@@ -19,26 +19,7 @@ export function AddToCartButton({ product, variation, className = "" }: AddToCar
   const handleAddToCart = () => {
     setIsAdding(true)
     
-    const price = variation 
-      ? parseFloat(variation.price)
-      : parseFloat(product.price)
-    
-    const image = variation?.image?.src || product.images[0]?.src
-
-    const attributes = variation?.attributes?.reduce((acc, attr) => {
-      acc[attr.name] = attr.option
-      return acc
-    }, {} as Record<string, string>)
-
-    addItem({
-      productId: product.id,
-      variationId: variation?.id,
-      name: product.name,
-      price,
-      quantity,
-      image,
-      attributes
-    })
+    addItem(product, quantity, variation)
 
     setTimeout(() => {
       setIsAdding(false)

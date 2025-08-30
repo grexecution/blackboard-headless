@@ -15,7 +15,7 @@ export function useRequireAuth(redirectTo: string = '/') {
     
     if (!session) {
       // Not logged in, open modal and redirect to home
-      openLoginModal(redirectTo)
+      openLoginModal()
       router.push('/')
     }
   }, [session, status, openLoginModal, router, redirectTo])

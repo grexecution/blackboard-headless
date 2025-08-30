@@ -519,6 +519,7 @@ export default function AccountPage() {
                           rel="noopener noreferrer"
                           className="block"
                         >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img 
                             src={course.featured_image} 
                             alt={course.title}

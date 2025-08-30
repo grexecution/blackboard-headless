@@ -186,10 +186,10 @@ export function SideCart() {
                                 <div className="flex justify-between">
                                   <div>
                                     <h3 className="text-sm font-medium">{item.name}</h3>
-                                    {item.attributes && (
+                                    {item.variation?.attributes && (
                                       <p className="mt-1 text-xs text-gray-400">
-                                        {Object.entries(item.attributes).map(([key, value]) => (
-                                          <span key={key}>{value} </span>
+                                        {item.variation.attributes.map((attr) => (
+                                          <span key={attr.name}>{attr.value} </span>
                                         ))}
                                       </p>
                                     )}

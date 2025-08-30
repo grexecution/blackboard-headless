@@ -23,7 +23,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
       notFound()
     }
 
-    let variations = []
+    let variations: any[] = []
     if (product.type === 'variable' && product.variations && product.variations.length > 0) {
       try {
         variations = await getProductVariations(product.id)

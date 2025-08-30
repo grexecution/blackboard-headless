@@ -43,7 +43,7 @@ export function MobileBottomNav() {
                 <span className={`text-xs mt-1 ${isActive ? 'text-[#ffed00] font-semibold' : 'text-gray-600'}`}>
                   {item.label}
                 </span>
-                {item.badge > 0 && (
+                {item.badge && item.badge > 0 && (
                   <span className="absolute top-1 right-4 bg-[#ffed00] text-black text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
                     {item.badge}
                   </span>

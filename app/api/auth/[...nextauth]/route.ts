@@ -91,7 +91,7 @@ const authOptions: NextAuthOptions = {
               lastName: customerData.last_name || '',
               billing: customerData.billing || {},
               shipping: customerData.shipping || {},
-              avatar: null,
+              avatar: undefined,
             }
           }
           

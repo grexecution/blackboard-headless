@@ -168,10 +168,10 @@ export async function GET(request: NextRequest) {
                 tutor_course_id: tutorCourseId,
                 // Course contents
                 course_contents: courseContents,
-                topics_count: courseContents?.topics?.length || 0,
+                topics_count: (courseContents as any)?.topics?.length || 0,
                 // Progress tracking (would need TutorLMS API for real data)
                 progress: 0, // Default to 0, would need TutorLMS API for actual progress
-                total_lessons: courseContents?.total_lessons || 
+                total_lessons: (courseContents as any)?.total_lessons || 
                               productDetails?.meta_data?.find((m: any) => m.key === '_tutor_course_lesson_count')?.value || 
                               0,
                 completed_lessons: 0,
