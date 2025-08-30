@@ -8,10 +8,25 @@ export class WooCommerceClient {
   private config: WooCommerceConfig
 
   constructor() {
+    // Check for required environment variables
+    const url = process.env.WP_BASE_URL || process.env.NEXT_PUBLIC_WOO_API_URL?.replace('/wp-json/wc/v3', '') || ''
+    const consumerKey = process.env.WOO_CONSUMER_KEY || ''
+    const consumerSecret = process.env.WOO_CONSUMER_SECRET || ''
+
+    if (!url) {
+      throw new Error('WP_BASE_URL or NEXT_PUBLIC_WOO_API_URL environment variable is required')
+    }
+    if (!consumerKey) {
+      throw new Error('WOO_CONSUMER_KEY environment variable is required')
+    }
+    if (!consumerSecret) {
+      throw new Error('WOO_CONSUMER_SECRET environment variable is required')
+    }
+
     this.config = {
-      url: process.env.WP_BASE_URL || '',
-      consumerKey: process.env.WOO_CONSUMER_KEY || '',
-      consumerSecret: process.env.WOO_CONSUMER_SECRET || '',
+      url,
+      consumerKey,
+      consumerSecret,
     }
   }
 
