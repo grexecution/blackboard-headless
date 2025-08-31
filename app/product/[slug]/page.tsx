@@ -2,15 +2,24 @@ import { getProduct, getProductVariations, getAllProducts } from '@/lib/woocomme
 import { ProductDetail } from '@/components/product/product-detail'
 import { notFound } from 'next/navigation'
 
-// Static generation - rebuilds only on webhook
-export const revalidate = false
-export const dynamic = 'force-static'
+// Allow revalidation every hour as fallback
+export const revalidate = 3600
+// Allow dynamic rendering if needed
+export const dynamic = 'auto'
 
 export async function generateStaticParams() {
-  const products = await getAllProducts()
-  return products.map((product) => ({
-    slug: product.slug,
-  }))
+  try {
+    const products = await getAllProducts()
+    // Filter out products without slugs or with empty slugs
+    const validProducts = products.filter(p => p.slug && p.slug.trim() !== '')
+    return validProducts.map((product) => ({
+      slug: product.slug,
+    }))
+  } catch (error) {
+    console.error('Error generating static params:', error)
+    // Return empty array to allow dynamic rendering
+    return []
+  }
 }
 
 export default async function ProductPage({ params }: { params: Promise<{ slug: string }> }) {
@@ -35,7 +44,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
 
     return <ProductDetail product={product} variations={variations} />
   } catch (error) {
-    console.error('Error fetching product:', error)
+    console.error('Error fetching product with slug:', slug, error)
     notFound()
   }
 }

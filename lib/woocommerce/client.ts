@@ -13,14 +13,24 @@ export class WooCommerceClient {
     const consumerKey = process.env.WOO_CONSUMER_KEY || ''
     const consumerSecret = process.env.WOO_CONSUMER_SECRET || ''
 
-    if (!url) {
+    // In production, throw clear errors
+    if (!url && process.env.NODE_ENV === 'production') {
       throw new Error('WP_BASE_URL or NEXT_PUBLIC_WOO_API_URL environment variable is required')
     }
-    if (!consumerKey) {
+    if (!consumerKey && process.env.NODE_ENV === 'production') {
       throw new Error('WOO_CONSUMER_KEY environment variable is required')
     }
-    if (!consumerSecret) {
+    if (!consumerSecret && process.env.NODE_ENV === 'production') {
       throw new Error('WOO_CONSUMER_SECRET environment variable is required')
+    }
+
+    // Log configuration for debugging
+    if (process.env.NODE_ENV === 'development') {
+      console.log('WooCommerce Client Config:', {
+        url: url ? `${url} (configured)` : 'NOT SET',
+        consumerKey: consumerKey ? 'SET' : 'NOT SET',
+        consumerSecret: consumerSecret ? 'SET' : 'NOT SET'
+      })
     }
 
     this.config = {

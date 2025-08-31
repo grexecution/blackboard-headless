@@ -34,6 +34,7 @@ export const getCachedProduct = unstable_cache(
     // If it's a string (slug), we need to search for it
     if (typeof idOrSlug === 'string' && isNaN(Number(idOrSlug))) {
       const products = await wooClient.request<Product[]>(`/products?slug=${idOrSlug}`)
+      
       if (products.length === 0) {
         throw new Error(`Product not found: ${idOrSlug}`)
       }
