@@ -8,12 +8,23 @@ export class WooCommerceClient {
   private config: WooCommerceConfig
 
   constructor() {
-    // Check for required environment variables
+    // Only run on server-side
+    if (typeof window !== 'undefined') {
+      // Client-side: return dummy config to prevent errors
+      this.config = {
+        url: '',
+        consumerKey: '',
+        consumerSecret: '',
+      }
+      return
+    }
+
+    // Server-side: Check for required environment variables
     const url = process.env.WP_BASE_URL || process.env.NEXT_PUBLIC_WOO_API_URL?.replace('/wp-json/wc/v3', '') || ''
     const consumerKey = process.env.WOO_CONSUMER_KEY || ''
     const consumerSecret = process.env.WOO_CONSUMER_SECRET || ''
 
-    // In production, throw clear errors
+    // In production, throw clear errors (only server-side)
     if (!url && process.env.NODE_ENV === 'production') {
       throw new Error('WP_BASE_URL or NEXT_PUBLIC_WOO_API_URL environment variable is required')
     }
@@ -22,15 +33,6 @@ export class WooCommerceClient {
     }
     if (!consumerSecret && process.env.NODE_ENV === 'production') {
       throw new Error('WOO_CONSUMER_SECRET environment variable is required')
-    }
-
-    // Log configuration for debugging
-    if (process.env.NODE_ENV === 'development') {
-      console.log('WooCommerce Client Config:', {
-        url: url ? `${url} (configured)` : 'NOT SET',
-        consumerKey: consumerKey ? 'SET' : 'NOT SET',
-        consumerSecret: consumerSecret ? 'SET' : 'NOT SET'
-      })
     }
 
     this.config = {
@@ -49,6 +51,11 @@ export class WooCommerceClient {
     endpoint: string,
     options: RequestInit = {}
   ): Promise<T> {
+    // Prevent client-side calls
+    if (typeof window !== 'undefined') {
+      throw new Error('WooCommerce API calls can only be made from the server')
+    }
+
     const url = `${this.config.url}/wp-json/wc/v3${endpoint}`
     
     const response = await fetch(url, {
@@ -73,6 +80,11 @@ export class WooCommerceClient {
     options: RequestInit = {},
     sessionToken?: string
   ): Promise<{ data: T; headers: Headers }> {
+    // Prevent client-side calls
+    if (typeof window !== 'undefined') {
+      throw new Error('WooCommerce API calls can only be made from the server')
+    }
+
     const url = `${this.config.url}/wp-json/wc/store/v1${endpoint}`
     
     const headers: Record<string, string> = {
