@@ -12,6 +12,7 @@ import { PaymentIcons } from '@/components/ui/payment-icons'
 interface ProductDetailProps {
   product: Product
   variations: ProductVariation[]
+  workshopProduct?: Product | null
 }
 
 export function ProductDetail({ product, variations, workshopProduct }: ProductDetailProps) {
