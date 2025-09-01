@@ -17,6 +17,8 @@ export interface CartItem {
   }
   stock_quantity?: number | null
   manage_stock?: boolean
+  isFreebie?: boolean
+  parentProductId?: number // ID of the product that triggered this freebie
 }
 
 interface CartContextType {
@@ -27,6 +29,7 @@ interface CartContextType {
   addItem: (product: Product, quantity?: number, variation?: ProductVariation) => void
   removeItem: (id: string) => void
   updateQuantity: (id: string, quantity: number) => void
+  updateItem?: (id: string, updates: Partial<CartItem>) => void
   clearCart: () => void
   totalItems: number
   totalPrice: number
@@ -68,7 +71,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setItems(currentItems => {
       const existingItem = currentItems.find(item => item.id === itemId)
       
-      if (existingItem) {
+      if (existingItem && !existingItem.isFreebie) {
         return currentItems.map(item =>
           item.id === itemId
             ? { ...item, quantity: item.quantity + quantity }
@@ -97,14 +100,63 @@ export function CartProvider({ children }: { children: ReactNode }) {
         manage_stock: variation?.manage_stock ?? product.manage_stock
       }
       
-      return [...currentItems, newItem]
+      // Check if this is a BlackBoard Set and add freebie
+      const updatedItems = [...currentItems, newItem]
+      
+      // Auto-add Functional Foot Workshop as freebie for BlackBoard Sets
+      const isBlackBoardSet = product.categories?.some(cat => 
+        cat.slug === 'blackboard-sets' || 
+        cat.name.toLowerCase().includes('blackboard set')
+      ) || product.name.toLowerCase().includes('blackboard')
+      
+      if (isBlackBoardSet && !existingItem) {
+        // Check if freebie already exists for this product
+        const freebieExists = currentItems.some(item => 
+          item.isFreebie && item.parentProductId === product.id
+        )
+        
+        if (!freebieExists) {
+          // Add freebie - we'll use actual workshop product details if available
+          // The workshop product should be fetched by the component that calls addItem
+          // Try to get workshop image from commonly used WooCommerce demo/placeholder patterns
+          // In production, this should be fetched from the actual workshop product
+          const workshopImage = 'https://via.placeholder.com/150/ffed00/000000?text=Workshop'
+          
+          const freebieItem: CartItem = {
+            id: `freebie-${product.id}`,
+            productId: 999, // Workshop product ID - should match actual WooCommerce ID
+            name: 'Functional Foot Workshop',
+            price: 0,
+            quantity: 1,
+            image: workshopImage,
+            slug: 'functional-foot-workshop',
+            isFreebie: true,
+            parentProductId: product.id
+          }
+          updatedItems.push(freebieItem)
+        }
+      }
+      
+      return updatedItems
     })
     
     openCart()
   }
 
   const removeItem = (id: string) => {
-    setItems(currentItems => currentItems.filter(item => item.id !== id))
+    setItems(currentItems => {
+      const itemToRemove = currentItems.find(item => item.id === id)
+      
+      // If removing a BlackBoard product, also remove its freebie
+      if (itemToRemove && !itemToRemove.isFreebie) {
+        return currentItems.filter(item => 
+          item.id !== id && !(item.isFreebie && item.parentProductId === itemToRemove.productId)
+        )
+      }
+      
+      // If removing a freebie, just remove it
+      return currentItems.filter(item => item.id !== id)
+    })
   }
 
   const updateQuantity = (id: string, quantity: number) => {
@@ -117,6 +169,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
         )
       )
     }
+  }
+
+  const updateItem = (id: string, updates: Partial<CartItem>) => {
+    setItems(currentItems =>
+      currentItems.map(item =>
+        item.id === id ? { ...item, ...updates } : item
+      )
+    )
   }
 
   const clearCart = () => {
@@ -136,6 +196,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         addItem,
         removeItem,
         updateQuantity,
+        updateItem,
         clearCart,
         totalItems,
         totalPrice,

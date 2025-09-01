@@ -258,16 +258,28 @@ export default function CheckoutPage() {
               <div className="space-y-3 mb-4">
                 {items.map((item) => (
                   <div key={item.id} className="flex justify-between text-sm">
-                    <span>{item.name} x {item.quantity}</span>
-                    <span>${(item.price * item.quantity).toFixed(2)}</span>
+                    <span className="flex items-center gap-1">
+                      {item.isFreebie && <span className="text-green-600">🎁</span>}
+                      {item.name} x {item.quantity}
+                    </span>
+                    <span className={item.isFreebie ? 'text-green-600 font-medium' : ''}>
+                      {item.isFreebie ? 'FREE' : `€${(item.price * item.quantity).toFixed(2)}`}
+                    </span>
                   </div>
                 ))}
               </div>
               
               <div className="border-t pt-4">
+                {/* Show savings if there are freebies */}
+                {items.some(item => item.isFreebie) && (
+                  <div className="flex justify-between text-sm text-green-600 mb-2">
+                    <span>Gift Value</span>
+                    <span>€49.00</span>
+                  </div>
+                )}
                 <div className="flex justify-between font-semibold text-lg">
                   <span>Total</span>
-                  <span>${totalPrice.toFixed(2)}</span>
+                  <span>€{totalPrice.toFixed(2)}</span>
                 </div>
               </div>
             </div>

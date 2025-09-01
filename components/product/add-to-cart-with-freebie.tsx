@@ -5,35 +5,36 @@ import { useState, useEffect } from 'react'
 import { useCart } from '@/lib/cart-context'
 import { Product, ProductVariation, getStockStatus } from '@/lib/woocommerce/products'
 import { qualifiesForFreebie } from '@/lib/woocommerce/freebie'
-import { useWorkshopProduct } from '@/lib/hooks/use-workshop-product'
 
 interface AddToCartButtonProps {
   product: Product
   variation?: ProductVariation
   className?: string
+  workshopProduct?: Product | null
 }
 
-export function AddToCartButton({ product, variation, className = "" }: AddToCartButtonProps) {
+export function AddToCartButton({ product, variation, className = "", workshopProduct }: AddToCartButtonProps) {
   const [isAdding, setIsAdding] = useState(false)
-  const { addItem, items, updateItem } = useCart()
-  const { workshopProduct } = useWorkshopProduct()
+  const { addItem, items } = useCart()
 
   const handleAddToCart = () => {
     setIsAdding(true)
     
-    // Always add quantity of 1
+    // Add the main product
     addItem(product, 1, variation)
-
-    // If workshop product is loaded and this qualifies for freebie, update the freebie item
-    if (workshopProduct && qualifiesForFreebie(product)) {
+    
+    // If this qualifies for freebie and we have workshop product details, update the cart
+    if (qualifiesForFreebie(product) && workshopProduct) {
+      // The cart context will handle adding the freebie, but we can update it with real data
       setTimeout(() => {
-        // Update the freebie item with real workshop data
+        // Update the freebie with actual workshop data
         const freebieId = `freebie-${product.id}`
-        const freebieItem = items.find(item => item.id === freebieId)
+        const existingFreebie = items.find(item => item.id === freebieId)
         
-        if (freebieItem && updateItem) {
-          // Update with real workshop data if updateItem method exists
-          console.log('Workshop product ready for cart:', workshopProduct)
+        if (!existingFreebie && workshopProduct) {
+          // Cart context should have already added a placeholder
+          // We could dispatch an update action here if needed
+          console.log('Workshop product ready for freebie:', workshopProduct)
         }
       }, 100)
     }

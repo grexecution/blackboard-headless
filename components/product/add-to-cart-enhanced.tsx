@@ -5,36 +5,41 @@ import { useState, useEffect } from 'react'
 import { useCart } from '@/lib/cart-context'
 import { Product, ProductVariation, getStockStatus } from '@/lib/woocommerce/products'
 import { qualifiesForFreebie } from '@/lib/woocommerce/freebie'
-import { useWorkshopProduct } from '@/lib/hooks/use-workshop-product'
 
-interface AddToCartButtonProps {
+interface AddToCartButtonEnhancedProps {
   product: Product
   variation?: ProductVariation
+  workshopProduct?: Product | null
   className?: string
 }
 
-export function AddToCartButton({ product, variation, className = "" }: AddToCartButtonProps) {
+export function AddToCartButtonEnhanced({ 
+  product, 
+  variation, 
+  workshopProduct,
+  className = "" 
+}: AddToCartButtonEnhancedProps) {
   const [isAdding, setIsAdding] = useState(false)
-  const { addItem, items, updateItem } = useCart()
-  const { workshopProduct } = useWorkshopProduct()
+  const { addItem, updateItem, items } = useCart()
 
   const handleAddToCart = () => {
     setIsAdding(true)
     
-    // Always add quantity of 1
+    // Add the main product
     addItem(product, 1, variation)
-
-    // If workshop product is loaded and this qualifies for freebie, update the freebie item
+    
+    // If we have workshop product data and this qualifies for freebie, update the freebie
     if (workshopProduct && qualifiesForFreebie(product)) {
       setTimeout(() => {
-        // Update the freebie item with real workshop data
         const freebieId = `freebie-${product.id}`
-        const freebieItem = items.find(item => item.id === freebieId)
         
-        if (freebieItem && updateItem) {
-          // Update with real workshop data if updateItem method exists
-          console.log('Workshop product ready for cart:', workshopProduct)
-        }
+        // Update the freebie with real workshop data
+        updateItem?.(freebieId, {
+          name: `${workshopProduct.name}`,
+          productId: workshopProduct.id,
+          image: workshopProduct.images?.[0]?.src,
+          slug: workshopProduct.slug
+        })
       }, 100)
     }
 

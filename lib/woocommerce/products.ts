@@ -67,6 +67,18 @@ export interface Product {
   attributes: ProductAttribute[]
   variations?: number[]
   price_html?: string
+  acf?: {
+    product_detail_description?: string
+    scope_of_delivery?: string
+    additional_information?: string
+    shipping_information?: string
+    [key: string]: any
+  }
+  meta_data?: Array<{
+    id: number
+    key: string
+    value: any
+  }>
 }
 
 // Helper function to determine actual stock status

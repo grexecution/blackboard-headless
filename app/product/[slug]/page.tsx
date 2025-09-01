@@ -1,6 +1,7 @@
 import { getProduct, getProductVariations, getAllProducts } from '@/lib/woocommerce/products'
 import { ProductDetail } from '@/components/product/product-detail'
 import { notFound } from 'next/navigation'
+import { findWorkshopProduct, qualifiesForFreebie } from '@/lib/woocommerce/freebie'
 
 // Allow revalidation every hour as fallback
 export const revalidate = 3600
@@ -42,7 +43,18 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
       }
     }
 
-    return <ProductDetail product={product} variations={variations} />
+    // Fetch workshop product if this qualifies for freebie
+    let workshopProduct = null
+    if (qualifiesForFreebie(product)) {
+      try {
+        const allProducts = await getAllProducts()
+        workshopProduct = findWorkshopProduct(allProducts)
+      } catch (error) {
+        console.error('Error fetching workshop product:', error)
+      }
+    }
+
+    return <ProductDetail product={product} variations={variations} workshopProduct={workshopProduct} />
   } catch (error) {
     console.error('Error fetching product with slug:', slug, error)
     notFound()

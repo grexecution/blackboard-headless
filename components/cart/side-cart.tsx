@@ -2,7 +2,7 @@
 
 import { Fragment, useEffect, useState } from 'react'
 import { Dialog, Transition } from '@headlessui/react'
-import { X, Plus, Minus, ShoppingBag, Truck, Shield, CreditCard } from 'lucide-react'
+import { X, Plus, Minus, ShoppingBag, Truck, Shield, CreditCard, Gift, Package } from 'lucide-react'
 import { useCart } from '@/lib/cart-context'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -171,21 +171,49 @@ export function SideCart() {
                       ) : (
                         <div className="space-y-6">
                           {items.map((item) => (
-                            <div key={item.id} className="flex gap-4">
-                              {item.image && (
-                                <div className="relative h-24 w-24 flex-shrink-0 overflow-hidden rounded-md border border-gray-800">
+                            <div key={item.id} className={`flex gap-4 ${
+                              item.isFreebie ? 'bg-gradient-to-r from-green-900/30 to-yellow-900/20 -mx-6 px-6 py-4 border-l-4 border-l-green-400 rounded-r-lg' : ''
+                            }`}>
+                              {/* Product Image with Gift Badge */}
+                              <div className="relative h-24 w-24 flex-shrink-0 overflow-hidden rounded-md border border-gray-800">
+                                {item.image && !item.image.includes('placeholder') ? (
                                   <Image
                                     src={item.image}
                                     alt={item.name}
                                     fill
                                     className="object-cover"
                                   />
-                                </div>
-                              )}
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-800 to-gray-900">
+                                    {item.isFreebie ? (
+                                      <Gift className="h-8 w-8 text-green-400" />
+                                    ) : (
+                                      <Package className="h-8 w-8 text-gray-600" />
+                                    )}
+                                  </div>
+                                )}
+                                {item.isFreebie && (
+                                  <div className="absolute -top-2 -right-2 bg-green-400 text-black rounded-full p-1.5 shadow-lg">
+                                    <Gift className="h-4 w-4" />
+                                  </div>
+                                )}
+                              </div>
+                              
                               <div className="flex flex-1 flex-col">
                                 <div className="flex justify-between">
-                                  <div>
-                                    <h3 className="text-sm font-medium">{item.name}</h3>
+                                  <div className="flex-1">
+                                    {item.isFreebie && (
+                                      <div className="inline-flex items-center gap-1 bg-gradient-to-r from-green-400 to-yellow-400 text-black px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider mb-1">
+                                        <Gift className="h-3 w-3" />
+                                        FREE BONUS GIFT
+                                      </div>
+                                    )}
+                                    <h3 className="text-sm font-medium">
+                                      {item.name}
+                                      {item.isFreebie && (
+                                        <span className="ml-1 text-xs text-green-400">(€49 value)</span>
+                                      )}
+                                    </h3>
                                     {item.variation?.attributes && (
                                       <p className="mt-1 text-xs text-gray-400">
                                         {item.variation.attributes.map((attr) => (
@@ -194,32 +222,47 @@ export function SideCart() {
                                       </p>
                                     )}
                                   </div>
-                                  <button
-                                    onClick={() => removeItem(item.id)}
-                                    className="text-gray-500 hover:text-white transition-colors"
-                                  >
-                                    <X className="h-4 w-4" />
-                                  </button>
+                                  {!item.isFreebie && (
+                                    <button
+                                      onClick={() => removeItem(item.id)}
+                                      className="text-gray-500 hover:text-white transition-colors ml-2"
+                                    >
+                                      <X className="h-4 w-4" />
+                                    </button>
+                                  )}
                                 </div>
                                 <div className="mt-2 flex items-center justify-between">
-                                  <div className="flex items-center gap-2">
-                                    <button
-                                      onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                                      className="rounded-md border border-gray-700 p-1 hover:bg-gray-900 transition-colors"
-                                    >
-                                      <Minus className="h-3 w-3" />
-                                    </button>
-                                    <span className="w-8 text-center text-sm">{item.quantity}</span>
-                                    <button
-                                      onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                                      className="rounded-md border border-gray-700 p-1 hover:bg-gray-900 transition-colors"
-                                    >
-                                      <Plus className="h-3 w-3" />
-                                    </button>
-                                  </div>
-                                  <p className="text-sm font-medium">
-                                    €{(item.price * item.quantity).toFixed(2)}
-                                  </p>
+                                  {!item.isFreebie ? (
+                                    <>
+                                      <div className="flex items-center gap-2">
+                                        <button
+                                          onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                                          className="rounded-md border border-gray-700 p-1 hover:bg-gray-900 transition-colors"
+                                        >
+                                          <Minus className="h-3 w-3" />
+                                        </button>
+                                        <span className="w-8 text-center text-sm">{item.quantity}</span>
+                                        <button
+                                          onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                                          className="rounded-md border border-gray-700 p-1 hover:bg-gray-900 transition-colors"
+                                        >
+                                          <Plus className="h-3 w-3" />
+                                        </button>
+                                      </div>
+                                      <p className="text-sm font-medium">
+                                        €{(item.price * item.quantity).toFixed(2)}
+                                      </p>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <span className="text-xs text-green-400 font-medium flex items-center gap-1">
+                                        <span className="text-green-400">✓</span> Included with purchase
+                                      </span>
+                                      <p className="text-sm font-bold text-green-400 animate-pulse">
+                                        FREE
+                                      </p>
+                                    </>
+                                  )}
                                 </div>
                               </div>
                             </div>
