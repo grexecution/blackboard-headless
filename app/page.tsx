@@ -1,7 +1,7 @@
 import { getAllProducts, getProductVariations, getPriceRange } from '@/lib/woocommerce/products'
 import Link from 'next/link'
 import Image from 'next/image'
-import { ArrowRight, Star, Shield, Truck, Award, Check, PlayCircle, Users, Target, Clock, ChevronRight, Gift, RefreshCw } from 'lucide-react'
+import { ArrowRight, Star, Shield, Truck, Award, Check, PlayCircle, Users, ChevronRight, Gift, RefreshCw, BookOpen, Video, FileText, Lock } from 'lucide-react'
 
 // Static generation - rebuilds only on webhook
 export const revalidate = false
@@ -58,9 +58,20 @@ export default async function Home() {
         <div className="container mx-auto px-4 relative z-10">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="text-white">
-              <div className="inline-flex items-center gap-2 bg-[#ffed00]/20 text-[#ffed00] px-4 py-2 rounded-full mb-6">
-                <Star className="h-4 w-4 fill-current" />
-                <span className="text-sm font-semibold">Trusted by 20,000+ Athletes</span>
+              {/* Trustpilot and Trust Badges */}
+              <div className="flex flex-wrap items-center gap-4 mb-6">
+                <div className="inline-flex items-center gap-2 bg-[#ffed00]/20 text-[#ffed00] px-4 py-2 rounded-full">
+                  <Star className="h-4 w-4 fill-current" />
+                  <span className="text-sm font-semibold">Trusted by 20,000+ Athletes</span>
+                </div>
+                <div className="inline-flex items-center gap-2 bg-white/10 px-4 py-2 rounded-full">
+                  <div className="flex gap-0.5">
+                    {[...Array(5)].map((_, i) => (
+                      <Star key={i} className="h-4 w-4 fill-[#ffed00] text-[#ffed00]" />
+                    ))}
+                  </div>
+                  <span className="text-sm text-white">50+ Trustpilot Reviews</span>
+                </div>
               </div>
               
               <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight">
@@ -85,34 +96,44 @@ export default async function Home() {
                   Watch Demo
                 </button>
               </div>
-              
-              {/* Trust Indicators */}
-              <div className="grid grid-cols-3 gap-6">
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-[#ffed00]">98%</div>
-                  <div className="text-sm text-gray-400">Satisfaction Rate</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-[#ffed00]">30-Day</div>
-                  <div className="text-sm text-gray-400">Money Back</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-[#ffed00]">2-5 Days</div>
-                  <div className="text-sm text-gray-400">Fast Delivery</div>
-                </div>
-              </div>
+
             </div>
             
             <div className="relative">
               <div className="relative z-10">
                 {blackboardProducts[0]?.images[0] ? (
-                  <Image
-                    src={blackboardProducts[0].images[0].src}
-                    alt="BlackBoard Training Equipment"
-                    width={600}
-                    height={600}
-                    className="w-full h-auto rounded-2xl shadow-2xl"
-                  />
+                  <>
+                    <Image
+                      src={blackboardProducts[0].images[0].src}
+                      alt="BlackBoard Training Equipment"
+                      width={600}
+                      height={600}
+                      className="w-full h-auto rounded-2xl shadow-2xl"
+                    />
+                    {/* Mini Product Link Card */}
+                    <Link 
+                      href={`/product/${blackboardProducts[0].slug}`}
+                      className="absolute bottom-4 left-4 right-4 bg-white/95 backdrop-blur-sm rounded-xl p-4 shadow-lg hover:shadow-xl transition-all hover:scale-[1.02] group"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="relative w-16 h-16 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+                          <Image
+                            src={blackboardProducts[0].images[0].src}
+                            alt={getDisplayName(blackboardProducts[0].name)}
+                            fill
+                            className="object-cover"
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="font-bold text-gray-900 group-hover:text-[#ffed00] transition-colors">
+                            {getDisplayName(blackboardProducts[0].name)}
+                          </h3>
+                          <p className="text-sm text-gray-600">From €{blackboardProducts[0].price}</p>
+                        </div>
+                        <ChevronRight className="h-5 w-5 text-gray-400 group-hover:text-[#ffed00] transition-all group-hover:translate-x-1" />
+                      </div>
+                    </Link>
+                  </>
                 ) : (
                   <div className="w-full aspect-square bg-gray-800 rounded-2xl"></div>
                 )}
@@ -405,6 +426,152 @@ export default async function Home() {
             <div className="bg-gray-900 rounded-xl p-6 text-center">
               <div className="text-5xl font-bold text-[#ffed00] mb-2">98%</div>
               <div className="text-gray-400">Would Recommend</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Training Center Section */}
+      <section className="py-20 bg-gradient-to-br from-gray-900 via-black to-gray-900 text-white relative overflow-hidden">
+        {/* Background Pattern */}
+        <div className="absolute inset-0 opacity-5">
+          <div className="absolute inset-0" style={{
+            backgroundImage: `radial-gradient(circle at 2px 2px, #ffed00 1px, transparent 1px)`,
+            backgroundSize: '30px 30px'
+          }}/>
+        </div>
+        
+        <div className="container mx-auto px-4 relative z-10">
+          <div className="max-w-6xl mx-auto">
+            <div className="grid lg:grid-cols-2 gap-12 items-center">
+              {/* Content */}
+              <div>
+                <div className="inline-flex items-center gap-2 bg-[#ffed00]/20 text-[#ffed00] px-4 py-2 rounded-full mb-6">
+                  <Lock className="h-4 w-4" />
+                  <span className="text-sm font-semibold uppercase tracking-wider">Exclusive for Customers</span>
+                </div>
+                
+                <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6">
+                  The BlackBoard
+                  <span className="block text-[#ffed00]">Training Center</span>
+                </h2>
+                
+                <p className="text-xl text-gray-300 mb-8 leading-relaxed">
+                  In our Training Center, you&apos;ll find guides and videos from instructors and experts to help you achieve maximum training results.
+                </p>
+                
+                {/* Features */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-[#ffed00]/20 rounded-lg flex items-center justify-center">
+                      <Video className="h-5 w-5 text-[#ffed00]" />
+                    </div>
+                    <div>
+                      <p className="font-semibold">Video Tutorials</p>
+                      <p className="text-sm text-gray-400">Step-by-step guides</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-[#ffed00]/20 rounded-lg flex items-center justify-center">
+                      <BookOpen className="h-5 w-5 text-[#ffed00]" />
+                    </div>
+                    <div>
+                      <p className="font-semibold">Training Plans</p>
+                      <p className="text-sm text-gray-400">Structured programs</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-[#ffed00]/20 rounded-lg flex items-center justify-center">
+                      <Users className="h-5 w-5 text-[#ffed00]" />
+                    </div>
+                    <div>
+                      <p className="font-semibold">Expert Instructors</p>
+                      <p className="text-sm text-gray-400">Learn from the best</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-[#ffed00]/20 rounded-lg flex items-center justify-center">
+                      <FileText className="h-5 w-5 text-[#ffed00]" />
+                    </div>
+                    <div>
+                      <p className="font-semibold">PDF Guides</p>
+                      <p className="text-sm text-gray-400">Downloadable resources</p>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* CTA Button */}
+                <Link
+                  href="/training-center"
+                  className="inline-flex items-center gap-3 bg-[#ffed00] text-black px-8 py-4 rounded-full font-bold text-lg hover:bg-[#ffed00]/90 transform hover:scale-105 transition-all shadow-xl"
+                >
+                  <PlayCircle className="h-6 w-6" />
+                  Go to Training Center
+                  <ArrowRight className="h-5 w-5" />
+                </Link>
+              </div>
+              
+              {/* Visual Side */}
+              <div className="relative">
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Video Cards */}
+                  <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-4 hover:bg-gray-800/70 transition-all cursor-pointer group">
+                    <div className="aspect-video bg-gray-700 rounded-lg mb-3 relative overflow-hidden">
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="w-12 h-12 bg-[#ffed00] rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                          <PlayCircle className="h-6 w-6 text-black ml-0.5" />
+                        </div>
+                      </div>
+                    </div>
+                    <p className="text-sm font-semibold">Getting Started</p>
+                    <p className="text-xs text-gray-400">5 min</p>
+                  </div>
+                  
+                  <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-4 hover:bg-gray-800/70 transition-all cursor-pointer group">
+                    <div className="aspect-video bg-gray-700 rounded-lg mb-3 relative overflow-hidden">
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="w-12 h-12 bg-[#ffed00] rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                          <PlayCircle className="h-6 w-6 text-black ml-0.5" />
+                        </div>
+                      </div>
+                    </div>
+                    <p className="text-sm font-semibold">Basic Exercises</p>
+                    <p className="text-xs text-gray-400">12 min</p>
+                  </div>
+                  
+                  <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-4 hover:bg-gray-800/70 transition-all cursor-pointer group">
+                    <div className="aspect-video bg-gray-700 rounded-lg mb-3 relative overflow-hidden">
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="w-12 h-12 bg-[#ffed00] rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                          <PlayCircle className="h-6 w-6 text-black ml-0.5" />
+                        </div>
+                      </div>
+                    </div>
+                    <p className="text-sm font-semibold">Advanced Training</p>
+                    <p className="text-xs text-gray-400">18 min</p>
+                  </div>
+                  
+                  <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-4 hover:bg-gray-800/70 transition-all cursor-pointer group">
+                    <div className="aspect-video bg-gray-700 rounded-lg mb-3 relative overflow-hidden">
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="w-12 h-12 bg-[#ffed00] rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                          <PlayCircle className="h-6 w-6 text-black ml-0.5" />
+                        </div>
+                      </div>
+                    </div>
+                    <p className="text-sm font-semibold">Pro Techniques</p>
+                    <p className="text-xs text-gray-400">15 min</p>
+                  </div>
+                </div>
+                
+                {/* Floating Badge */}
+                <div className="absolute -top-4 -right-4 bg-[#ffed00] text-black px-4 py-2 rounded-full font-bold text-sm shadow-xl">
+                  100+ Videos
+                </div>
+              </div>
             </div>
           </div>
         </div>
