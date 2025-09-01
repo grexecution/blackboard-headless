@@ -3,12 +3,20 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { Package, Truck, Award, ChevronRight, Star, Shield, Globe, RefreshCw, Gift, Check } from 'lucide-react'
 
-// Static generation - rebuilds only on webhook or manual trigger
-export const revalidate = false // No automatic revalidation - only manual/webhook
-export const dynamic = 'force-static' // Force static generation
+// Force static generation at build time
+export const revalidate = false
+export const dynamic = 'force-static'
+
+// Add metadata for SEO
+export const metadata = {
+  title: 'Shop - BlackBoard Training',
+  description: 'Premium tactical training equipment including BlackBoard Basic and Professional models',
+}
 
 export default async function ShopPage() {
+  console.log('[Shop] Rendering shop page...')
   const products = await getAllProducts()
+  console.log(`[Shop] Loaded ${products.length} products`)
   
   // Helper function to rename BlackBoard Normal to Basic
   const getDisplayName = (name: string) => {

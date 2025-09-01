@@ -10,15 +10,29 @@ export async function POST(request: NextRequest) {
     const secret = request.headers.get('x-revalidate-secret') || 
                    request.nextUrl.searchParams.get('secret')
     
+    console.log('[Revalidation] Request received', {
+      hasSecret: !!secret,
+      expectedSecret: !!process.env.REVALIDATE_SECRET,
+      secretMatch: secret === process.env.REVALIDATE_SECRET
+    })
+    
     // Check for secret to secure the endpoint
     if (process.env.REVALIDATE_SECRET && secret !== process.env.REVALIDATE_SECRET) {
+      console.error('[Revalidation] Invalid secret provided')
       return NextResponse.json({ error: 'Invalid secret' }, { status: 401 })
     }
 
     const body = await request.json().catch(() => ({}))
     const { path, tag, type = 'path', slug, action } = body
 
-    console.log(`[Revalidation Request] Type: ${type}, Action: ${action}, Path: ${path}, Slug: ${slug}`)
+    console.log(`[Revalidation] Processing request:`, {
+      type,
+      action,
+      path,
+      slug,
+      tag,
+      timestamp: new Date().toISOString()
+    })
 
     // Handle WordPress WooCommerce webhook actions
     if (action) {
@@ -28,15 +42,26 @@ export async function POST(request: NextRequest) {
         case 'product.deleted':
         case 'product.restored':
           // Revalidate product pages and shop
+          console.log('[Revalidation] Revalidating shop page...')
           revalidatePath('/shop', 'page')
+          console.log('[Revalidation] Revalidating homepage...')
           revalidatePath('/', 'page')
           if (slug) {
+            console.log(`[Revalidation] Revalidating product: /product/${slug}`)
             revalidatePath(`/product/${slug}`, 'page')
           }
+          // Also revalidate all product pages
+          console.log('[Revalidation] Revalidating all product pages...')
+          revalidatePath('/product/[slug]', 'page')
+          
+          const revalidatedPages = ['/', '/shop', '/product/[slug]', slug ? `/product/${slug}` : null].filter(Boolean)
+          console.log('[Revalidation] Success! Revalidated:', revalidatedPages)
+          
           return NextResponse.json({ 
             revalidated: true, 
             action, 
-            pages: ['/', '/shop', slug ? `/product/${slug}` : null].filter(Boolean)
+            pages: revalidatedPages,
+            timestamp: new Date().toISOString()
           })
 
         case 'order.created':

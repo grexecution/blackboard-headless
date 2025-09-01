@@ -1,30 +1,63 @@
 import { getProduct, getProductVariations, getAllProducts } from '@/lib/woocommerce/products'
+import { getAllProductsForBuild } from '@/lib/woocommerce/build-helpers'
 import { ProductDetail } from '@/components/product/product-detail'
 import { notFound } from 'next/navigation'
 import { findWorkshopProduct, qualifiesForFreebie } from '@/lib/woocommerce/freebie'
 
-// Allow revalidation every hour as fallback
-export const revalidate = 3600
-// Allow dynamic rendering if needed
-export const dynamic = 'auto'
+// Force static generation at build time with no revalidation
+export const revalidate = false
+export const dynamic = 'force-static'
+export const dynamicParams = false
+
+// Add metadata generation for better SEO
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params
+  try {
+    const product = await getProduct(slug)
+    if (!product) return {}
+    
+    return {
+      title: product.name.replace(/BlackBoard Normal/gi, 'BlackBoard Basic'),
+      description: product.short_description?.replace(/<[^>]*>/g, '') || '',
+    }
+  } catch (error) {
+    return {}
+  }
+}
 
 export async function generateStaticParams() {
+  console.log('[Build] Starting generateStaticParams for product pages...')
+  
   try {
-    const products = await getAllProducts()
+    // Use build helper to bypass cache during static generation
+    const products = await getAllProductsForBuild()
+    console.log(`[Build] Fetched ${products.length} products from WooCommerce (bypassing cache)`)
+    
     // Filter out products without slugs or with empty slugs
     const validProducts = products.filter(p => p.slug && p.slug.trim() !== '')
-    return validProducts.map((product) => ({
-      slug: product.slug,
-    }))
+    console.log(`[Build] Found ${validProducts.length} valid products with slugs`)
+    
+    const params = validProducts.map((product) => {
+      console.log(`[Build] Generating static params for: ${product.slug}`)
+      return {
+        slug: product.slug,
+      }
+    })
+    
+    console.log('[Build] Static params generation complete!')
+    return params
   } catch (error) {
-    console.error('Error generating static params:', error)
-    // Return empty array to allow dynamic rendering
-    return []
+    console.error('[Build] Error generating static params:', error)
+    // Don't return empty array - throw error to fail build
+    throw error
   }
 }
 
 export default async function ProductPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
+  
+  // Note: We use the cached version here for runtime, not the build helper
+  // This ensures proper caching behavior when serving pages
   
   try {
     const product = await getProduct(slug)
