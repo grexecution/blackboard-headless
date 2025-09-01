@@ -10,6 +10,7 @@ export const getCachedProducts = unstable_cache(
     featured?: boolean
     category?: string
     include?: number[]
+    status?: string
   }): Promise<Product[]> => {
     const queryParams = new URLSearchParams()
     
@@ -18,9 +19,14 @@ export const getCachedProducts = unstable_cache(
     if (params?.featured !== undefined) queryParams.append('featured', params.featured.toString())
     if (params?.category) queryParams.append('category', params.category)
     if (params?.include) queryParams.append('include', params.include.join(','))
+    // Always default to 'publish' status unless explicitly set
+    queryParams.append('status', params?.status || 'publish')
     
     const endpoint = `/products${queryParams.toString() ? `?${queryParams.toString()}` : ''}`
-    return wooClient.request<Product[]>(endpoint)
+    const products = await wooClient.request<Product[]>(endpoint)
+    
+    // Additional client-side filter to ensure only published products
+    return products.filter(product => product.status === 'publish')
   },
   ['products'],
   {

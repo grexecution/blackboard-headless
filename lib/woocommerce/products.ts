@@ -100,6 +100,7 @@ export async function getProducts(params?: {
   featured?: boolean
   category?: string
   include?: number[]
+  status?: string
 }): Promise<Product[]> {
   return getCachedProducts(params)
 }
