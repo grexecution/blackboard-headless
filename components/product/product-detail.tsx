@@ -425,7 +425,7 @@ export function ProductDetail({ product, variations, workshopProduct }: ProductD
                 {/* Customer Satisfaction - Clean Design */}
                 <AddToCartButtonEnhanced 
                   product={product} 
-                  variation={selectedVariation}
+                  variation={selectedVariation || undefined}
                   workshopProduct={workshopProduct}
                   className="w-full shadow-lg lg:shadow-none"
                 />
