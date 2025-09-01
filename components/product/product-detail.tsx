@@ -770,7 +770,7 @@ export function ProductDetail({ product, variations, workshopProduct }: ProductD
                 <div className="bg-gray-50 rounded-lg p-4">
                   <h4 className="font-semibold mb-3 flex items-center gap-2">
                     <Check className="h-5 w-5 text-green-600" />
-                    What you'll get:
+                    What you&apos;ll get:
                   </h4>
                   <ul className="space-y-2">
                     <li className="flex items-start gap-2">

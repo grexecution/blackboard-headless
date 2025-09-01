@@ -463,8 +463,8 @@ export default async function Home() {
               30-Day Money Back Guarantee
             </h2>
             <p className="text-xl text-black/80 mb-8">
-              We're so confident you'll love your BlackBoard that we offer a full refund 
-              if you're not completely satisfied. No questions asked.
+              We&apos;re so confident you&apos;ll love your BlackBoard that we offer a full refund 
+              if you&apos;re not completely satisfied. No questions asked.
             </p>
             <Link
               href="/shop"
