@@ -1,34 +1,40 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { cookies } from 'next/headers'
 import { wooClient } from '@/lib/woocommerce/client'
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const cookieStore = await cookies()
-    let cartToken = cookieStore.get('woo-cart-token')?.value
+    console.log('Checkout request received:', {
+      paymentMethod: body.paymentMethod,
+      hasCartItems: body.cartItems?.length > 0,
+      billingCountry: body.billing?.country,
+    })
 
-    // Prepare checkout data for WooCommerce Store API
-    const checkoutData = {
-      billing_address: {
+    // Prepare order data for WooCommerce REST API v3
+    const orderData = {
+      payment_method: body.paymentMethod || 'bacs',
+      payment_method_title: body.paymentMethod === 'stripe' ? 'Credit Card (Stripe)' : 
+                           body.paymentMethod === 'paypal' ? 'PayPal' : 'Direct Bank Transfer',
+      set_paid: false,
+      billing: {
         first_name: body.billing.firstName,
         last_name: body.billing.lastName,
         address_1: body.billing.address1,
         address_2: body.billing.address2 || '',
         city: body.billing.city,
-        state: body.billing.state,
+        state: body.billing.state || '',
         postcode: body.billing.postcode,
         country: body.billing.country,
         email: body.billing.email,
         phone: body.billing.phone || '',
       },
-      shipping_address: body.useShippingAsBilling ? {
+      shipping: body.useShippingAsBilling ? {
         first_name: body.billing.firstName,
         last_name: body.billing.lastName,
         address_1: body.billing.address1,
         address_2: body.billing.address2 || '',
         city: body.billing.city,
-        state: body.billing.state,
+        state: body.billing.state || '',
         postcode: body.billing.postcode,
         country: body.billing.country,
       } : {
@@ -37,93 +43,81 @@ export async function POST(request: NextRequest) {
         address_1: body.shipping.address1,
         address_2: body.shipping.address2 || '',
         city: body.shipping.city,
-        state: body.shipping.state,
+        state: body.shipping.state || '',
         postcode: body.shipping.postcode,
         country: body.shipping.country,
       },
-      payment_method: body.paymentMethod || 'stripe',
-      payment_data: body.paymentData || [],
-      customer_note: body.customerNote || '',
-    }
-
-    // First, ensure the cart is synced with WooCommerce
-    if (body.cartItems && body.cartItems.length > 0) {
-      // Clear existing cart
-      await wooClient.storeRequest('/cart/items', { method: 'DELETE' }, cartToken)
-      
-      // Add items to WooCommerce cart
-      for (const item of body.cartItems) {
-        const cartItem = {
-          id: item.variationId || item.productId,
+      line_items: body.cartItems
+        .filter((item: any) => !item.isFreebie) // Skip freebie items
+        .map((item: any) => ({
+          product_id: item.productId,
+          variation_id: item.variationId || undefined,
           quantity: item.quantity,
-        }
-        
-        const { data: addedItem, headers: addHeaders } = await wooClient.storeRequest(
-          '/cart/add-item',
-          {
-            method: 'POST',
-            body: JSON.stringify(cartItem),
-          },
-          cartToken
-        )
-        
-        // Update cart token if new one is provided
-        const newToken = addHeaders.get('Cart-Token')
-        if (newToken) {
-          cartToken = newToken
-          cookieStore.set('woo-cart-token', newToken, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
-            maxAge: 60 * 60 * 24 * 7,
-          })
-        }
-      }
+        })),
+      customer_note: body.customerNote || '',
+      status: 'pending',
     }
 
-    // Process checkout with WooCommerce Store API
-    const { data: orderData, headers: orderHeaders } = await wooClient.storeRequest(
-      '/checkout',
-      {
-        method: 'POST',
-        body: JSON.stringify(checkoutData),
-      },
-      cartToken
-    )
+    console.log('Creating order with WooCommerce REST API...')
+    console.log('Order data:', JSON.stringify(orderData, null, 2))
 
-    // Clear cart token after successful checkout
-    cookieStore.delete('woo-cart-token')
+    // Create order using WooCommerce REST API
+    const order = await wooClient.request('/orders', {
+      method: 'POST',
+      body: JSON.stringify(orderData),
+    })
+
+    console.log('Order created successfully:', order.id)
+
+    // Generate payment URL based on payment method
+    let paymentUrl = null
+    if (body.paymentMethod === 'paypal') {
+      // For PayPal, you would typically redirect to PayPal checkout
+      // This would be handled by your WooCommerce PayPal plugin
+      paymentUrl = `${process.env.WP_BASE_URL}/checkout/order-pay/${order.id}/?pay_for_order=true&key=${order.order_key}`
+    } else if (body.paymentMethod === 'stripe') {
+      // For Stripe, you would typically use Stripe's payment intent
+      // This would be handled by your WooCommerce Stripe plugin
+      paymentUrl = `${process.env.WP_BASE_URL}/checkout/order-pay/${order.id}/?pay_for_order=true&key=${order.order_key}`
+    }
 
     // Return the order details
     return NextResponse.json({
       success: true,
       order: {
-        id: orderData.order_id || orderData.id,
-        orderNumber: orderData.order_number || orderData.order_key,
-        status: orderData.status,
-        total: orderData.total,
-        paymentUrl: orderData.payment_result?.redirect_url,
-        paymentMethod: orderData.payment_method,
-        billingAddress: orderData.billing_address,
-        shippingAddress: orderData.shipping_address,
+        id: order.id,
+        orderNumber: order.number,
+        orderKey: order.order_key,
+        status: order.status,
+        total: order.total,
+        paymentUrl: paymentUrl,
+        paymentMethod: order.payment_method,
+        billingAddress: order.billing,
+        shippingAddress: order.shipping,
       },
     })
   } catch (error: any) {
     console.error('Checkout error:', error)
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack,
+    })
     
-    // Parse error message if it's from WooCommerce
+    // Parse error message
     let errorMessage = 'Failed to process checkout'
     let errorCode = 'checkout_error'
+    let errorDetails: any = {}
     
     if (error.message) {
-      try {
-        // Try to parse WooCommerce error
-        const wooError = JSON.parse(error.message.replace('WooCommerce Store API error: ', ''))
-        errorMessage = wooError.message || errorMessage
-        errorCode = wooError.code || errorCode
-      } catch {
-        errorMessage = error.message
-      }
+      errorMessage = error.message
+    }
+    
+    // Check for specific WooCommerce errors
+    if (error.response) {
+      console.error('WooCommerce response error:', error.response)
+      errorMessage = error.response.message || errorMessage
+      errorCode = error.response.code || errorCode
+      errorDetails = error.response.data || {}
     }
     
     return NextResponse.json(
@@ -131,37 +125,62 @@ export async function POST(request: NextRequest) {
         success: false,
         error: errorMessage,
         code: errorCode,
+        details: errorDetails,
       },
       { status: 400 }
     )
   }
 }
 
-// Get checkout fields and configuration
+// Get available payment methods
 export async function GET(request: NextRequest) {
   try {
-    const cookieStore = await cookies()
-    const cartToken = cookieStore.get('woo-cart-token')?.value
-
-    // Get checkout configuration from WooCommerce
-    const { data: checkoutData } = await wooClient.storeRequest(
-      '/checkout',
-      { method: 'GET' },
-      cartToken
-    )
-
+    // Get payment gateways from WooCommerce
+    const paymentGateways = await wooClient.request('/payment_gateways')
+    
+    // Filter to only enabled gateways
+    const enabledGateways = paymentGateways.filter((gateway: any) => gateway.enabled)
+    
+    // Return simplified payment method data
     return NextResponse.json({
-      fields: checkoutData.fields || {},
-      paymentMethods: checkoutData.payment_methods || [],
-      shippingMethods: checkoutData.shipping_methods || [],
-      needsShipping: checkoutData.needs_shipping || false,
-      needsPayment: checkoutData.needs_payment || true,
+      paymentMethods: enabledGateways.map((gateway: any) => ({
+        id: gateway.id,
+        title: gateway.title,
+        description: gateway.description,
+        enabled: gateway.enabled,
+      })),
+      shippingMethods: [], // You can fetch shipping methods if needed
+      needsShipping: true,
+      needsPayment: true,
     })
   } catch (error) {
     console.error('Get checkout config error:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch checkout configuration' },
-      { status: 500 }
-    )
+    
+    // Return default payment methods if API fails
+    return NextResponse.json({
+      paymentMethods: [
+        {
+          id: 'bacs',
+          title: 'Direct Bank Transfer',
+          description: 'Make your payment directly into our bank account.',
+          enabled: true,
+        },
+        {
+          id: 'stripe',
+          title: 'Credit Card (Stripe)',
+          description: 'Pay with your credit card via Stripe.',
+          enabled: true,
+        },
+        {
+          id: 'paypal',
+          title: 'PayPal',
+          description: 'Pay via PayPal; you can pay with your credit card if you don\'t have a PayPal account.',
+          enabled: true,
+        },
+      ],
+      shippingMethods: [],
+      needsShipping: true,
+      needsPayment: true,
+    })
   }
 }

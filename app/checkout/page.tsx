@@ -149,6 +149,8 @@ export default function CheckoutPage() {
             productId: item.productId,
             variationId: item.variationId,
             quantity: item.quantity,
+            isFreebie: item.isFreebie || false,
+            name: item.name,
           })),
         }),
       })
@@ -156,6 +158,7 @@ export default function CheckoutPage() {
       const data = await response.json()
 
       if (!response.ok || !data.success) {
+        console.error('Checkout failed:', data)
         throw new Error(data.error || 'Failed to process checkout')
       }
 
