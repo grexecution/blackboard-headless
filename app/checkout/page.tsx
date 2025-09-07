@@ -205,8 +205,8 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12">
-      <div className="container mx-auto px-4 max-w-7xl">
+    <div className="min-h-screen bg-gray-50 py-6 md:py-12">
+      <div className="container mx-auto px-3 sm:px-4 max-w-7xl">
         <div className="mb-6">
           <Link 
             href="/shop" 
@@ -229,9 +229,9 @@ export default function CheckoutPage() {
         <form onSubmit={handleSubmit}>
           <div className="grid lg:grid-cols-3 gap-8">
             {/* Main Checkout Form */}
-            <div className="lg:col-span-2 space-y-6">
+            <div className="lg:col-span-2 space-y-4 md:space-y-6">
               {/* Billing Information */}
-              <div className="bg-white rounded-lg shadow-sm p-6">
+              <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6">
                 <div className="flex items-center mb-4">
                   <User className="h-5 w-5 text-gray-600 mr-2" />
                   <h2 className="text-xl font-semibold">Billing Information</h2>
@@ -419,7 +419,7 @@ export default function CheckoutPage() {
               </div>
 
               {/* Shipping Address */}
-              <div className="bg-white rounded-lg shadow-sm p-6">
+              <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center">
                     <Truck className="h-5 w-5 text-gray-600 mr-2" />
@@ -588,7 +588,7 @@ export default function CheckoutPage() {
               </div>
 
               {/* Payment Method */}
-              <div className="bg-white rounded-lg shadow-sm p-6">
+              <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6">
                 <div className="flex items-center mb-4">
                   <CreditCard className="h-5 w-5 text-gray-600 mr-2" />
                   <h2 className="text-xl font-semibold">Payment Method</h2>
@@ -660,7 +660,7 @@ export default function CheckoutPage() {
               </div>
 
               {/* Order Notes */}
-              <div className="bg-white rounded-lg shadow-sm p-6">
+              <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6">
                 <h2 className="text-xl font-semibold mb-4">Order Notes (Optional)</h2>
                 <textarea
                   name="customerNote"

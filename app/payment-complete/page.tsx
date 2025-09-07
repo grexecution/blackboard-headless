@@ -98,7 +98,7 @@ export default function PaymentCompletePage() {
           <XCircle className="h-16 w-16 text-red-500 mx-auto mb-4" />
           <h1 className="text-2xl font-bold mb-2">Payment Failed</h1>
           <p className="text-gray-600 mb-6">
-            We couldn't process your payment. Please try again or contact support if the problem persists.
+            We couldn&apos;t process your payment. Please try again or contact support if the problem persists.
           </p>
           <div className="space-y-3">
             <Link
@@ -120,13 +120,13 @@ export default function PaymentCompletePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12">
-      <div className="container mx-auto px-4 max-w-2xl">
-        <div className="bg-white rounded-lg shadow-sm p-8 text-center">
+    <div className="min-h-screen bg-gray-50 py-6 md:py-12">
+      <div className="container mx-auto px-3 sm:px-4 max-w-2xl">
+        <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6 md:p-8 text-center">
           <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
           <h1 className="text-3xl font-bold mb-2">Payment Successful!</h1>
           <p className="text-gray-600 mb-6">
-            Thank you for your order. We've received your payment and will process your order shortly.
+            Thank you for your order. We&apos;ve received your payment and will process your order shortly.
           </p>
 
           {orderDetails && (

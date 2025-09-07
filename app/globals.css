@@ -533,12 +533,12 @@
 /* Mobile responsiveness */
 @media (max-width: 768px) {
     .bb-modern-dashboard {
-        padding: 12px;
+        padding: 8px;
     }
     
     .bb-welcome-section {
-        padding: 20px;
-        border-radius: 20px;
+        padding: 16px;
+        border-radius: 16px;
     }
     
     .bb-welcome-title {

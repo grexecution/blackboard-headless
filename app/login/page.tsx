@@ -175,7 +175,7 @@ export default function LoginPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
             >
-              <div className="bg-white rounded-2xl shadow-xl p-8 md:p-10 border border-gray-100">
+              <div className="bg-white rounded-2xl shadow-xl p-4 sm:p-6 md:p-8 lg:p-10 border border-gray-100">
                 {/* Mobile Trust Indicators */}
                 <div className="lg:hidden mb-8 pb-8 border-b">
                   <div className="flex justify-around">

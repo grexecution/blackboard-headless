@@ -79,7 +79,7 @@ export default async function ShopPage() {
       {/* Modern Header - Compact */}
       <section className="relative bg-gradient-to-br from-gray-900 via-black to-gray-900 text-white py-12 lg:py-16 overflow-hidden">
         <div className="absolute inset-0 bg-[url('/pattern.svg')] opacity-10"></div>
-        <div className="container mx-auto px-4 relative z-10">
+        <div className="container mx-auto px-3 sm:px-4 relative z-10">
           <div className="max-w-3xl">
             <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-3">
               Professional Training Equipment
@@ -108,7 +108,7 @@ export default async function ShopPage() {
       {/* Featured BlackBoard Products */}
       {blackboardWithVariations.length > 0 && (
         <section className="py-16 lg:py-24">
-          <div className="container mx-auto px-4">
+          <div className="container mx-auto px-3 sm:px-4">
             
             <div className="grid lg:grid-cols-2 gap-8 max-w-7xl mx-auto">
               {blackboardWithVariations.map((product, index) => {
@@ -274,7 +274,7 @@ export default async function ShopPage() {
       {/* Accessories Section - Modern Grid */}
       {accessories.length > 0 && (
         <section className="py-16 lg:py-24 bg-gray-50">
-          <div className="container mx-auto px-4">
+          <div className="container mx-auto px-3 sm:px-4">
             <div className="text-center mb-12">
               <h2 className="text-3xl md:text-4xl font-bold mb-4">Accessories & Replacement Parts</h2>
               <p className="text-lg text-gray-600">Keep your BlackBoard in perfect condition</p>
@@ -325,7 +325,7 @@ export default async function ShopPage() {
       {/* Workshops Section */}
       {workshopProducts.length > 0 && (
         <section className="py-16 lg:py-24">
-          <div className="container mx-auto px-4">
+          <div className="container mx-auto px-3 sm:px-4">
             <div className="text-center mb-12">
               <h2 className="text-3xl md:text-4xl font-bold mb-4">Online Workshops</h2>
               <p className="text-lg text-gray-600">Learn from experts and enhance your skills</p>
@@ -383,7 +383,7 @@ export default async function ShopPage() {
       {/* ProCoach Section */}
       {procoachProducts.length > 0 && (
         <section className="py-16 lg:py-24 bg-gray-50">
-          <div className="container mx-auto px-4">
+          <div className="container mx-auto px-3 sm:px-4">
             <div className="flex items-center justify-between mb-12">
               <div>
                 <h2 className="text-3xl md:text-4xl font-bold mb-2">ProCoach Certifications</h2>

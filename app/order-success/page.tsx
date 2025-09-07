@@ -20,8 +20,8 @@ export default function OrderSuccessPage() {
   }, [])
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-yellow-50 py-12">
-      <div className="bg-white rounded-lg shadow-xl p-8 max-w-2xl w-full">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-yellow-50 py-6 md:py-12 px-3 sm:px-4">
+      <div className="bg-white rounded-lg shadow-xl p-4 sm:p-6 md:p-8 max-w-2xl w-full">
         {/* Success Animation */}
         <div className="mb-6 relative">
           <div className="absolute inset-0 flex items-center justify-center">
