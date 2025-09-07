@@ -164,9 +164,14 @@ export default function CheckoutPage() {
 
       // Handle payment redirect if needed
       if (data.order.paymentUrl) {
-        // For payment gateways that require redirect (PayPal, etc.)
+        console.log('Redirecting to payment URL:', data.order.paymentUrl)
+        // Clear cart before redirecting
+        clearCart()
+        // For payment gateways that require redirect (PayPal, Stripe)
+        // Redirect to WooCommerce for payment processing
         window.location.href = data.order.paymentUrl
       } else {
+        // For bank transfer or other methods that don't need immediate payment
         // Clear cart and go to success page
         clearCart()
         router.push(`/order-success?order=${data.order.id}&number=${data.order.orderNumber}`)

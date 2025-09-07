@@ -56,6 +56,16 @@ export async function POST(request: NextRequest) {
         })),
       customer_note: body.customerNote || '',
       status: 'pending',
+      meta_data: [
+        {
+          key: '_headless_return_url',
+          value: process.env.NEXTAUTH_URL || 'https://blackboard-headless.vercel.app',
+        },
+        {
+          key: '_payment_source',
+          value: 'nextjs_checkout',
+        },
+      ],
     }
 
     console.log('Creating order with WooCommerce REST API...')
@@ -69,16 +79,25 @@ export async function POST(request: NextRequest) {
 
     console.log('Order created successfully:', order.id)
 
-    // Generate payment URL based on payment method
+    // Generate payment URL for payment gateways
     let paymentUrl = null
-    if (body.paymentMethod === 'paypal') {
-      // For PayPal, you would typically redirect to PayPal checkout
-      // This would be handled by your WooCommerce PayPal plugin
-      paymentUrl = `${process.env.WP_BASE_URL}/checkout/order-pay/${order.id}/?pay_for_order=true&key=${order.order_key}`
-    } else if (body.paymentMethod === 'stripe') {
-      // For Stripe, you would typically use Stripe's payment intent
-      // This would be handled by your WooCommerce Stripe plugin
-      paymentUrl = `${process.env.WP_BASE_URL}/checkout/order-pay/${order.id}/?pay_for_order=true&key=${order.order_key}`
+    
+    // For payment methods that require payment processing, redirect to WooCommerce
+    if (body.paymentMethod === 'paypal' || body.paymentMethod === 'stripe') {
+      // Build the return URL for after payment
+      const returnUrl = process.env.NEXTAUTH_URL || 'https://blackboard-headless.vercel.app'
+      const successUrl = `${returnUrl}/payment-complete?order_id=${order.id}&key=${order.order_key}&status=success`
+      const cancelUrl = `${returnUrl}/payment-complete?order_id=${order.id}&status=cancelled`
+      
+      // Redirect to WooCommerce's order-pay page where payment gateways are configured
+      // Include return URLs as parameters
+      paymentUrl = `${process.env.WP_BASE_URL}/checkout/order-pay/${order.id}/?pay_for_order=true&key=${order.order_key}&return_url=${encodeURIComponent(successUrl)}&cancel_url=${encodeURIComponent(cancelUrl)}`
+      console.log('Payment URL generated:', paymentUrl)
+    }
+    // For bank transfer (bacs), no immediate payment needed
+    else if (body.paymentMethod === 'bacs') {
+      // Bank transfer doesn't need immediate payment
+      paymentUrl = null
     }
 
     // Return the order details
