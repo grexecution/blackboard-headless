@@ -55,7 +55,7 @@ export default function OrderSuccessPage() {
               </div>
               <div>
                 <p className="font-medium">Order Confirmation</p>
-                <p className="text-sm text-gray-600">You'll receive an email confirmation with your order details</p>
+                <p className="text-sm text-gray-600">You&apos;ll receive an email confirmation with your order details</p>
               </div>
             </div>
             
@@ -65,7 +65,7 @@ export default function OrderSuccessPage() {
               </div>
               <div>
                 <p className="font-medium">Order Processing</p>
-                <p className="text-sm text-gray-600">We'll prepare your items for shipment</p>
+                <p className="text-sm text-gray-600">We&apos;ll prepare your items for shipment</p>
               </div>
             </div>
             
@@ -97,7 +97,7 @@ export default function OrderSuccessPage() {
           <p className="text-lg font-medium mb-1">Estimated Delivery</p>
           <p className="text-2xl font-bold text-[#ffed00]">3-5 Business Days</p>
           <p className="text-sm text-gray-600 mt-2">
-            You'll receive tracking information once your order ships
+            You&apos;ll receive tracking information once your order ships
           </p>
         </div>
         
