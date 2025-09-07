@@ -2,130 +2,184 @@
 
 import { useEffect, useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { CheckCircle, XCircle, Loader2, ArrowRight } from 'lucide-react'
+import { CheckCircle, XCircle, Clock, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
 
 export default function PaymentCompletePage() {
   const searchParams = useSearchParams()
   const router = useRouter()
-  const [status, setStatus] = useState<'loading' | 'success' | 'failed'>('loading')
+  const [status, setStatus] = useState<'loading' | 'success' | 'failed' | 'cancelled'>('loading')
   const [orderDetails, setOrderDetails] = useState<any>(null)
-  
-  // WooCommerce typically returns these params after payment
-  const orderId = searchParams.get('order_id') || searchParams.get('order')
+
+  const orderId = searchParams.get('order_id')
   const orderKey = searchParams.get('key')
   const paymentStatus = searchParams.get('status')
-  
+
   useEffect(() => {
-    // Clear cart data since payment has been processed
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('cart')
+    // Check the payment status
+    if (paymentStatus === 'cancelled') {
+      setStatus('cancelled')
+      return
     }
-    
-    // Check payment status
-    if (paymentStatus === 'cancelled' || paymentStatus === 'failed') {
+
+    if (!orderId || !orderKey) {
       setStatus('failed')
-    } else if (orderId) {
-      // Payment successful or pending verification
-      setStatus('success')
-      setOrderDetails({
-        id: orderId,
-        key: orderKey,
-      })
-    } else {
-      // No order information, redirect to home
-      router.push('/')
+      return
     }
-  }, [orderId, orderKey, paymentStatus, router])
-  
+
+    // Verify the order status with backend
+    fetch(`/api/orders/${orderId}?key=${orderKey}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          setOrderDetails(data.order)
+          if (data.order.status === 'processing' || data.order.status === 'completed') {
+            setStatus('success')
+          } else if (data.order.status === 'pending') {
+            // Payment might still be processing
+            setStatus('success') // Show success but with pending payment message
+          } else if (data.order.status === 'failed') {
+            setStatus('failed')
+          }
+        } else {
+          setStatus('failed')
+        }
+      })
+      .catch(err => {
+        console.error('Error fetching order:', err)
+        setStatus('failed')
+      })
+  }, [orderId, orderKey, paymentStatus])
+
   if (status === 'loading') {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
-          <Loader2 className="h-12 w-12 animate-spin text-[#ffed00] mx-auto mb-4" />
-          <p className="text-lg">Processing your payment...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#ffed00] mx-auto mb-4"></div>
+          <h1 className="text-2xl font-bold mb-2">Processing Payment...</h1>
+          <p className="text-gray-600">Please wait while we confirm your payment</p>
         </div>
       </div>
     )
   }
-  
+
+  if (status === 'cancelled') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="max-w-md text-center">
+          <XCircle className="h-16 w-16 text-yellow-500 mx-auto mb-4" />
+          <h1 className="text-2xl font-bold mb-2">Payment Cancelled</h1>
+          <p className="text-gray-600 mb-6">
+            Your payment was cancelled. Your cart items have been saved.
+          </p>
+          <div className="space-y-3">
+            <Link
+              href="/checkout"
+              className="block w-full bg-[#ffed00] text-black px-6 py-3 rounded-md font-semibold hover:bg-yellow-400 transition"
+            >
+              Return to Checkout
+            </Link>
+            <Link
+              href="/shop"
+              className="block w-full border border-gray-300 text-gray-700 px-6 py-3 rounded-md font-semibold hover:bg-gray-50 transition"
+            >
+              Continue Shopping
+            </Link>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   if (status === 'failed') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-50 to-gray-50 py-12">
-        <div className="bg-white rounded-lg shadow-xl p-8 max-w-2xl w-full">
-          <div className="mb-6">
-            <XCircle className="h-32 w-32 text-red-500 mx-auto" />
-          </div>
-          
-          <h1 className="text-3xl font-bold mb-4 text-center">Payment Failed</h1>
-          
-          <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-8">
-            <p className="text-red-800 text-center">
-              Your payment could not be processed. Please try again or contact support if the issue persists.
-            </p>
-          </div>
-          
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="max-w-md text-center">
+          <XCircle className="h-16 w-16 text-red-500 mx-auto mb-4" />
+          <h1 className="text-2xl font-bold mb-2">Payment Failed</h1>
+          <p className="text-gray-600 mb-6">
+            We couldn't process your payment. Please try again or contact support if the problem persists.
+          </p>
           <div className="space-y-3">
-            <Link 
+            <Link
               href="/checkout"
-              className="w-full bg-[#ffed00] text-black px-6 py-3 rounded-md font-semibold hover:bg-yellow-400 transition flex items-center justify-center gap-2"
+              className="block w-full bg-[#ffed00] text-black px-6 py-3 rounded-md font-semibold hover:bg-yellow-400 transition"
             >
               Try Again
-              <ArrowRight className="h-4 w-4" />
             </Link>
-            
-            <Link 
-              href="/shop"
-              className="w-full bg-white text-gray-700 border border-gray-300 px-6 py-3 rounded-md font-semibold hover:bg-gray-50 transition block text-center"
+            <Link
+              href="/contact"
+              className="block w-full border border-gray-300 text-gray-700 px-6 py-3 rounded-md font-semibold hover:bg-gray-50 transition"
             >
-              Return to Shop
+              Contact Support
             </Link>
           </div>
         </div>
       </div>
     )
   }
-  
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-yellow-50 py-12">
-      <div className="bg-white rounded-lg shadow-xl p-8 max-w-2xl w-full">
-        <div className="mb-6 relative">
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="h-32 w-32 bg-green-100 rounded-full animate-ping opacity-20"></div>
+    <div className="min-h-screen bg-gray-50 py-12">
+      <div className="container mx-auto px-4 max-w-2xl">
+        <div className="bg-white rounded-lg shadow-sm p-8 text-center">
+          <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
+          <h1 className="text-3xl font-bold mb-2">Payment Successful!</h1>
+          <p className="text-gray-600 mb-6">
+            Thank you for your order. We've received your payment and will process your order shortly.
+          </p>
+
+          {orderDetails && (
+            <div className="border-t border-b py-4 my-6 text-left">
+              <h2 className="font-semibold mb-3">Order Details</h2>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Order Number:</span>
+                  <span className="font-medium">#{orderDetails.number}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Total:</span>
+                  <span className="font-medium">€{orderDetails.total}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Status:</span>
+                  <span className={`font-medium ${
+                    orderDetails.status === 'processing' ? 'text-blue-600' :
+                    orderDetails.status === 'completed' ? 'text-green-600' :
+                    orderDetails.status === 'pending' ? 'text-yellow-600' :
+                    'text-gray-600'
+                  }`}>
+                    {orderDetails.status === 'processing' ? 'Processing' :
+                     orderDetails.status === 'completed' ? 'Completed' :
+                     orderDetails.status === 'pending' ? 'Payment Pending' :
+                     orderDetails.status}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <p className="text-sm text-gray-600 mb-6">
+            A confirmation email has been sent to your email address with order details and tracking information.
+          </p>
+
+          <div className="space-y-3">
+            {orderDetails && (
+              <Link
+                href={`/order-success?order=${orderDetails.id}&number=${orderDetails.number}`}
+                className="block w-full bg-[#ffed00] text-black px-6 py-3 rounded-md font-semibold hover:bg-yellow-400 transition flex items-center justify-center gap-2"
+              >
+                View Order Details
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            )}
+            <Link
+              href="/shop"
+              className="block w-full border border-gray-300 text-gray-700 px-6 py-3 rounded-md font-semibold hover:bg-gray-50 transition"
+            >
+              Continue Shopping
+            </Link>
           </div>
-          <CheckCircle className="h-32 w-32 text-green-500 mx-auto relative z-10" />
-        </div>
-        
-        <h1 className="text-4xl font-bold mb-2 text-center">Payment Successful!</h1>
-        
-        {orderDetails && (
-          <p className="text-lg text-gray-600 text-center mb-6">
-            Order #{orderDetails.id}
-          </p>
-        )}
-        
-        <div className="bg-green-50 border border-green-200 rounded-md p-4 mb-8">
-          <p className="text-green-800 text-center">
-            <span className="font-semibold">Thank you!</span> Your payment has been processed successfully.
-            You will receive an order confirmation email shortly.
-          </p>
-        </div>
-        
-        <div className="space-y-3">
-          <Link 
-            href="/account"
-            className="w-full bg-[#ffed00] text-black px-6 py-3 rounded-md font-semibold hover:bg-yellow-400 transition flex items-center justify-center gap-2"
-          >
-            View My Orders
-            <ArrowRight className="h-4 w-4" />
-          </Link>
-          
-          <Link 
-            href="/shop"
-            className="w-full bg-black text-white px-6 py-3 rounded-md font-semibold hover:bg-gray-800 transition block text-center"
-          >
-            Continue Shopping
-          </Link>
         </div>
       </div>
     </div>

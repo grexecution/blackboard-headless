@@ -78,6 +78,7 @@ export async function POST(request: NextRequest) {
     })
 
     console.log('Order created successfully:', order.id)
+    console.log('Order response:', JSON.stringify(order, null, 2))
 
     // Generate payment URL for payment gateways
     let paymentUrl = null
@@ -89,10 +90,20 @@ export async function POST(request: NextRequest) {
       const successUrl = `${returnUrl}/payment-complete?order_id=${order.id}&key=${order.order_key}&status=success`
       const cancelUrl = `${returnUrl}/payment-complete?order_id=${order.id}&status=cancelled`
       
-      // Redirect to WooCommerce's order-pay page where payment gateways are configured
-      // Include return URLs as parameters
-      paymentUrl = `${process.env.WP_BASE_URL}/checkout/order-pay/${order.id}/?pay_for_order=true&key=${order.order_key}&return_url=${encodeURIComponent(successUrl)}&cancel_url=${encodeURIComponent(cancelUrl)}`
-      console.log('Payment URL generated:', paymentUrl)
+      // Get the payment URL from the order if it exists
+      // WooCommerce should provide the payment URL in the order response
+      if (order._links && order._links.payment) {
+        paymentUrl = order._links.payment[0].href
+        console.log('Using WooCommerce payment URL:', paymentUrl)
+      } else {
+        // Fallback: construct the WordPress checkout URL
+        // WordPress/WooCommerce checkout is typically at /kasse/ (German) or /checkout/
+        const wpBaseUrl = process.env.WP_BASE_URL || 'https://blackboard-training.com'
+        // Try the shop subdomain which is where WooCommerce is hosted
+        const shopUrl = wpBaseUrl.replace('blackboard-training.com', 'shop.blackboard-training.com')
+        paymentUrl = `${shopUrl}/kasse/order-pay/${order.id}/?pay_for_order=true&key=${order.order_key}`
+        console.log('Payment URL generated:', paymentUrl)
+      }
     }
     // For bank transfer (bacs), no immediate payment needed
     else if (body.paymentMethod === 'bacs') {
