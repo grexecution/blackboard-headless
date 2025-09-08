@@ -15,55 +15,91 @@ export default function AccountPage() {
   const [orders, setOrders] = useState<any[]>([])
   const [courses, setCourses] = useState<any[]>([])
   const [certificates, setCertificates] = useState<any[]>([])
-  const [addresses, setAddresses] = useState<any>({})
+  const [addresses, setAddresses] = useState<any>({
+    billing: session?.user?.billing || {},
+    shipping: session?.user?.shipping || {}
+  })
   const [paymentMethods, setPaymentMethods] = useState<any[]>([])
   const [affiliateData, setAffiliateData] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false) // Start as false since we load immediately
+  const [ordersLoading, setOrdersLoading] = useState(false)
   const [activeTab, setActiveTab] = useState('dashboard')
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null)
 
+  // Use addresses from session immediately - no API call needed
   useEffect(() => {
     if (session) {
-      fetchUserData()
+      setAddresses({
+        billing: session.user.billing || {},
+        shipping: session.user.shipping || {}
+      })
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session])
 
-  const fetchUserData = async () => {
+  // Lazy load orders only when orders tab is opened
+  useEffect(() => {
+    if (activeTab === 'orders' && orders.length === 0 && !ordersLoading && session) {
+      fetchOrders()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab])
+
+  // Lazy load courses when courses tab is opened
+  useEffect(() => {
+    if (activeTab === 'courses' && courses.length === 0 && session) {
+      fetchCourses()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab])
+
+  // Lazy load certificates when certificates tab is opened
+  useEffect(() => {
+    if (activeTab === 'certificates' && certificates.length === 0 && session) {
+      fetchCertificates()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab])
+
+  // Check affiliate status only (lightweight, can run immediately)
+  useEffect(() => {
+    if (session) {
+      fetch('/api/affiliate/dashboard')
+        .then(res => res.ok ? res.json() : null)
+        .then(data => setAffiliateData(data))
+        .catch(() => setAffiliateData(null))
+    }
+  }, [session])
+
+  const fetchOrders = async () => {
+    setOrdersLoading(true)
     try {
-      // Fetch all data in parallel
-      const [ordersRes, coursesRes, certificatesRes, addressesRes, paymentMethodsRes, affiliateRes] = await Promise.all([
-        fetch('/api/woo/orders?customer=' + session?.user.id),
-        fetch('/api/tutor/courses'),
-        fetch('/api/tutor/certificates'),
-        fetch('/api/woo/addresses'),
-        fetch('/api/woo/payment-methods'),
-        fetch('/api/affiliate/dashboard').catch(() => null) // Allow to fail if not affiliate
-      ])
-
-      const [ordersData, coursesData, certificatesData, addressesData, paymentMethodsData] = await Promise.all([
-        ordersRes.json(),
-        coursesRes.json(),
-        certificatesRes.json(),
-        addressesRes.json(),
-        paymentMethodsRes.json()
-      ])
-
-      let affiliateDataResult = null
-      if (affiliateRes && affiliateRes.ok) {
-        affiliateDataResult = await affiliateRes.json()
-      }
-
-      setOrders(ordersData)
-      setCourses(coursesData)
-      setCertificates(certificatesData)
-      setAddresses(addressesData)
-      setPaymentMethods(paymentMethodsData)
-      setAffiliateData(affiliateDataResult)
+      const res = await fetch('/api/woo/orders?customer=' + session?.user.id)
+      const data = await res.json()
+      setOrders(data)
     } catch (error) {
-      console.error('Failed to fetch user data:', error)
+      console.error('Failed to fetch orders:', error)
     } finally {
-      setLoading(false)
+      setOrdersLoading(false)
+    }
+  }
+
+  const fetchCourses = async () => {
+    try {
+      const res = await fetch('/api/tutor/courses')
+      const data = await res.json()
+      setCourses(data)
+    } catch (error) {
+      console.error('Failed to fetch courses:', error)
+    }
+  }
+
+  const fetchCertificates = async () => {
+    try {
+      const res = await fetch('/api/tutor/certificates')
+      const data = await res.json()
+      setCertificates(data)
+    } catch (error) {
+      console.error('Failed to fetch certificates:', error)
     }
   }
 
@@ -76,7 +112,7 @@ export default function AccountPage() {
     { id: 'account-details', label: 'Account Details', icon: User },
   ]
 
-  if (authLoading || loading) {
+  if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-bb-primary" />
@@ -255,12 +291,16 @@ export default function AccountPage() {
             >
               <div className="bb-section-header">
                 <h2>Order History</h2>
-                <button onClick={fetchUserData} className="bb-sync-button">
+                <button onClick={fetchOrders} className="bb-sync-button">
                   <RefreshCw className="w-4 h-4" />
                   Sync Orders
                 </button>
               </div>
-              {orders.length > 0 ? (
+              {ordersLoading ? (
+                <div className="flex justify-center py-8">
+                  <Loader2 className="w-6 h-6 animate-spin text-bb-primary" />
+                </div>
+              ) : orders.length > 0 ? (
                 <div className="bb-orders-list">
                   {orders.map((order: any) => (
                     <div key={order.id} className="bb-order-item">
@@ -502,7 +542,7 @@ export default function AccountPage() {
             >
               <div className="bb-section-header">
                 <h2>My Purchased Courses</h2>
-                <button onClick={fetchUserData} className="bb-sync-button">
+                <button onClick={fetchCourses} className="bb-sync-button">
                   <RefreshCw className="w-4 h-4" />
                   Sync Courses
                 </button>
@@ -636,7 +676,7 @@ export default function AccountPage() {
             >
               <div className="bb-section-header">
                 <h2>My Certificates</h2>
-                <button onClick={fetchUserData} className="bb-sync-button">
+                <button onClick={fetchCertificates} className="bb-sync-button">
                   <RefreshCw className="w-4 h-4" />
                   Sync Certificates
                 </button>
@@ -758,10 +798,6 @@ export default function AccountPage() {
               <div className="bb-dashboard-section">
                 <div className="bb-section-header">
                   <h2>My Addresses</h2>
-                  <button onClick={fetchUserData} className="bb-sync-button">
-                    <RefreshCw className="w-4 h-4" />
-                    Sync Addresses
-                  </button>
                 </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Billing Address */}
@@ -918,7 +954,7 @@ export default function AccountPage() {
               <div className="bb-dashboard-section">
                 <div className="bb-section-header">
                   <h2>Affiliate Dashboard</h2>
-                  <button onClick={fetchUserData} className="bb-sync-button">
+                  <button onClick={() => window.location.reload()} className="bb-sync-button">
                     <RefreshCw className="w-4 h-4" />
                     Sync Data
                   </button>
