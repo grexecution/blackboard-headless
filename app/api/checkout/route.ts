@@ -78,7 +78,9 @@ export async function POST(request: NextRequest) {
     })
 
     console.log('Order created successfully:', order.id)
-    console.log('Order response:', JSON.stringify(order, null, 2))
+    console.log('Order key:', order.order_key)
+    console.log('Order status:', order.status)
+    console.log('Order links:', order._links ? Object.keys(order._links) : 'No links')
 
     // Generate payment URL for payment gateways
     let paymentUrl = null
@@ -96,13 +98,17 @@ export async function POST(request: NextRequest) {
         paymentUrl = order._links.payment[0].href
         console.log('Using WooCommerce payment URL:', paymentUrl)
       } else {
-        // Fallback: construct the WordPress checkout URL
-        // WordPress/WooCommerce checkout is typically at /kasse/ (German) or /checkout/
+        // Construct the WordPress checkout URL on the main domain
+        // Try both German (/kasse/) and English (/checkout/) paths
         const wpBaseUrl = process.env.WP_BASE_URL || 'https://blackboard-training.com'
-        // Try the shop subdomain which is where WooCommerce is hosted
-        const shopUrl = wpBaseUrl.replace('blackboard-training.com', 'shop.blackboard-training.com')
-        paymentUrl = `${shopUrl}/kasse/order-pay/${order.id}/?pay_for_order=true&key=${order.order_key}`
-        console.log('Payment URL generated:', paymentUrl)
+        
+        // German WooCommerce sites often use /kasse/ instead of /checkout/
+        // Let's try the German path first since this is a German site
+        paymentUrl = `${wpBaseUrl}/kasse/order-pay/${order.id}/?pay_for_order=true&key=${order.order_key}`
+        console.log('Payment URL generated (German path):', paymentUrl)
+        
+        // Alternative: If the above doesn't work, the site might use English paths
+        // paymentUrl = `${wpBaseUrl}/checkout/order-pay/${order.id}/?pay_for_order=true&key=${order.order_key}`
       }
     }
     // For bank transfer (bacs), no immediate payment needed
