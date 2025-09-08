@@ -34,7 +34,7 @@ export default function CheckoutPage() {
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('stripe')
   const [useShippingAsBilling, setUseShippingAsBilling] = useState(true)
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
-  const [createAccount, setCreateAccount] = useState(false)
+  const [createAccount, setCreateAccount] = useState(true) // Always true - account creation is mandatory
   const [accountPassword, setAccountPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -175,9 +175,9 @@ export default function CheckoutPage() {
       errors.email = 'This email is already registered. Please login or use a different email.'
     }
     
-    // Validate password if creating account
-    if (createAccount && emailStatus === 'available') {
-      if (!accountPassword) errors.password = 'Password is required'
+    // Validate password (account creation is mandatory for new users)
+    if (emailStatus === 'available' && !session) {
+      if (!accountPassword) errors.password = 'Password is required for account creation'
       if (accountPassword && accountPassword.length < 8) errors.password = 'Password must be at least 8 characters'
       if (!confirmPassword) errors.confirmPassword = 'Please confirm your password'
       if (accountPassword && confirmPassword && accountPassword !== confirmPassword) {
@@ -203,8 +203,8 @@ export default function CheckoutPage() {
     try {
       let customerId = session?.user?.id || newCustomerId || null
       
-      // Create account if requested
-      if (createAccount && emailStatus === 'available' && !session) {
+      // Create account (mandatory for new users)
+      if (emailStatus === 'available' && !session) {
         try {
           const registerResponse = await fetch('/api/auth/register-customer', {
             method: 'POST',
@@ -422,29 +422,25 @@ export default function CheckoutPage() {
                       </p>
                     )}
                     {emailStatus === 'available' && !session && (
-                      <div className="mt-2 p-3 bg-green-50 border border-green-200 rounded-md">
-                        <label className="flex items-start gap-2">
-                          <input
-                            type="checkbox"
-                            checked={createAccount}
-                            onChange={(e) => setCreateAccount(e.target.checked)}
-                            className="mt-1"
-                          />
+                      <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                        <div className="flex items-start gap-2">
+                          <AlertCircle className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
                           <div>
-                            <span className="text-sm font-medium text-green-800">
-                              Create an account for faster checkout next time
-                            </span>
-                            <p className="text-xs text-green-600 mt-1">
-                              Save your addresses and track your orders
+                            <p className="text-sm font-medium text-blue-800">
+                              Account creation required
+                            </p>
+                            <p className="text-xs text-blue-600 mt-1">
+                              An account is required to access training center videos and your purchased video content.
+                              Please set a password below.
                             </p>
                           </div>
-                        </label>
+                        </div>
                       </div>
                     )}
                   </div>
                   
-                  {/* Password fields for account creation */}
-                  {createAccount && emailStatus === 'available' && !session && (
+                  {/* Password fields for account creation - mandatory */}
+                  {emailStatus === 'available' && !session && (
                     <>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
