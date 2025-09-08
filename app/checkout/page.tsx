@@ -7,6 +7,7 @@ import { useSession } from 'next-auth/react'
 import { ShoppingCart, CreditCard, User, MapPin, ArrowLeft, Package, Truck, CheckCircle, AlertCircle, Mail, Lock, Eye, EyeOff, Info } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { LoginModal } from '@/components/auth/login-modal'
 
 interface CheckoutConfig {
   paymentMethods: Array<{
@@ -43,6 +44,7 @@ export default function CheckoutPage() {
   const [newCustomerId, setNewCustomerId] = useState<number | null>(null)
   const [passwordStrength, setPasswordStrength] = useState<'weak' | 'medium' | 'strong' | null>(null)
   const [passwordMatch, setPasswordMatch] = useState<boolean | null>(null)
+  const [showLoginModal, setShowLoginModal] = useState(false)
   
   const [billingData, setBillingData] = useState({
     firstName: '',
@@ -84,13 +86,23 @@ export default function CheckoutPage() {
       .catch(err => console.error('Failed to fetch checkout config:', err))
   }, [])
 
-  // Update email when session changes
+  // Update email when session changes (after login)
   useEffect(() => {
-    if (session?.user?.email && !billingData.email) {
-      setBillingData(prev => ({ ...prev, email: session.user.email! }))
-      setEmailStatus('exists') // User is logged in
+    if (session?.user?.email) {
+      // Update email if empty or different
+      if (!billingData.email || billingData.email !== session.user.email) {
+        setBillingData(prev => ({ ...prev, email: session.user.email! }))
+      }
+      // Clear password fields since user is now logged in
+      setAccountPassword('')
+      setConfirmPassword('')
+      setPasswordStrength(null)
+      setPasswordMatch(null)
+      // Update email status to show user is logged in
+      setEmailStatus('exists')
     }
-  }, [session, billingData.email])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session])
 
   // Check if email exists when user types
   useEffect(() => {
@@ -466,7 +478,13 @@ export default function CheckoutPage() {
                       <p className="text-red-600 text-sm mt-1 flex items-center gap-1">
                         <AlertCircle className="h-3 w-3" />
                         This email is already registered. 
-                        <Link href="/login" className="underline font-medium">Please login</Link>
+                        <button 
+                          type="button"
+                          onClick={() => setShowLoginModal(true)} 
+                          className="underline font-medium hover:text-red-700"
+                        >
+                          Please login
+                        </button>
                         or use a different email.
                       </p>
                     )}
@@ -1073,6 +1091,13 @@ export default function CheckoutPage() {
           </div>
         </form>
       </div>
+      
+      {/* Login Modal */}
+      <LoginModal 
+        isOpen={showLoginModal} 
+        onClose={() => setShowLoginModal(false)}
+        redirectTo="/checkout"
+      />
     </div>
   )
 }

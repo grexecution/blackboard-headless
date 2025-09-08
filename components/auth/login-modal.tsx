@@ -71,7 +71,13 @@ export function LoginModal({ isOpen, onClose, redirectTo = '/account' }: LoginMo
         
         if (result?.ok) {
           onClose()
-          router.push(redirectTo)
+          // Only navigate if not on checkout page (checkout preserves data)
+          if (redirectTo !== '/checkout') {
+            router.push(redirectTo)
+          } else {
+            // On checkout, just refresh to update session
+            router.refresh()
+          }
         } else if (result?.error) {
           if (result.error === '2FA_NOT_SUPPORTED') {
             setError('This system does not support accounts with Two-Factor Authentication (2FA) enabled. Please disable 2FA in your WordPress account settings or use an account without 2FA.')
@@ -169,7 +175,7 @@ export function LoginModal({ isOpen, onClose, redirectTo = '/account' }: LoginMo
                 </div>
 
                 {/* Right Side - Form */}
-                <div className="p-8 lg:p-12 relative">
+                <div className="p-8 lg:p-12 relative flex flex-col justify-center">
                   {/* Close Button */}
                   <button
                     onClick={onClose}
