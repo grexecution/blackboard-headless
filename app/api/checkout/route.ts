@@ -70,6 +70,19 @@ export async function POST(request: NextRequest) {
           key: '_payment_source',
           value: 'nextjs_checkout',
         },
+        {
+          key: '_payment_method_used',
+          value: body.paymentMethod,
+        },
+        {
+          key: '_awaiting_payment',
+          value: body.paymentMethod !== 'bacs' ? 'yes' : 'no',
+        },
+        // Store payment intent ID if using Stripe (would come from Stripe.js integration)
+        ...(body.paymentIntentId ? [{
+          key: '_stripe_intent_id',
+          value: body.paymentIntentId,
+        }] : []),
       ],
     }
 
