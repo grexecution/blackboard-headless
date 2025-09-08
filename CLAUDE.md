@@ -4,12 +4,18 @@
 
 ### Before Going to Production:
 
-1. **Configure WooCommerce Webhooks** (CRITICAL for auto-updates)
+1. **Install Auto-Cancel Orders Plugin** (CRITICAL for order management)
+   - Add `/wordpress-plugin/auto-cancel-orders.php` to WordPress
+   - This auto-cancels unpaid orders after 10 minutes
+   - Prevents orphaned orders and restores stock automatically
+   - Can be added to functions.php or installed as a plugin
+
+2. **Configure WooCommerce Webhooks** (CRITICAL for auto-updates)
    - See `WEBHOOK_SETUP.md` for detailed instructions
    - Set up webhooks for product create/update/delete
    - This enables automatic site rebuilds when you change products in WordPress
 
-2. **Set Environment Variables in Vercel**
+3. **Set Environment Variables in Vercel**
    ```bash
    # Required for production:
    NEXT_PUBLIC_WOO_API_URL=https://your-wordpress-site.com/wp-json/wc/v3
@@ -29,7 +35,7 @@
    WORDPRESS_API_URL=https://your-wordpress-site.com
    ```
 
-3. **Generate Secrets**
+4. **Generate Secrets**
    ```bash
    # Generate NEXTAUTH_SECRET:
    openssl rand -base64 32
@@ -38,10 +44,27 @@
    openssl rand -hex 32
    ```
 
-4. **Performance Configuration**
+5. **Performance Configuration**
    - Site uses **full static generation** for <50ms page loads
    - No API calls on page views (pre-built HTML)
    - Automatic rebuilds via webhooks when WordPress content changes
+
+## 💳 Payment Flow Architecture
+
+### Current Implementation:
+1. **Order-First Approach**: Orders created in WooCommerce before payment
+2. **Status Management**: 
+   - Bank Transfer → `on-hold` status
+   - Stripe/PayPal → `pending` status
+3. **Payment Confirmation**: Via `/admin/confirm-payment` page (temporary)
+4. **Auto-Cancellation**: Unpaid orders cancelled after 10 minutes (via WordPress plugin)
+5. **Refunds**: Handled through WooCommerce admin with stored transaction IDs
+
+### Production Payment Integration:
+- **Stripe**: Integrate Stripe.js on checkout page
+- **PayPal**: Use PayPal SDK for payment processing  
+- **Confirmation**: Call `/api/orders/[id]/complete-payment` after successful payment
+- **Webhooks**: Set up Stripe/PayPal webhooks for automatic payment confirmation
 
 ## 📝 Project Architecture
 
