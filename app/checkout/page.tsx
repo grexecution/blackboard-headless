@@ -145,12 +145,15 @@ export default function CheckoutPage() {
           useShippingAsBilling,
           paymentMethod: selectedPaymentMethod,
           customerNote,
+          totalPrice,
+          customerId: session?.user?.id || null,
           cartItems: items.map(item => ({
             productId: item.productId,
             variationId: item.variationId,
             quantity: item.quantity,
             isFreebie: item.isFreebie || false,
             name: item.name,
+            price: item.price,
           })),
         }),
       })

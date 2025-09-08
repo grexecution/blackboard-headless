@@ -59,7 +59,15 @@ export async function POST(request: NextRequest) {
           variation_id: item.variationId || undefined,
           quantity: item.quantity,
         })),
+      shipping_lines: [
+        {
+          method_id: 'flat_rate',
+          method_title: body.totalPrice >= 100 ? 'Free Shipping' : 'Flat Rate',
+          total: body.totalPrice >= 100 ? '0.00' : '7.95',
+        }
+      ],
       customer_note: body.customerNote || '',
+      customer_id: body.customerId || 0, // Link to WooCommerce customer if logged in
       status: orderStatus,
       meta_data: [
         {

@@ -25,19 +25,32 @@ export async function POST(
     })
 
     // Update order with payment information
+    // CRITICAL: transaction_id is required for WooCommerce refunds to work!
     const updateData: any = {
       status: status === 'completed' ? 'processing' : 'on-hold',
-      transaction_id: transactionId,
+      transaction_id: transactionId, // This enables refunds in WooCommerce
       date_paid: new Date().toISOString(),
       date_paid_gmt: new Date().toISOString(),
+      payment_method: paymentMethod, // Update payment method if needed
+      payment_method_title: paymentMethod === 'stripe' ? 'Credit Card (Stripe)' : 
+                           paymentMethod === 'paypal' ? 'PayPal' : 
+                           paymentMethod === 'bacs' ? 'Direct Bank Transfer' : 'Manual',
       meta_data: [
         {
           key: '_stripe_charge_id',
           value: paymentMethod === 'stripe' ? transactionId : ''
         },
         {
+          key: '_stripe_source_id', // Some Stripe integrations look for this
+          value: paymentMethod === 'stripe' ? transactionId : ''
+        },
+        {
           key: '_paypal_transaction_id',
           value: paymentMethod === 'paypal' ? transactionId : ''
+        },
+        {
+          key: '_paypal_status', // PayPal plugins often check this
+          value: paymentMethod === 'paypal' ? 'completed' : ''
         },
         {
           key: '_payment_method',
