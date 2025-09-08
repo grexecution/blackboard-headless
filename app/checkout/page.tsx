@@ -86,21 +86,66 @@ export default function CheckoutPage() {
       .catch(err => console.error('Failed to fetch checkout config:', err))
   }, [])
 
-  // Update email when session changes (after login)
+  // Update email and fetch addresses when session changes (after login)
   useEffect(() => {
-    if (session?.user?.email) {
-      // Update email if empty or different
-      if (!billingData.email || billingData.email !== session.user.email) {
-        setBillingData(prev => ({ ...prev, email: session.user.email! }))
+    const loadUserData = async () => {
+      if (session?.user?.email) {
+        // Update email if empty or different
+        if (!billingData.email || billingData.email !== session.user.email) {
+          setBillingData(prev => ({ ...prev, email: session.user.email! }))
+        }
+        // Clear password fields since user is now logged in
+        setAccountPassword('')
+        setConfirmPassword('')
+        setPasswordStrength(null)
+        setPasswordMatch(null)
+        // Update email status to show user is logged in
+        setEmailStatus('exists')
+        
+        // Fetch user's saved addresses
+        try {
+          const response = await fetch('/api/woo/addresses')
+          if (response.ok) {
+            const { billing, shipping } = await response.json()
+            
+            // Only populate if fields are currently empty (don't overwrite user's input)
+            setBillingData(prev => ({
+              firstName: prev.firstName || billing?.first_name || '',
+              lastName: prev.lastName || billing?.last_name || '',
+              email: session.user.email!,
+              address1: prev.address1 || billing?.address_1 || '',
+              address2: prev.address2 || billing?.address_2 || '',
+              city: prev.city || billing?.city || '',
+              state: prev.state || billing?.state || '',
+              postcode: prev.postcode || billing?.postcode || '',
+              country: prev.country || billing?.country || 'DE',
+            }))
+            
+            // Populate shipping if it exists and fields are empty
+            if (shipping && (shipping.address_1 || shipping.city)) {
+              setShippingData(prev => ({
+                firstName: prev.firstName || shipping?.first_name || '',
+                lastName: prev.lastName || shipping?.last_name || '',
+                address1: prev.address1 || shipping?.address_1 || '',
+                address2: prev.address2 || shipping?.address_2 || '',
+                city: prev.city || shipping?.city || '',
+                state: prev.state || shipping?.state || '',
+                postcode: prev.postcode || shipping?.postcode || '',
+                country: prev.country || shipping?.country || 'DE',
+              }))
+              // If shipping address exists, uncheck "use billing as shipping"
+              if (shipping.address_1 && shipping.city) {
+                setUseShippingAsBilling(false)
+              }
+            }
+          }
+        } catch (error) {
+          console.error('Failed to fetch user addresses:', error)
+        }
       }
-      // Clear password fields since user is now logged in
-      setAccountPassword('')
-      setConfirmPassword('')
-      setPasswordStrength(null)
-      setPasswordMatch(null)
-      // Update email status to show user is logged in
-      setEmailStatus('exists')
     }
+    
+    loadUserData()
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session])
 
