@@ -162,20 +162,15 @@ export default function CheckoutPage() {
         throw new Error(data.error || 'Failed to process checkout')
       }
 
-      // Handle payment redirect if needed
-      if (data.order.paymentUrl) {
-        console.log('Redirecting to payment URL:', data.order.paymentUrl)
-        // Clear cart before redirecting
-        clearCart()
-        // For payment gateways that require redirect (PayPal, Stripe)
-        // Redirect to WooCommerce for payment processing
-        window.location.href = data.order.paymentUrl
-      } else {
-        // For bank transfer or other methods that don't need immediate payment
-        // Clear cart and go to success page
-        clearCart()
-        router.push(`/order-success?order=${data.order.id}&number=${data.order.orderNumber}`)
-      }
+      // Clear cart after successful order creation
+      clearCart()
+      
+      // Store order details in sessionStorage for the success page
+      sessionStorage.setItem('lastOrder', JSON.stringify(data.order))
+      
+      // Redirect to success page for all payment methods
+      // The success page will show appropriate instructions based on payment method
+      router.push(`/order-success?order=${data.order.id}&number=${data.order.orderNumber}&method=${data.order.paymentMethod}`)
     } catch (err: any) {
       setError(err.message || 'Failed to process order. Please try again.')
       setIsProcessing(false)

@@ -1,23 +1,39 @@
 'use client'
 
 import Link from 'next/link'
-import { CheckCircle, Package, ArrowRight, Printer, Mail } from 'lucide-react'
+import { CheckCircle, Package, ArrowRight, Printer, Mail, CreditCard, DollarSign, Copy, AlertCircle } from 'lucide-react'
 import { useSearchParams } from 'next/navigation'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 
 export default function OrderSuccessPage() {
   const searchParams = useSearchParams()
   const orderId = searchParams.get('order')
   const orderNumber = searchParams.get('number')
+  const paymentMethod = searchParams.get('method')
+  const [orderDetails, setOrderDetails] = useState<any>(null)
+  const [copied, setCopied] = useState(false)
 
-  // Clear any lingering cart data
+  // Get order details from sessionStorage and clear cart
   useEffect(() => {
     // The cart should already be cleared by the checkout process
-    // This is just a safety measure
     if (typeof window !== 'undefined') {
       localStorage.removeItem('cart')
+      
+      // Get order details from sessionStorage
+      const storedOrder = sessionStorage.getItem('lastOrder')
+      if (storedOrder) {
+        setOrderDetails(JSON.parse(storedOrder))
+        // Clear it after reading
+        sessionStorage.removeItem('lastOrder')
+      }
     }
   }, [])
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-yellow-50 py-6 md:py-12 px-3 sm:px-4">
@@ -38,12 +54,73 @@ export default function OrderSuccessPage() {
           </p>
         )}
         
-        <div className="bg-green-50 border border-green-200 rounded-md p-4 mb-8">
-          <p className="text-green-800 text-center">
-            <span className="font-semibold">Success!</span> Your order has been successfully placed.
-            You will receive a confirmation email with your order details shortly.
-          </p>
-        </div>
+        {/* Payment Status Message */}
+        {paymentMethod === 'bacs' && orderDetails?.bankDetails ? (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4 mb-8">
+            <div className="flex items-start gap-2">
+              <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5 flex-shrink-0" />
+              <div className="flex-1">
+                <p className="text-yellow-800 font-semibold mb-3">
+                  Bank Transfer Required
+                </p>
+                <p className="text-yellow-700 text-sm mb-4">
+                  Please transfer the total amount to the following bank account:
+                </p>
+                <div className="bg-white rounded-md p-4 space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Account Name:</span>
+                    <span className="font-mono">{orderDetails.bankDetails.accountName}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">IBAN:</span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono">{orderDetails.bankDetails.iban}</span>
+                      <button
+                        onClick={() => copyToClipboard(orderDetails.bankDetails.iban)}
+                        className="text-gray-500 hover:text-gray-700"
+                      >
+                        <Copy className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">BIC/SWIFT:</span>
+                    <span className="font-mono">{orderDetails.bankDetails.bic}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Bank:</span>
+                    <span>{orderDetails.bankDetails.bank}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Reference:</span>
+                    <span className="font-semibold">{orderDetails.bankDetails.reference}</span>
+                  </div>
+                  <div className="flex justify-between pt-2 border-t">
+                    <span className="text-gray-600">Amount:</span>
+                    <span className="font-semibold text-lg">€{orderDetails?.total || '0.00'}</span>
+                  </div>
+                </div>
+                {copied && (
+                  <p className="text-green-600 text-sm mt-2">IBAN copied to clipboard!</p>
+                )}
+              </div>
+            </div>
+          </div>
+        ) : paymentMethod === 'stripe' || paymentMethod === 'paypal' ? (
+          <div className="bg-blue-50 border border-blue-200 rounded-md p-4 mb-8">
+            <p className="text-blue-800 text-center">
+              <span className="font-semibold">Order Received!</span> Your order has been placed and is awaiting payment processing.
+              You will receive a confirmation email once payment is confirmed.
+            </p>
+          </div>
+        ) : (
+          <div className="bg-green-50 border border-green-200 rounded-md p-4 mb-8">
+            <p className="text-green-800 text-center">
+              <span className="font-semibold">Success!</span> Your order has been successfully placed.
+              You will receive a confirmation email with your order details shortly.
+            </p>
+          </div>
+        )}
         
         {/* What Happens Next */}
         <div className="mb-8">

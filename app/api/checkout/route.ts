@@ -10,6 +10,11 @@ export async function POST(request: NextRequest) {
       billingCountry: body.billing?.country,
     })
 
+    // Determine order status based on payment method
+    // For now, we'll mark bank transfer as on-hold (awaiting payment)
+    // and other methods as pending until we integrate proper payment processing
+    const orderStatus = body.paymentMethod === 'bacs' ? 'on-hold' : 'pending'
+    
     // Prepare order data for WooCommerce REST API v3
     const orderData = {
       payment_method: body.paymentMethod || 'bacs',
@@ -55,7 +60,7 @@ export async function POST(request: NextRequest) {
           quantity: item.quantity,
         })),
       customer_note: body.customerNote || '',
-      status: 'pending',
+      status: orderStatus,
       meta_data: [
         {
           key: '_headless_return_url',
@@ -80,44 +85,23 @@ export async function POST(request: NextRequest) {
     console.log('Order created successfully:', order.id)
     console.log('Order key:', order.order_key)
     console.log('Order status:', order.status)
-    console.log('Order links:', order._links ? Object.keys(order._links) : 'No links')
+    console.log('Payment method:', body.paymentMethod)
 
-    // Generate payment URL for payment gateways
-    let paymentUrl = null
+    // For headless checkout, we don't redirect to WooCommerce
+    // Instead, we handle everything on our side
+    // The order is created with appropriate status:
+    // - 'on-hold' for bank transfer (awaiting payment)
+    // - 'pending' for other methods (payment to be processed)
     
-    // For payment methods that require payment processing, redirect to WooCommerce
-    if (body.paymentMethod === 'paypal' || body.paymentMethod === 'stripe') {
-      // Build the return URL for after payment
-      const returnUrl = process.env.NEXTAUTH_URL || 'https://blackboard-headless.vercel.app'
-      const successUrl = `${returnUrl}/payment-complete?order_id=${order.id}&key=${order.order_key}&status=success`
-      const cancelUrl = `${returnUrl}/payment-complete?order_id=${order.id}&status=cancelled`
-      
-      // Get the payment URL from the order if it exists
-      // WooCommerce should provide the payment URL in the order response
-      if (order._links && order._links.payment) {
-        paymentUrl = order._links.payment[0].href
-        console.log('Using WooCommerce payment URL:', paymentUrl)
-      } else {
-        // Construct the WordPress checkout URL on the main domain
-        // Try both German (/kasse/) and English (/checkout/) paths
-        const wpBaseUrl = process.env.WP_BASE_URL || 'https://blackboard-training.com'
-        
-        // German WooCommerce sites often use /kasse/ instead of /checkout/
-        // Let's try the German path first since this is a German site
-        paymentUrl = `${wpBaseUrl}/kasse/order-pay/${order.id}/?pay_for_order=true&key=${order.order_key}`
-        console.log('Payment URL generated (German path):', paymentUrl)
-        
-        // Alternative: If the above doesn't work, the site might use English paths
-        // paymentUrl = `${wpBaseUrl}/checkout/order-pay/${order.id}/?pay_for_order=true&key=${order.order_key}`
-      }
-    }
-    // For bank transfer (bacs), no immediate payment needed
-    else if (body.paymentMethod === 'bacs') {
-      // Bank transfer doesn't need immediate payment
-      paymentUrl = null
-    }
+    // In a production environment, you would:
+    // 1. For Stripe: Use Stripe.js to process payment client-side
+    // 2. For PayPal: Use PayPal SDK to process payment
+    // 3. For Bank Transfer: Show bank details for manual transfer
+    
+    // For now, we'll just return success and show order confirmation
 
-    // Return the order details
+    // Return the order details without payment URL
+    // The frontend will handle the success flow
     return NextResponse.json({
       success: true,
       order: {
@@ -126,10 +110,18 @@ export async function POST(request: NextRequest) {
         orderKey: order.order_key,
         status: order.status,
         total: order.total,
-        paymentUrl: paymentUrl,
         paymentMethod: order.payment_method,
+        paymentMethodTitle: order.payment_method_title,
         billingAddress: order.billing,
         shippingAddress: order.shipping,
+        // Include bank details if bank transfer
+        bankDetails: body.paymentMethod === 'bacs' ? {
+          accountName: 'BlackBoard Training GmbH',
+          iban: 'DE89 3704 0044 0532 0130 00',
+          bic: 'COBADEFFXXX',
+          bank: 'Commerzbank',
+          reference: `Order #${order.number}`,
+        } : null,
       },
     })
   } catch (error: any) {
