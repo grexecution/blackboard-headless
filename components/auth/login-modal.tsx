@@ -120,7 +120,7 @@ export function LoginModal({ isOpen, onClose, redirectTo = '/account' }: LoginMo
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
             className="fixed inset-0 md:inset-4 lg:inset-8 xl:inset-16 2xl:inset-24 z-50 flex items-center justify-center p-4 md:p-0"
           >
-            <div className="bg-white md:rounded-2xl shadow-2xl w-full h-full max-w-6xl max-h-[100vh] md:max-h-[90vh] overflow-auto">
+            <div className="bg-white md:rounded-2xl shadow-2xl w-full h-full max-w-6xl max-h-[100vh] md:max-h-[60vh] overflow-auto">
               <div className="grid lg:grid-cols-2 h-full">
                 {/* Left Side - Benefits */}
                 <div className="hidden lg:block bg-gradient-to-br from-black via-gray-900 to-black p-12 md:rounded-l-2xl">

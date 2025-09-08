@@ -41,12 +41,13 @@ export default function CheckoutPage() {
   const [emailStatus, setEmailStatus] = useState<'checking' | 'exists' | 'available' | null>(null)
   const [checkingEmail, setCheckingEmail] = useState(false)
   const [newCustomerId, setNewCustomerId] = useState<number | null>(null)
+  const [passwordStrength, setPasswordStrength] = useState<'weak' | 'medium' | 'strong' | null>(null)
+  const [passwordMatch, setPasswordMatch] = useState<boolean | null>(null)
   
   const [billingData, setBillingData] = useState({
     firstName: '',
     lastName: '',
     email: session?.user?.email || '',
-    phone: '',
     address1: '',
     address2: '',
     city: '',
@@ -147,6 +148,54 @@ export default function CheckoutPage() {
     setShippingData(prev => ({ ...prev, [name]: value }))
     // Clear validation error for this field
     setValidationErrors(prev => ({ ...prev, [`shipping_${name}`]: '' }))
+  }
+
+  const checkPasswordStrength = (password: string) => {
+    if (!password) {
+      setPasswordStrength(null)
+      return
+    }
+    
+    // Check for weak password
+    if (password.length < 8) {
+      setPasswordStrength('weak')
+      return
+    }
+    
+    // Check for strong password (length >= 12, has uppercase, lowercase, number, and special char)
+    const hasUpperCase = /[A-Z]/.test(password)
+    const hasLowerCase = /[a-z]/.test(password)
+    const hasNumbers = /\d/.test(password)
+    const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password)
+    
+    const strengthCount = [hasUpperCase, hasLowerCase, hasNumbers, hasSpecialChar].filter(Boolean).length
+    
+    if (password.length >= 12 && strengthCount >= 3) {
+      setPasswordStrength('strong')
+    } else if (password.length >= 8 && strengthCount >= 2) {
+      setPasswordStrength('medium')
+    } else {
+      setPasswordStrength('weak')
+    }
+  }
+
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newPassword = e.target.value
+    setAccountPassword(newPassword)
+    checkPasswordStrength(newPassword)
+    setValidationErrors(prev => ({ ...prev, password: '' }))
+    
+    // Check if passwords match
+    if (confirmPassword) {
+      setPasswordMatch(newPassword === confirmPassword)
+    }
+  }
+
+  const handleConfirmPasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newConfirmPassword = e.target.value
+    setConfirmPassword(newConfirmPassword)
+    setPasswordMatch(accountPassword === newConfirmPassword)
+    setValidationErrors(prev => ({ ...prev, confirmPassword: '' }))
   }
 
   const validateForm = () => {
@@ -450,12 +499,13 @@ export default function CheckoutPage() {
                           <input
                             type={showPassword ? 'text' : 'password'}
                             value={accountPassword}
-                            onChange={(e) => {
-                              setAccountPassword(e.target.value)
-                              setValidationErrors(prev => ({ ...prev, password: '' }))
-                            }}
+                            onChange={handlePasswordChange}
                             className={`w-full px-3 py-2 pr-10 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#ffed00] ${
-                              validationErrors.password ? 'border-red-500' : 'border-gray-300'
+                              validationErrors.password ? 'border-red-500' : 
+                              passwordStrength === 'weak' ? 'border-red-400' :
+                              passwordStrength === 'medium' ? 'border-yellow-400' :
+                              passwordStrength === 'strong' ? 'border-green-400' :
+                              'border-gray-300'
                             }`}
                             placeholder="Min. 8 characters"
                           />
@@ -467,6 +517,34 @@ export default function CheckoutPage() {
                             {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                           </button>
                         </div>
+                        {passwordStrength && (
+                          <div className="mt-1 flex items-center gap-2">
+                            <div className="flex gap-1 flex-1">
+                              <div className={`h-1 flex-1 rounded ${
+                                passwordStrength === 'weak' ? 'bg-red-400' :
+                                passwordStrength === 'medium' ? 'bg-yellow-400' :
+                                'bg-green-400'
+                              }`} />
+                              <div className={`h-1 flex-1 rounded ${
+                                passwordStrength === 'medium' ? 'bg-yellow-400' :
+                                passwordStrength === 'strong' ? 'bg-green-400' :
+                                'bg-gray-200'
+                              }`} />
+                              <div className={`h-1 flex-1 rounded ${
+                                passwordStrength === 'strong' ? 'bg-green-400' : 'bg-gray-200'
+                              }`} />
+                            </div>
+                            <span className={`text-xs font-medium ${
+                              passwordStrength === 'weak' ? 'text-red-600' :
+                              passwordStrength === 'medium' ? 'text-yellow-600' :
+                              'text-green-600'
+                            }`}>
+                              {passwordStrength === 'weak' ? 'Weak' :
+                               passwordStrength === 'medium' ? 'Medium' :
+                               'Strong'}
+                            </span>
+                          </div>
+                        )}
                         {validationErrors.password && (
                           <p className="text-red-500 text-xs mt-1">{validationErrors.password}</p>
                         )}
@@ -476,37 +554,41 @@ export default function CheckoutPage() {
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                           Confirm Password *
                         </label>
-                        <input
-                          type={showPassword ? 'text' : 'password'}
-                          value={confirmPassword}
-                          onChange={(e) => {
-                            setConfirmPassword(e.target.value)
-                            setValidationErrors(prev => ({ ...prev, confirmPassword: '' }))
-                          }}
-                          className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#ffed00] ${
-                            validationErrors.confirmPassword ? 'border-red-500' : 'border-gray-300'
-                          }`}
-                          placeholder="Re-enter password"
-                        />
+                        <div className="relative">
+                          <input
+                            type={showPassword ? 'text' : 'password'}
+                            value={confirmPassword}
+                            onChange={handleConfirmPasswordChange}
+                            className={`w-full px-3 py-2 pr-10 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#ffed00] ${
+                              validationErrors.confirmPassword ? 'border-red-500' :
+                              passwordMatch === false ? 'border-red-400' :
+                              passwordMatch === true ? 'border-green-400' :
+                              'border-gray-300'
+                            }`}
+                            placeholder="Re-enter password"
+                          />
+                          {passwordMatch !== null && (
+                            <div className="absolute right-3 top-3">
+                              {passwordMatch ? (
+                                <CheckCircle className="h-4 w-4 text-green-500" />
+                              ) : (
+                                <AlertCircle className="h-4 w-4 text-red-500" />
+                              )}
+                            </div>
+                          )}
+                        </div>
+                        {passwordMatch === false && confirmPassword && (
+                          <p className="text-red-500 text-xs mt-1">Passwords do not match</p>
+                        )}
+                        {passwordMatch === true && confirmPassword && (
+                          <p className="text-green-500 text-xs mt-1">Passwords match</p>
+                        )}
                         {validationErrors.confirmPassword && (
                           <p className="text-red-500 text-xs mt-1">{validationErrors.confirmPassword}</p>
                         )}
                       </div>
                     </>
                   )}
-                  
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Phone Number
-                    </label>
-                    <input
-                      type="tel"
-                      name="phone"
-                      value={billingData.phone}
-                      onChange={handleBillingChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ffed00]"
-                    />
-                  </div>
                   
                   <div className="md:col-span-2">
                     <label className="block text-sm font-medium text-gray-700 mb-1">
