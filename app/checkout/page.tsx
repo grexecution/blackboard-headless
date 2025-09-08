@@ -4,7 +4,7 @@ import { useCart } from '@/lib/cart-context'
 import { useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
-import { ShoppingCart, CreditCard, User, MapPin, ArrowLeft, Package, Truck, CheckCircle, AlertCircle } from 'lucide-react'
+import { ShoppingCart, CreditCard, User, MapPin, ArrowLeft, Package, Truck, CheckCircle, AlertCircle, Mail, Lock, Eye, EyeOff, Info } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
 
@@ -34,6 +34,13 @@ export default function CheckoutPage() {
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('stripe')
   const [useShippingAsBilling, setUseShippingAsBilling] = useState(true)
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
+  const [createAccount, setCreateAccount] = useState(false)
+  const [accountPassword, setAccountPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const [emailStatus, setEmailStatus] = useState<'checking' | 'exists' | 'available' | null>(null)
+  const [checkingEmail, setCheckingEmail] = useState(false)
+  const [newCustomerId, setNewCustomerId] = useState<number | null>(null)
   
   const [billingData, setBillingData] = useState({
     firstName: '',
@@ -80,8 +87,53 @@ export default function CheckoutPage() {
   useEffect(() => {
     if (session?.user?.email && !billingData.email) {
       setBillingData(prev => ({ ...prev, email: session.user.email! }))
+      setEmailStatus('exists') // User is logged in
     }
   }, [session, billingData.email])
+
+  // Check if email exists when user types
+  useEffect(() => {
+    const checkEmail = async () => {
+      if (!billingData.email || !billingData.email.includes('@')) {
+        setEmailStatus(null)
+        return
+      }
+
+      // Don't check if user is logged in
+      if (session?.user?.email === billingData.email) {
+        setEmailStatus('exists')
+        return
+      }
+
+      setCheckingEmail(true)
+      try {
+        const response = await fetch('/api/auth/check-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: billingData.email })
+        })
+        const data = await response.json()
+        
+        if (data.exists) {
+          setEmailStatus('exists')
+          setCreateAccount(false)
+        } else {
+          setEmailStatus('available')
+          // Suggest creating account for new users
+          if (!session) {
+            setCreateAccount(true)
+          }
+        }
+      } catch (error) {
+        console.error('Email check failed:', error)
+      } finally {
+        setCheckingEmail(false)
+      }
+    }
+
+    const debounceTimer = setTimeout(checkEmail, 500)
+    return () => clearTimeout(debounceTimer)
+  }, [billingData.email, session])
 
   const handleBillingChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
@@ -118,6 +170,21 @@ export default function CheckoutPage() {
       if (!shippingData.postcode) errors.shipping_postcode = 'Postal code is required'
     }
     
+    // Check email status
+    if (emailStatus === 'exists' && !session) {
+      errors.email = 'This email is already registered. Please login or use a different email.'
+    }
+    
+    // Validate password if creating account
+    if (createAccount && emailStatus === 'available') {
+      if (!accountPassword) errors.password = 'Password is required'
+      if (accountPassword && accountPassword.length < 8) errors.password = 'Password must be at least 8 characters'
+      if (!confirmPassword) errors.confirmPassword = 'Please confirm your password'
+      if (accountPassword && confirmPassword && accountPassword !== confirmPassword) {
+        errors.confirmPassword = 'Passwords do not match'
+      }
+    }
+    
     setValidationErrors(errors)
     return Object.keys(errors).length === 0
   }
@@ -134,6 +201,40 @@ export default function CheckoutPage() {
     setError('')
 
     try {
+      let customerId = session?.user?.id || newCustomerId || null
+      
+      // Create account if requested
+      if (createAccount && emailStatus === 'available' && !session) {
+        try {
+          const registerResponse = await fetch('/api/auth/register-customer', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email: billingData.email,
+              password: accountPassword,
+              firstName: billingData.firstName,
+              lastName: billingData.lastName,
+              billing: billingData,
+              shipping: useShippingAsBilling ? billingData : shippingData
+            })
+          })
+          
+          const registerData = await registerResponse.json()
+          
+          if (!registerData.success) {
+            throw new Error(registerData.error || 'Failed to create account')
+          }
+          
+          customerId = registerData.customer.id
+          setNewCustomerId(registerData.customer.id)
+          console.log('Account created successfully for:', registerData.customer.email)
+        } catch (err: any) {
+          setError('Failed to create account: ' + err.message)
+          setIsProcessing(false)
+          return
+        }
+      }
+      
       const response = await fetch('/api/checkout', {
         method: 'POST',
         headers: {
@@ -146,7 +247,7 @@ export default function CheckoutPage() {
           paymentMethod: selectedPaymentMethod,
           customerNote,
           totalPrice,
-          customerId: session?.user?.id || null,
+          customerId: customerId,
           cartItems: items.map(item => ({
             productId: item.productId,
             variationId: item.variationId,
@@ -278,20 +379,125 @@ export default function CheckoutPage() {
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Email Address *
                     </label>
-                    <input
-                      type="email"
-                      name="email"
-                      required
-                      value={billingData.email}
-                      onChange={handleBillingChange}
-                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#ffed00] ${
-                        validationErrors.email ? 'border-red-500' : 'border-gray-300'
-                      }`}
-                    />
+                    <div className="relative">
+                      <input
+                        type="email"
+                        name="email"
+                        required
+                        value={billingData.email}
+                        onChange={handleBillingChange}
+                        disabled={!!session}
+                        className={`w-full px-3 py-2 pr-10 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#ffed00] ${
+                          validationErrors.email ? 'border-red-500' : 
+                          emailStatus === 'exists' && !session ? 'border-red-500' :
+                          emailStatus === 'available' ? 'border-green-500' :
+                          'border-gray-300'
+                        } ${session ? 'bg-gray-50' : ''}`}
+                      />
+                      {checkingEmail && (
+                        <div className="absolute right-3 top-3">
+                          <div className="animate-spin h-4 w-4 border-2 border-gray-300 border-t-black rounded-full"></div>
+                        </div>
+                      )}
+                      {!checkingEmail && emailStatus === 'exists' && !session && (
+                        <div className="absolute right-3 top-3">
+                          <AlertCircle className="h-4 w-4 text-red-500" />
+                        </div>
+                      )}
+                      {!checkingEmail && emailStatus === 'available' && (
+                        <div className="absolute right-3 top-3">
+                          <CheckCircle className="h-4 w-4 text-green-500" />
+                        </div>
+                      )}
+                    </div>
                     {validationErrors.email && (
                       <p className="text-red-500 text-xs mt-1">{validationErrors.email}</p>
                     )}
+                    {emailStatus === 'exists' && !session && (
+                      <p className="text-red-600 text-sm mt-1 flex items-center gap-1">
+                        <AlertCircle className="h-3 w-3" />
+                        This email is already registered. 
+                        <Link href="/login" className="underline font-medium">Please login</Link>
+                        or use a different email.
+                      </p>
+                    )}
+                    {emailStatus === 'available' && !session && (
+                      <div className="mt-2 p-3 bg-green-50 border border-green-200 rounded-md">
+                        <label className="flex items-start gap-2">
+                          <input
+                            type="checkbox"
+                            checked={createAccount}
+                            onChange={(e) => setCreateAccount(e.target.checked)}
+                            className="mt-1"
+                          />
+                          <div>
+                            <span className="text-sm font-medium text-green-800">
+                              Create an account for faster checkout next time
+                            </span>
+                            <p className="text-xs text-green-600 mt-1">
+                              Save your addresses and track your orders
+                            </p>
+                          </div>
+                        </label>
+                      </div>
+                    )}
                   </div>
+                  
+                  {/* Password fields for account creation */}
+                  {createAccount && emailStatus === 'available' && !session && (
+                    <>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Password *
+                        </label>
+                        <div className="relative">
+                          <input
+                            type={showPassword ? 'text' : 'password'}
+                            value={accountPassword}
+                            onChange={(e) => {
+                              setAccountPassword(e.target.value)
+                              setValidationErrors(prev => ({ ...prev, password: '' }))
+                            }}
+                            className={`w-full px-3 py-2 pr-10 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#ffed00] ${
+                              validationErrors.password ? 'border-red-500' : 'border-gray-300'
+                            }`}
+                            placeholder="Min. 8 characters"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-3 top-3 text-gray-500 hover:text-gray-700"
+                          >
+                            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          </button>
+                        </div>
+                        {validationErrors.password && (
+                          <p className="text-red-500 text-xs mt-1">{validationErrors.password}</p>
+                        )}
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Confirm Password *
+                        </label>
+                        <input
+                          type={showPassword ? 'text' : 'password'}
+                          value={confirmPassword}
+                          onChange={(e) => {
+                            setConfirmPassword(e.target.value)
+                            setValidationErrors(prev => ({ ...prev, confirmPassword: '' }))
+                          }}
+                          className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#ffed00] ${
+                            validationErrors.confirmPassword ? 'border-red-500' : 'border-gray-300'
+                          }`}
+                          placeholder="Re-enter password"
+                        />
+                        {validationErrors.confirmPassword && (
+                          <p className="text-red-500 text-xs mt-1">{validationErrors.confirmPassword}</p>
+                        )}
+                      </div>
+                    </>
+                  )}
                   
                   <div className="md:col-span-2">
                     <label className="block text-sm font-medium text-gray-700 mb-1">
