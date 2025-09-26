@@ -11,7 +11,7 @@ export interface Course {
   content: string
   acf: {
     course_duration: string
-    difficulty_level: 'Beginner' | 'Intermediate' | 'Advanced'
+    difficulty_level: 'Beginner' | 'Intermediate' | 'Advanced' | 'Professional'
     course_category: string
     course_thumbnail: any
     course_trailer_vimeo?: string
@@ -28,6 +28,8 @@ export interface Course {
   lessons: Lesson[]
   has_access?: boolean
   progress?: number
+  price?: string
+  product_slug?: string
 }
 
 export interface Lesson {
@@ -325,6 +327,69 @@ const DEMO_COURSES: Course[] = [
     lessons: [],
     has_access: false,
     progress: 0
+  },
+  {
+    id: 7,
+    title: 'Functional Foot Workshop',
+    slug: 'functional-foot-workshop',
+    excerpt: 'Intensive 2-day workshop focusing on functional foot mechanics and rehabilitation techniques.',
+    content: '<p>Learn advanced functional foot assessment and treatment techniques in this comprehensive workshop...</p>',
+    acf: {
+      course_duration: '2 days',
+      difficulty_level: 'Intermediate',
+      course_category: 'Workshop',
+      course_thumbnail: { url: 'https://images.unsplash.com/photo-1540324155974-7523202daa3f?w=800' },
+      total_lessons: 6,
+      required_products: [109],
+      course_order: 7,
+      is_featured: true,
+      course_materials: []
+    },
+    lessons: [],
+    has_access: true,
+    progress: 50
+  },
+  {
+    id: 8,
+    title: 'Flat Foot Workshop',
+    slug: 'flat-foot-workshop',
+    excerpt: 'Specialized workshop addressing flat foot conditions and corrective training methods.',
+    content: '<p>Comprehensive training on flat foot assessment, treatment, and prevention strategies...</p>',
+    acf: {
+      course_duration: '1 day',
+      difficulty_level: 'Intermediate',
+      course_category: 'Workshop',
+      course_thumbnail: { url: 'https://images.unsplash.com/photo-1609899464726-209befaac5bc?w=800' },
+      total_lessons: 4,
+      required_products: [110],
+      course_order: 8,
+      is_featured: true,
+      course_materials: []
+    },
+    lessons: [],
+    has_access: true,
+    progress: 0
+  },
+  {
+    id: 9,
+    title: 'Rigid Foot Workshop',
+    slug: 'rigid-foot-workshop',
+    excerpt: 'Advanced techniques for treating rigid foot conditions and improving mobility.',
+    content: '<p>Master the assessment and treatment of rigid foot patterns in this specialized workshop...</p>',
+    acf: {
+      course_duration: '1 day',
+      difficulty_level: 'Advanced',
+      course_category: 'Workshop',
+      course_thumbnail: { url: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=800' },
+      total_lessons: 4,
+      required_products: [111],
+      course_order: 9,
+      is_featured: false,
+      course_materials: []
+    },
+    lessons: [],
+    has_access: false,
+    progress: 0
   }
 ]
 
@@ -593,6 +658,101 @@ export function getVimeoEmbedUrl(vimeoId: string, autoplay: boolean = false): st
   })
 
   return `https://player.vimeo.com/video/${vimeoId}?${params.toString()}`
+}
+
+// Get ProCoach certification courses from WooCommerce
+export async function getProCoachCourses(): Promise<Course[]> {
+  try {
+    const { getAllProducts } = await import('@/lib/woocommerce/products')
+    const products = await getAllProducts()
+
+    // Filter for ProCoach/Certification products
+    const procoachProducts = products.filter(p =>
+      p.categories.some(cat =>
+        cat.slug === 'procoach' ||
+        cat.slug === 'certification' ||
+        cat.name.toLowerCase().includes('procoach') ||
+        cat.name.toLowerCase().includes('certification')
+      ) || p.name.toLowerCase().includes('procoach')
+    )
+
+    // Transform to Course format
+    return procoachProducts.map((product, index) => ({
+      id: product.id,
+      title: product.name,
+      slug: product.slug,
+      excerpt: product.short_description || product.description || '',
+      content: product.description || '',
+      acf: {
+        course_duration: '8-12 weeks',
+        difficulty_level: 'Professional' as const,
+        course_category: 'Certification',
+        course_thumbnail: product.images?.[0] ? {
+          url: product.images[0].src,
+          alt: product.images[0].alt
+        } : null,
+        total_lessons: 12,
+        required_products: [],
+        course_order: index,
+        is_featured: true
+      },
+      lessons: [],
+      has_access: false, // Will be checked against user purchases
+      progress: 0,
+      price: product.price,
+      product_slug: product.slug
+    }))
+  } catch (error) {
+    console.error('Error fetching ProCoach courses:', error)
+    return []
+  }
+}
+
+// Get Workshop courses from WooCommerce
+export async function getWorkshopCourses(): Promise<Course[]> {
+  try {
+    const { getAllProducts } = await import('@/lib/woocommerce/products')
+    const products = await getAllProducts()
+
+    // Filter for Workshop products
+    const workshopProducts = products.filter(p =>
+      p.categories.some(cat =>
+        cat.slug === 'workshop' ||
+        cat.slug === 'workshops' ||
+        cat.name.toLowerCase().includes('workshop')
+      ) || p.name.toLowerCase().includes('workshop')
+    )
+
+    // Transform to Course format
+    return workshopProducts.map((product, index) => ({
+      id: product.id,
+      title: product.name,
+      slug: product.slug,
+      excerpt: product.short_description || product.description || '',
+      content: product.description || '',
+      acf: {
+        course_duration: '2-4 weeks',
+        difficulty_level: 'Intermediate' as const,
+        course_category: 'Workshop',
+        course_thumbnail: product.images?.[0] ? {
+          url: product.images[0].src,
+          alt: product.images[0].alt
+        } : null,
+        total_lessons: 6,
+        required_products: [],
+        course_order: index,
+        is_featured: false
+      },
+      lessons: [],
+      has_access: false, // Will be checked against user purchases
+      progress: 0,
+      price: product.price,
+      product_slug: product.slug
+    }))
+  } catch (error) {
+    console.error('Error fetching Workshop courses:', error)
+    return []
+  }
 }
 
 // Calculate course progress percentage

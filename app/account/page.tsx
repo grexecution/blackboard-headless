@@ -3,12 +3,17 @@
 import { signOut } from 'next-auth/react'
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
-import { 
-  User, Mail, Phone, MapPin, Package, CreditCard, LogOut, ChevronRight, 
+import {
+  User, Mail, Phone, MapPin, Package, CreditCard, LogOut, ChevronRight,
   Loader2, Settings, Star, BookOpen, Award, Bell, Shield, RefreshCw,
-  ExternalLink, TrendingUp, DollarSign, Calendar, Clock
+  ExternalLink, TrendingUp, DollarSign, Calendar, Clock, Video, CheckCircle,
+  Lock, PlayCircle
 } from 'lucide-react'
 import { useRequireAuth } from '@/hooks/use-require-auth'
+import Link from 'next/link'
+import Image from 'next/image'
+import { getAllCourses, getUserProgress, checkCourseAccess } from '@/lib/lms/api'
+import CourseCard from '@/components/lms/course-card'
 
 export default function AccountPage() {
   const { session, isLoading: authLoading } = useRequireAuth('/account')
@@ -85,9 +90,30 @@ export default function AccountPage() {
 
   const fetchCourses = async () => {
     try {
-      const res = await fetch('/api/tutor/courses')
-      const data = await res.json()
-      setCourses(data)
+      // Fetch all courses (will return demo data in development)
+      const allCourses = await getAllCourses()
+
+      // If authenticated, get user progress
+      if (session?.user) {
+        const progress = await getUserProgress((session.user as any)?.token || '')
+
+        // Check access for each course
+        const coursesWithAccess = await Promise.all(
+          allCourses.map(async (course) => {
+            const hasAccess = await checkCourseAccess(course.id, (session.user as any)?.token || '')
+            const courseProgress = progress.find(p => p.course_id === course.id)
+            return {
+              ...course,
+              has_access: hasAccess,
+              progress: courseProgress?.percentage_complete || 0
+            }
+          })
+        )
+
+        // Only show courses user has access to (first 4 for demo)
+        const purchasedCourses = coursesWithAccess.filter(c => c.has_access)
+        setCourses(purchasedCourses)
+      }
     } catch (error) {
       console.error('Failed to fetch courses:', error)
     }
@@ -541,128 +567,28 @@ export default function AccountPage() {
               className="bb-dashboard-section"
             >
               <div className="bb-section-header">
-                <h2>My Purchased Courses</h2>
-                <button onClick={fetchCourses} className="bb-sync-button">
-                  <RefreshCw className="w-4 h-4" />
-                  Sync Courses
-                </button>
+                <h2>My Learning</h2>
+                <Link
+                  href="/account/courses"
+                  className="bb-sync-button"
+                >
+                  View All Courses
+                  <ChevronRight className="w-4 h-4" />
+                </Link>
               </div>
               {courses.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
                   {courses.map((course: any) => (
-                    <div key={course.id} className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl overflow-hidden border border-gray-200 hover:border-bb-primary/30 transition-all duration-300">
-                      {/* Course Featured Image */}
-                      {course.featured_image && (
-                        <a 
-                          href={course.course_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="block"
-                        >
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img 
-                            src={course.featured_image} 
-                            alt={course.title}
-                            className="w-full h-48 object-cover"
-                          />
-                        </a>
-                      )}
-                      <div className="p-6">
-                      <div className="flex items-start justify-between mb-4">
-                        <div className="flex-1">
-                          {course.course_url ? (
-                            <a 
-                              href={course.course_url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="hover:text-bb-primary transition-colors"
-                            >
-                              <h3 className="font-semibold text-lg text-bb-dark mb-2 hover:text-bb-primary">{course.title}</h3>
-                            </a>
-                          ) : (
-                            <h3 className="font-semibold text-lg text-bb-dark mb-2">{course.title}</h3>
-                          )}
-                          <p className="text-sm text-gray-600 mb-3">{course.excerpt}</p>
-                          <div className="flex items-center gap-4 text-xs text-gray-500 mb-3">
-                            <span className="flex items-center gap-1">
-                              <Clock className="w-3 h-3" />
-                              {course.duration}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <BookOpen className="w-3 h-3" />
-                              {course.completed_lessons}/{course.total_lessons} lessons
-                            </span>
-                            <span className="bg-bb-primary/10 text-bb-dark px-2 py-1 rounded">
-                              {course.level}
-                            </span>
-                          </div>
-                          {course.purchase_date && (
-                            <div className="text-xs text-gray-500 mb-2 flex items-center gap-1">
-                              <DollarSign className="w-3 h-3" />
-                              Purchased: {new Date(course.purchase_date).toLocaleDateString('en-GB', {
-                                day: 'numeric',
-                                month: 'long',
-                                year: 'numeric'
-                              })}
-                              {course.order_id && (
-                                <span className="ml-2 text-bb-primary">Order #{course.order_id}</span>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                        <div className="text-right">
-                          <div className="text-sm font-semibold text-bb-dark mb-1">{course.progress}%</div>
-                          <div className="w-12 h-2 bg-gray-200 rounded-full overflow-hidden">
-                            <div 
-                              className="h-full bg-gradient-to-r from-bb-primary to-yellow-400 transition-all duration-500"
-                              style={{ width: `${course.progress}%` }}
-                            />
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <div className="text-sm text-gray-600">
-                          Instructor: <span className="font-medium">{course.instructor.name}</span>
-                        </div>
-                        {course.completion_date ? (
-                          <div className="flex items-center gap-1 text-green-600 text-sm">
-                            <Award className="w-4 h-4" />
-                            Completed
-                          </div>
-                        ) : course.course_url ? (
-                          <a 
-                            href={course.course_url} 
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="bb-order-link text-sm"
-                          >
-                            View Course <ChevronRight className="w-4 h-4" />
-                          </a>
-                        ) : (
-                          <span className="text-sm text-gray-400">
-                            Course URL not available
-                          </span>
-                        )}
-                      </div>
-                      {course.certificate_url && (
-                        <div className="mt-3 pt-3 border-t border-gray-200">
-                          <a href={course.certificate_url} className="flex items-center gap-2 text-sm text-bb-dark hover:text-bb-primary transition-colors">
-                            <Award className="w-4 h-4" />
-                            Download Certificate
-                          </a>
-                        </div>
-                      )}
-                      </div>
-                    </div>
+                    <CourseCard key={course.id} course={course} type="course" />
                   ))}
                 </div>
               ) : (
                 <div className="bb-empty-state">
                   <BookOpen className="w-16 h-16 mx-auto mb-4" />
                   <p>No courses enrolled yet</p>
-                  <a href="#" className="bb-btn-primary">
-                    Browse Courses
-                  </a>
+                  <Link href="/account/courses" className="bb-btn-primary">
+                    Browse Available Courses
+                  </Link>
                 </div>
               )}
             </motion.div>

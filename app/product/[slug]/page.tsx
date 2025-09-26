@@ -7,7 +7,7 @@ import { findWorkshopProduct, qualifiesForFreebie } from '@/lib/woocommerce/free
 // Force static generation at build time with no revalidation
 export const revalidate = false
 export const dynamic = 'force-static'
-export const dynamicParams = false
+export const dynamicParams = true
 
 // Add metadata generation for better SEO
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
