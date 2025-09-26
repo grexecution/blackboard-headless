@@ -17,8 +17,9 @@ export async function generateStaticParams() {
   }))
 }
 
-export default async function VideoPage({ params }: { params: { slug: string } }) {
-  const video = await getVideoBySlug(params.slug)
+export default async function VideoPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params
+  const video = await getVideoBySlug(slug)
 
   if (!video) {
     notFound()

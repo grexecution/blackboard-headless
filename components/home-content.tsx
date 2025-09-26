@@ -881,7 +881,7 @@ export default function HomeContent({ blackboardProducts, blackboardWithVariatio
                       </div>
                       <div>
                         <h4 className="font-bold text-gray-900">Limited Performance</h4>
-                        <p className="text-sm text-gray-600">Can't reach athletic potential</p>
+                        <p className="text-sm text-gray-600">Can&apos;t reach athletic potential</p>
                       </div>
                     </div>
                   </div>

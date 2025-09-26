@@ -21,9 +21,9 @@ export default function VideoCard({ video }: VideoCardProps) {
   const categories = getVideoCategories2(video)
 
   // Check if user has customer role or is admin
-  const hasAccess = session?.user?.roles?.includes('customer') ||
-                   session?.user?.roles?.includes('administrator') ||
-                   session?.user?.roles?.includes('reseller') ||
+  const hasAccess = (session?.user as any)?.roles?.includes('customer') ||
+                   (session?.user as any)?.roles?.includes('administrator') ||
+                   (session?.user as any)?.roles?.includes('reseller') ||
                    !isLocked
 
   const handleClick = (e: React.MouseEvent) => {
@@ -147,7 +147,6 @@ export default function VideoCard({ video }: VideoCardProps) {
         <LoginModal
           isOpen={showLoginModal}
           onClose={() => setShowLoginModal(false)}
-          redirectUrl="/training-videos"
         />
       )}
     </>

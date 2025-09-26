@@ -12,10 +12,11 @@ import {
 import { getCourseBySlug, markLessonComplete, getVimeoEmbedUrl, formatDuration, checkCourseAccess, type Course, type Lesson } from '@/lib/lms/api'
 
 interface CoursePageProps {
-  params: { slug: string }
+  params: Promise<{ slug: string }>
 }
 
-export default function CoursePage({ params }: CoursePageProps) {
+export default function CoursePage({ params: paramsPromise }: CoursePageProps) {
+  const [params, setParams] = useState<{ slug: string } | null>(null)
   const { data: session, status } = useSession()
   const router = useRouter()
   const [course, setCourse] = useState<Course | null>(null)
@@ -27,29 +28,38 @@ export default function CoursePage({ params }: CoursePageProps) {
   const videoRef = useRef<HTMLIFrameElement>(null)
 
   useEffect(() => {
+    paramsPromise.then(p => setParams(p))
+  }, [paramsPromise])
+
+  useEffect(() => {
+    if (!params) return
     // Comment out for demo - normally require auth
     // if (status === 'unauthenticated') {
     //   router.push(`/login?redirect=/account/courses/${params.slug}`)
     // }
-  }, [status, router, params.slug])
+  }, [status, router, params])
 
   useEffect(() => {
+    if (!params) return
     fetchCourseData()
-  }, [session, params.slug])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session, params])
 
   const fetchCourseData = async () => {
+    if (!params) return
+
     try {
       setLoading(true)
 
       // Fetch course by slug
-      const courseData = await getCourseBySlug(params.slug, session?.user?.token)
+      const courseData = await getCourseBySlug(params.slug, (session?.user as any)?.token)
 
       if (courseData) {
         setCourse(courseData)
 
         // Check access - for demo, use the course's has_access property
-        if (session?.user?.token) {
-          const access = await checkCourseAccess(courseData.id, session.user.token)
+        if ((session?.user as any)?.token) {
+          const access = await checkCourseAccess(courseData.id, (session?.user as any)?.token)
           setHasAccess(access)
         } else {
           // For demo without auth
@@ -75,9 +85,9 @@ export default function CoursePage({ params }: CoursePageProps) {
   }
 
   const handleLessonComplete = async () => {
-    if (!currentLesson || !session?.user?.token) return
+    if (!currentLesson || !(session?.user as any)?.token) return
 
-    const success = await markLessonComplete(currentLesson.id, session.user.token)
+    const success = await markLessonComplete(currentLesson.id, (session?.user as any)?.token)
 
     if (success) {
       setCompletedLessons([...completedLessons, currentLesson.id])
@@ -118,7 +128,7 @@ export default function CoursePage({ params }: CoursePageProps) {
       <div className="min-h-screen flex flex-col items-center justify-center">
         <AlertCircle className="h-16 w-16 text-gray-400 mb-4" />
         <h2 className="text-2xl font-bold mb-2">Course Not Found</h2>
-        <p className="text-gray-600 mb-6">The course you're looking for doesn't exist.</p>
+        <p className="text-gray-600 mb-6">The course you&apos;re looking for doesn&apos;t exist.</p>
         <Link
           href="/account/courses"
           className="flex items-center gap-2 bg-[#ffed00] text-black px-6 py-3 rounded-full font-semibold hover:bg-yellow-500"

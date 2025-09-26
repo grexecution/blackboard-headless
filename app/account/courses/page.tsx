@@ -29,6 +29,7 @@ export default function CoursesPage() {
 
   useEffect(() => {
     fetchCoursesAndProgress()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session, status])
 
   const fetchCoursesAndProgress = async () => {
@@ -39,14 +40,14 @@ export default function CoursesPage() {
       const allCourses = await getAllCourses()
 
       // Fetch user progress if authenticated
-      if (session?.user?.token) {
-        const progress = await getUserProgress(session.user.token)
+      if ((session?.user as any)?.token) {
+        const progress = await getUserProgress((session?.user as any)?.token)
         setUserProgress(progress)
 
         // Check access for each course
         const coursesWithAccess = await Promise.all(
           allCourses.map(async (course) => {
-            const hasAccess = await checkCourseAccess(course.id, session.user.token!)
+            const hasAccess = await checkCourseAccess(course.id, (session?.user as any)?.token)
             const courseProgress = progress.find(p => p.course_id === course.id)
             return {
               ...course,
@@ -74,7 +75,7 @@ export default function CoursesPage() {
 
   const filteredCourses = courses.filter(course => {
     if (filter === 'all') return true
-    if (filter === 'in-progress') return course.progress > 0 && course.progress < 100
+    if (filter === 'in-progress') return (course.progress || 0) > 0 && (course.progress || 0) < 100
     if (filter === 'completed') return course.progress === 100
     return true
   })
@@ -122,13 +123,13 @@ export default function CoursesPage() {
             </div>
             <div className="text-center">
               <div className="text-3xl font-bold text-green-500">
-                {courses.filter(c => c.progress === 100).length}
+                {courses.filter(c => (c.progress || 0) === 100).length}
               </div>
               <div className="text-sm text-gray-600">Completed</div>
             </div>
             <div className="text-center">
               <div className="text-3xl font-bold text-blue-500">
-                {courses.filter(c => c.progress > 0 && c.progress < 100).length}
+                {courses.filter(c => (c.progress || 0) > 0 && (c.progress || 0) < 100).length}
               </div>
               <div className="text-sm text-gray-600">In Progress</div>
             </div>
@@ -210,7 +211,7 @@ export default function CoursesPage() {
                 )}
 
                 {/* Progress Badge */}
-                {course.progress > 0 && (
+                {(course.progress || 0) > 0 && (
                   <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full">
                     <span className="text-sm font-semibold">
                       {course.progress === 100 ? (
@@ -219,7 +220,7 @@ export default function CoursesPage() {
                           Completed
                         </span>
                       ) : (
-                        <span className="text-blue-600">{course.progress}% Complete</span>
+                        <span className="text-blue-600">{course.progress || 0}% Complete</span>
                       )}
                     </span>
                   </div>
@@ -262,12 +263,12 @@ export default function CoursesPage() {
                 </div>
 
                 {/* Progress Bar */}
-                {course.has_access && course.progress > 0 && (
+                {course.has_access && (course.progress || 0) > 0 && (
                   <div className="mb-4">
                     <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
                       <div
                         className="h-full bg-gradient-to-r from-[#ffed00] to-yellow-500 transition-all"
-                        style={{ width: `${course.progress}%` }}
+                        style={{ width: `${course.progress || 0}%` }}
                       />
                     </div>
                   </div>

@@ -17,9 +17,9 @@ export default function VideoPlayer({ video }: VideoPlayerProps) {
   const { data: session } = useSession()
 
   const isLocked = isVideoLocked(video)
-  const hasAccess = session?.user?.roles?.includes('customer') ||
-                   session?.user?.roles?.includes('administrator') ||
-                   session?.user?.roles?.includes('reseller') ||
+  const hasAccess = (session?.user as any)?.roles?.includes('customer') ||
+                   (session?.user as any)?.roles?.includes('administrator') ||
+                   (session?.user as any)?.roles?.includes('reseller') ||
                    !isLocked
 
   const toggleDescription = (index: number) => {
@@ -57,7 +57,6 @@ export default function VideoPlayer({ video }: VideoPlayerProps) {
           <LoginModal
             isOpen={showLoginModal}
             onClose={() => setShowLoginModal(false)}
-            redirectUrl={`/training-videos/${video.slug}`}
           />
         )}
       </>

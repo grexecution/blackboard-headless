@@ -1,6 +1,4 @@
 // LMS API functions for fetching courses and managing progress
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/app/api/auth/[...nextauth]/route'
 
 const WP_API_URL = process.env.WORDPRESS_API_URL || ''
 const WOO_API_URL = process.env.NEXT_PUBLIC_WOO_API_URL || ''
