@@ -17,20 +17,20 @@ export default function Footer() {
     learn: [
       { label: 'ProCoach Certification', href: '/procoach' },
       { label: 'Workshops', href: '/workshops' },
-      { label: 'Training Videos', href: '#' },
-      { label: 'Blog', href: '#' },
+      { label: 'Training Videos', href: '/training-videos' },
+      { label: 'Blog', href: '/blog' },
     ],
     support: [
       { label: 'Contact Us', href: '/contact' },
       { label: 'Shipping & Returns', href: '/shipping' },
-      { label: 'Size Guide', href: '#' },
+      { label: 'Size Guide', href: '/size-guide' },
       { label: 'FAQ', href: '/faq' },
     ],
     company: [
       { label: 'About Us', href: '/about' },
-      { label: 'Our Story', href: '#' },
-      { label: 'Partners', href: '#' },
-      { label: 'Careers', href: '#' },
+      { label: 'Our Story', href: '/our-story' },
+      { label: 'Partners', href: '/partners' },
+      { label: 'Careers', href: '/careers' },
     ],
   }
 
@@ -210,20 +210,22 @@ export default function Footer() {
               <Phone className="h-5 w-5 text-[#ffed00] flex-shrink-0 mt-0.5" />
               <div>
                 <p className="text-sm font-semibold mb-1">Phone</p>
-                <p className="text-xs text-gray-400">
-                  +49 (0) 30 123456<br />
-                  Mon-Fri: 9:00-18:00 CET
-                </p>
+                <div className="text-xs text-gray-400">
+                  <span suppressHydrationWarning>+49 (0) 30 123456</span>
+                  <br />
+                  <span>Mon-Fri: 9:00-18:00 CET</span>
+                </div>
               </div>
             </div>
             <div className="flex items-start gap-3">
               <Mail className="h-5 w-5 text-[#ffed00] flex-shrink-0 mt-0.5" />
               <div>
                 <p className="text-sm font-semibold mb-1">Email</p>
-                <p className="text-xs text-gray-400">
-                  support@blackboard-training.com<br />
-                  info@blackboard-training.com
-                </p>
+                <div className="text-xs text-gray-400">
+                  <span suppressHydrationWarning>support@blackboard-training.com</span>
+                  <br />
+                  <span suppressHydrationWarning>info@blackboard-training.com</span>
+                </div>
               </div>
             </div>
           </div>

@@ -28,6 +28,11 @@ const nextConfig = {
         hostname: 'blackboard-training.local',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com',
+        pathname: '/**',
+      },
     ],
   },
   async headers() {

@@ -1,4 +1,5 @@
 import { getCachedProducts, getCachedProduct, getCachedProductVariations } from './cache'
+import { getCached } from './dev-cache'
 
 export interface ProductImage {
   id: number
@@ -122,6 +123,10 @@ export async function getProduct(idOrSlug: string | number): Promise<Product> {
 }
 
 export async function getProductVariations(productId: number): Promise<ProductVariation[]> {
+  // Use development cache to speed up local development
+  if (process.env.NODE_ENV === 'development') {
+    return getCached(`product-variations-${productId}`, () => getCachedProductVariations(productId))
+  }
   return getCachedProductVariations(productId)
 }
 
@@ -130,6 +135,10 @@ export async function getFeaturedProducts(): Promise<Product[]> {
 }
 
 export async function getAllProducts(): Promise<Product[]> {
+  // Use development cache to speed up local development
+  if (process.env.NODE_ENV === 'development') {
+    return getCached('all-products', () => getProducts({ per_page: 100 }))
+  }
   return getProducts({ per_page: 100 })
 }
 

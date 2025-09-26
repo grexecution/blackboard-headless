@@ -28,6 +28,7 @@ export default function Navbar() {
   const navLinks = [
     { href: '/', label: 'Home' },
     { href: '/shop', label: 'Shop' },
+    { href: '/training-videos', label: 'Videos' },
     { href: '/procoach', label: 'ProCoach' },
     { href: '/workshops', label: 'Workshops' },
     { href: '/about', label: 'About' }
