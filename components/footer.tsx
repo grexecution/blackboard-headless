@@ -51,7 +51,7 @@ export default function Footer() {
     <footer className="bg-gradient-to-b from-gray-900 to-black text-white mb-16 md:mb-0">
       {/* Trust Badges Section */}
       <div className="border-b border-gray-800">
-        <div className="container mx-auto px-4 py-8">
+        <div className="max-w-screen-xl mx-auto px-4 lg:px-6 py-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             {trustBadges.map((badge, index) => (
               <motion.div
@@ -70,7 +70,7 @@ export default function Footer() {
       </div>
 
       {/* Main Footer Content */}
-      <div className="container mx-auto px-4 py-12 lg:py-16">
+      <div className="max-w-screen-xl mx-auto px-4 lg:px-6 py-12 lg:py-16">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-8 lg:gap-12">
           {/* Brand Section - Takes 2 columns on large screens */}
           <div className="lg:col-span-2">
@@ -234,7 +234,7 @@ export default function Footer() {
 
       {/* Bottom Bar - Mobile Optimized */}
       <div className="border-t border-gray-800">
-        <div className="container mx-auto px-4 py-6">
+        <div className="max-w-screen-xl mx-auto px-4 lg:px-6 py-6">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="text-xs text-gray-400 text-center md:text-left">
               © {currentYear} BlackBoard Training. All rights reserved.

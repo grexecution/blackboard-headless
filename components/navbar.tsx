@@ -11,6 +11,7 @@ import { useSession } from 'next-auth/react'
 
 export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [educationDropdownOpen, setEducationDropdownOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   const { totalItems, openCart } = useCart()
   const { openLoginModal } = useAuth()
@@ -28,9 +29,15 @@ export default function Navbar() {
   const navLinks = [
     { href: '/', label: 'Home' },
     { href: '/shop', label: 'Shop' },
-    { href: '/training-videos', label: 'Videos' },
-    { href: '/procoach', label: 'ProCoach' },
-    { href: '/workshops', label: 'Workshops' },
+    { href: '/training-videos', label: 'Training Videos' },
+    {
+      href: '#',
+      label: 'Education',
+      submenu: [
+        { href: '/procoach', label: 'ProCoach' },
+        { href: '/workshops', label: 'Workshops' }
+      ]
+    },
     { href: '/about', label: 'About' }
   ]
 
@@ -39,7 +46,7 @@ export default function Navbar() {
       <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         scrolled ? 'bg-white/95 backdrop-blur-md shadow-lg' : 'bg-white'
       }`}>
-        <div className="container mx-auto px-4">
+        <div className="max-w-screen-xl mx-auto px-4 lg:px-6">
           <div className="flex items-center justify-between h-20">
             {/* Logo */}
             <Link href="/" className="flex items-center space-x-2 relative">
@@ -59,20 +66,72 @@ export default function Navbar() {
             {/* Desktop Menu - Center */}
             <div className="hidden lg:flex items-center space-x-1 xl:absolute xl:left-1/2 xl:transform xl:-translate-x-1/2">
               {navLinks.map((link) => {
-                const isActive = pathname === link.href
-                return (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
-                      isActive 
-                        ? 'bg-[#ffed00] text-black' 
-                        : 'text-gray-700 hover:bg-gray-100'
-                    }`}
-                  >
-                    {link.label}
-                  </Link>
-                )
+                if (link.submenu) {
+                  const isActive = link.submenu.some(sub => pathname === sub.href)
+                  return (
+                    <div key={link.label} className="relative">
+                      <button
+                        onClick={() => setEducationDropdownOpen(!educationDropdownOpen)}
+                        onMouseEnter={() => setEducationDropdownOpen(true)}
+                        onMouseLeave={() => setEducationDropdownOpen(false)}
+                        className={`inline-flex items-center gap-1 px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                          isActive
+                            ? 'bg-[#ffed00] text-black'
+                            : 'text-gray-700 hover:bg-gray-100'
+                        }`}
+                      >
+                        {link.label}
+                        <ChevronDown className={`h-4 w-4 transition-transform ${educationDropdownOpen ? 'rotate-180' : ''}`} />
+                      </button>
+
+                      <AnimatePresence>
+                        {educationDropdownOpen && (
+                          <motion.div
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            transition={{ duration: 0.2 }}
+                            onMouseEnter={() => setEducationDropdownOpen(true)}
+                            onMouseLeave={() => setEducationDropdownOpen(false)}
+                            className="absolute top-full left-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden"
+                          >
+                            {link.submenu.map((sublink) => {
+                              const isSubActive = pathname === sublink.href
+                              return (
+                                <Link
+                                  key={sublink.href}
+                                  href={sublink.href}
+                                  className={`block px-4 py-3 font-medium transition-all duration-200 ${
+                                    isSubActive
+                                      ? 'bg-[#ffed00] text-black'
+                                      : 'text-gray-700 hover:bg-gray-100'
+                                  }`}
+                                >
+                                  {sublink.label}
+                                </Link>
+                              )
+                            })}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  )
+                } else {
+                  const isActive = pathname === link.href
+                  return (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                        isActive
+                          ? 'bg-[#ffed00] text-black'
+                          : 'text-gray-700 hover:bg-gray-100'
+                      }`}
+                    >
+                      {link.label}
+                    </Link>
+                  )
+                }
               })}
             </div>
 
@@ -159,21 +218,50 @@ export default function Navbar() {
                   {/* Mobile Links */}
                   <div className="space-y-2">
                     {navLinks.map((link) => {
-                      const isActive = pathname === link.href
-                      return (
-                        <Link
-                          key={link.href}
-                          href={link.href}
-                          onClick={() => setMobileMenuOpen(false)}
-                          className={`block px-4 py-3 rounded-lg font-medium transition-all ${
-                            isActive 
-                              ? 'bg-[#ffed00] text-black' 
-                              : 'text-gray-700 hover:bg-gray-100'
-                          }`}
-                        >
-                          {link.label}
-                        </Link>
-                      )
+                      if (link.submenu) {
+                        return (
+                          <div key={link.label}>
+                            <div className="px-4 py-2 font-semibold text-gray-900">
+                              {link.label}
+                            </div>
+                            <div className="ml-4 space-y-1">
+                              {link.submenu.map((sublink) => {
+                                const isActive = pathname === sublink.href
+                                return (
+                                  <Link
+                                    key={sublink.href}
+                                    href={sublink.href}
+                                    onClick={() => setMobileMenuOpen(false)}
+                                    className={`block px-4 py-2 rounded-lg font-medium transition-all ${
+                                      isActive
+                                        ? 'bg-[#ffed00] text-black'
+                                        : 'text-gray-700 hover:bg-gray-100'
+                                    }`}
+                                  >
+                                    {sublink.label}
+                                  </Link>
+                                )
+                              })}
+                            </div>
+                          </div>
+                        )
+                      } else {
+                        const isActive = pathname === link.href
+                        return (
+                          <Link
+                            key={link.href}
+                            href={link.href}
+                            onClick={() => setMobileMenuOpen(false)}
+                            className={`block px-4 py-3 rounded-lg font-medium transition-all ${
+                              isActive
+                                ? 'bg-[#ffed00] text-black'
+                                : 'text-gray-700 hover:bg-gray-100'
+                            }`}
+                          >
+                            {link.label}
+                          </Link>
+                        )
+                      }
                     })}
                   </div>
                   

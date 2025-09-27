@@ -34,7 +34,7 @@ export default function FeatureCard({
       <div
         className={cn(
           'mb-4',
-          iconColor === iconColorClasses[iconColor],
+          iconColorClasses[iconColor],
           centered && 'flex justify-center'
         )}
       >

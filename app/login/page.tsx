@@ -81,7 +81,7 @@ export default function LoginPage() {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
       {/* Header */}
       <div className="bg-white border-b">
-        <div className="container mx-auto px-4">
+        <div className="max-w-screen-xl mx-auto px-4 lg:px-6">
           <div className="flex items-center justify-between h-20">
             <Link href="/" className="flex items-center gap-2 text-gray-700 hover:text-black transition-colors">
               <ChevronLeft className="h-5 w-5" />
@@ -97,7 +97,7 @@ export default function LoginPage() {
       </div>
 
       {/* Main Content */}
-      <div className="container mx-auto px-4 py-12">
+      <div className="max-w-screen-xl mx-auto px-4 lg:px-6 py-12">
         <div className="max-w-6xl mx-auto">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             {/* Left Side - Benefits */}
@@ -404,7 +404,7 @@ export default function LoginPage() {
 
       {/* Bottom Section */}
       <div className="bg-gradient-to-r from-gray-50 to-gray-100 py-12 mt-12">
-        <div className="container mx-auto px-4">
+        <div className="max-w-screen-xl mx-auto px-4 lg:px-6">
           <div className="max-w-6xl mx-auto">
             <div className="grid md:grid-cols-3 gap-8 text-center">
               <div>

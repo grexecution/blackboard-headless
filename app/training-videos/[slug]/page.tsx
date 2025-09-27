@@ -35,7 +35,7 @@ export default async function VideoPage({ params }: { params: Promise<{ slug: st
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <section className="bg-black text-white py-8">
-        <div className="container mx-auto px-4">
+        <div className="max-w-screen-xl mx-auto px-4 lg:px-6">
           <div className="max-w-6xl mx-auto">
             {/* Back Button */}
             <Link
@@ -96,7 +96,7 @@ export default async function VideoPage({ params }: { params: Promise<{ slug: st
 
       {/* Video Content */}
       <section className="py-12">
-        <div className="container mx-auto px-4">
+        <div className="max-w-screen-xl mx-auto px-4 lg:px-6">
           <div className="max-w-6xl mx-auto">
             <VideoPlayer video={video} />
           </div>

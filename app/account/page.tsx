@@ -569,10 +569,10 @@ export default function AccountPage() {
               <div className="bb-section-header">
                 <h2>My Learning</h2>
                 <Link
-                  href="/account/courses"
+                  href="/workshops"
                   className="bb-sync-button"
                 >
-                  View All Courses
+                  Browse Workshops
                   <ChevronRight className="w-4 h-4" />
                 </Link>
               </div>
@@ -586,7 +586,7 @@ export default function AccountPage() {
                 <div className="bb-empty-state">
                   <BookOpen className="w-16 h-16 mx-auto mb-4" />
                   <p>No courses enrolled yet</p>
-                  <Link href="/account/courses" className="bb-btn-primary">
+                  <Link href="/workshops" className="bb-btn-primary">
                     Browse Available Courses
                   </Link>
                 </div>

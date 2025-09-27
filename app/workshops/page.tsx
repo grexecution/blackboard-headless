@@ -16,7 +16,7 @@ export default async function WorkshopsPage() {
     <div className="min-h-screen">
       {/* Hero Section */}
       <section className="relative bg-gradient-to-b from-black to-gray-900 text-white py-20">
-        <div className="container mx-auto px-4">
+        <div className="max-w-screen-xl mx-auto px-4 lg:px-6">
           <div className="max-w-5xl mx-auto text-center">
             <h1 className="text-5xl md:text-6xl font-bold mb-6">
               BlackBoard <span className="text-[#ffed00]">Workshops</span>
@@ -71,7 +71,7 @@ export default async function WorkshopsPage() {
 
       {/* Online Workshop Courses */}
       <section className="py-16">
-        <div className="container mx-auto px-4">
+        <div className="max-w-screen-xl mx-auto px-4 lg:px-6">
           <h2 className="text-3xl font-bold text-center mb-4">
             Online Workshop Training
           </h2>
@@ -101,7 +101,7 @@ export default async function WorkshopsPage() {
 
       {/* What to Expect */}
       <section className="py-16 bg-gray-50">
-        <div className="container mx-auto px-4">
+        <div className="max-w-screen-xl mx-auto px-4 lg:px-6">
           <h2 className="text-3xl font-bold text-center mb-12">
             What to Expect from Our Workshops
           </h2>
@@ -144,7 +144,7 @@ export default async function WorkshopsPage() {
 
       {/* Workshop Process */}
       <section className="py-16">
-        <div className="container mx-auto px-4">
+        <div className="max-w-screen-xl mx-auto px-4 lg:px-6">
           <h2 className="text-3xl font-bold text-center mb-12">
             Your Workshop Journey
           </h2>
@@ -177,7 +177,7 @@ export default async function WorkshopsPage() {
 
       {/* CTA Section */}
       <section className="py-16 bg-gradient-to-br from-black to-gray-900 text-white">
-        <div className="container mx-auto px-4 text-center">
+        <div className="max-w-screen-xl mx-auto px-4 lg:px-6 text-center">
           <h2 className="text-3xl font-bold mb-6">
             Ready to Transform Your Skills?
           </h2>

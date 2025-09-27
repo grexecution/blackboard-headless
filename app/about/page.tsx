@@ -28,7 +28,7 @@ export default function AboutPage() {
           }}/>
         </div>
 
-        <div className="container mx-auto px-4 relative z-10">
+        <div className="max-w-screen-xl mx-auto px-4 lg:px-6 relative z-10">
           <div className="max-w-4xl mx-auto text-center text-white">
             <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold mb-6">
               Our <span className="text-[#ffed00]">Story</span>
@@ -42,7 +42,7 @@ export default function AboutPage() {
 
       {/* The Idea Section */}
       <section className="py-20 bg-white">
-        <div className="container mx-auto px-4">
+        <div className="max-w-screen-xl mx-auto px-4 lg:px-6">
           <div className="max-w-6xl mx-auto">
             <div className="bg-gradient-to-r from-[#ffed00]/10 to-yellow-50 rounded-3xl p-8 md:p-12 mb-12">
               <h2 className="text-3xl md:text-4xl font-bold mb-6">
@@ -86,7 +86,7 @@ export default function AboutPage() {
 
       {/* Mission & Values Section */}
       <section className="py-20 bg-gray-50">
-        <div className="container mx-auto px-4">
+        <div className="max-w-screen-xl mx-auto px-4 lg:px-6">
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-12">
               <h2 className="text-4xl md:text-5xl font-bold mb-4">
@@ -134,7 +134,7 @@ export default function AboutPage() {
 
       {/* Milestones Timeline */}
       <section className="py-20 bg-black text-white">
-        <div className="container mx-auto px-4">
+        <div className="max-w-screen-xl mx-auto px-4 lg:px-6">
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-12">
               <h2 className="text-4xl md:text-5xl font-bold mb-4">
@@ -185,7 +185,7 @@ export default function AboutPage() {
 
       {/* Why Choose BlackBoard */}
       <section className="py-20 bg-white">
-        <div className="container mx-auto px-4">
+        <div className="max-w-screen-xl mx-auto px-4 lg:px-6">
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-12">
               <h2 className="text-4xl md:text-5xl font-bold mb-4">
@@ -235,7 +235,7 @@ export default function AboutPage() {
 
       {/* CTA Section */}
       <section className="py-20 bg-gradient-to-br from-[#ffed00] to-yellow-500">
-        <div className="container mx-auto px-4">
+        <div className="max-w-screen-xl mx-auto px-4 lg:px-6">
           <div className="max-w-4xl mx-auto text-center">
             <h2 className="text-4xl md:text-5xl font-bold mb-6 text-black">
               Ready to Start Your Journey?

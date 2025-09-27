@@ -1,322 +1,311 @@
-'use client'
-
-import { useState, useEffect } from 'react'
-import { useSession } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
+import { getWorkshopCourses, getProCoachCourses } from '@/lib/lms/api'
+import CourseCard from '@/components/lms/course-card'
 import Link from 'next/link'
-import Image from 'next/image'
 import {
-  PlayCircle, Clock, BookOpen, Lock, CheckCircle,
-  TrendingUp, Award, ChevronRight, Loader2,
-  Video, FileText, Users, Star
+  Award, Users, Clock, Calendar, Video, BookOpen,
+  ChevronRight, ArrowRight, Sparkles, Target, Zap
 } from 'lucide-react'
-import { getAllCourses, getUserProgress, checkCourseAccess, type Course, type UserProgress } from '@/lib/lms/api'
 
-export default function CoursesPage() {
-  const { data: session, status } = useSession()
-  const router = useRouter()
-  const [courses, setCourses] = useState<Course[]>([])
-  const [userProgress, setUserProgress] = useState<UserProgress[]>([])
-  const [loading, setLoading] = useState(true)
-  const [filter, setFilter] = useState<'all' | 'in-progress' | 'completed'>('all')
+export const revalidate = false
+export const dynamic = 'force-static'
 
-  useEffect(() => {
-    // Comment out redirect for demo purposes - normally you'd want this
-    // if (status === 'unauthenticated') {
-    //   router.push('/login?redirect=/account/courses')
-    // }
-  }, [status, router])
-
-  useEffect(() => {
-    fetchCoursesAndProgress()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session, status])
-
-  const fetchCoursesAndProgress = async () => {
-    try {
-      setLoading(true)
-
-      // Fetch all courses (will return demo data in development)
-      const allCourses = await getAllCourses()
-
-      // Fetch user progress if authenticated
-      if ((session?.user as any)?.token) {
-        const progress = await getUserProgress((session?.user as any)?.token)
-        setUserProgress(progress)
-
-        // Check access for each course
-        const coursesWithAccess = await Promise.all(
-          allCourses.map(async (course) => {
-            const hasAccess = await checkCourseAccess(course.id, (session?.user as any)?.token)
-            const courseProgress = progress.find(p => p.course_id === course.id)
-            return {
-              ...course,
-              has_access: hasAccess,
-              progress: courseProgress?.percentage_complete || 0
-            }
-          })
-        )
-        setCourses(coursesWithAccess)
-      } else {
-        // For demo/development, show courses with demo data
-        const coursesWithDemoAccess = allCourses.map(course => ({
-          ...course,
-          has_access: course.has_access ?? false,
-          progress: course.progress ?? 0
-        }))
-        setCourses(coursesWithDemoAccess)
-      }
-    } catch (error) {
-      console.error('Error fetching courses:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const filteredCourses = courses.filter(course => {
-    if (filter === 'all') return true
-    if (filter === 'in-progress') return (course.progress || 0) > 0 && (course.progress || 0) < 100
-    if (filter === 'completed') return course.progress === 100
-    return true
-  })
-
-  const getDifficultyColor = (level: string) => {
-    switch (level) {
-      case 'Beginner': return 'bg-green-100 text-green-800'
-      case 'Intermediate': return 'bg-yellow-100 text-yellow-800'
-      case 'Advanced': return 'bg-red-100 text-red-800'
-      default: return 'bg-gray-100 text-gray-800'
-    }
-  }
-
-  if (status === 'loading' || loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-[#ffed00]" />
-      </div>
-    )
-  }
+export default async function AllCoursesPage() {
+  // Fetch both workshop and ProCoach courses
+  const workshops = await getWorkshopCourses()
+  const procoachCourses = await getProCoachCourses()
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-black to-gray-900 text-white py-12">
-        <div className="container mx-auto px-4">
-          <div className="max-w-4xl">
-            <h1 className="text-4xl md:text-5xl font-bold mb-4">
-              My <span className="text-[#ffed00]">Training Center</span>
+    <div className="min-h-screen">
+      {/* Hero Section */}
+      <section className="relative bg-gradient-to-b from-black to-gray-900 text-white py-16 md:py-20">
+        <div className="max-w-screen-xl mx-auto px-4 lg:px-6">
+          <div className="max-w-5xl mx-auto text-center">
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6">
+              BlackBoard <span className="text-[#ffed00]">Education Center</span>
             </h1>
-            <p className="text-xl text-gray-300">
-              Access your courses, track progress, and master foot training
+            <p className="text-xl text-gray-300 mb-12 max-w-3xl mx-auto">
+              Master foot health with our comprehensive training programs. Choose between
+              intensive workshops for quick skills or complete certification courses for professional expertise.
             </p>
+
+            {/* Course Type Selector - Anchor Navigation */}
+            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
+              <a
+                href="#workshops"
+                className="group relative overflow-hidden bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-6 hover:bg-white/20 transition-all duration-300"
+              >
+                <div className="relative z-10">
+                  <div className="w-14 h-14 bg-[#ffed00] rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
+                    <Calendar className="h-7 w-7 text-black" />
+                  </div>
+                  <h3 className="text-xl font-bold mb-2">Workshops</h3>
+                  <p className="text-sm text-gray-300 mb-4">
+                    Intensive 2-4 day hands-on training sessions
+                  </p>
+                  <div className="flex items-center justify-center gap-2 text-[#ffed00]">
+                    <span className="font-semibold">View Workshops</span>
+                    <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                  </div>
+                </div>
+              </a>
+
+              <a
+                href="#procoach"
+                className="group relative overflow-hidden bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-6 hover:bg-white/20 transition-all duration-300"
+              >
+                <div className="relative z-10">
+                  <div className="w-14 h-14 bg-[#ffed00] rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
+                    <Award className="h-7 w-7 text-black" />
+                  </div>
+                  <h3 className="text-xl font-bold mb-2">ProCoach Certification</h3>
+                  <p className="text-sm text-gray-300 mb-4">
+                    Complete certification program with ongoing support
+                  </p>
+                  <div className="flex items-center justify-center gap-2 text-[#ffed00]">
+                    <span className="font-semibold">View Certifications</span>
+                    <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                  </div>
+                </div>
+              </a>
+            </div>
+
+            {/* Quick Stats */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
+              <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
+                <div className="text-2xl font-bold text-[#ffed00]">
+                  {workshops.length + procoachCourses.length}+
+                </div>
+                <div className="text-xs text-gray-300">Total Courses</div>
+              </div>
+              <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
+                <div className="text-2xl font-bold text-[#ffed00]">500+</div>
+                <div className="text-xs text-gray-300">Active Students</div>
+              </div>
+              <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
+                <div className="text-2xl font-bold text-[#ffed00]">20+</div>
+                <div className="text-xs text-gray-300">Expert Instructors</div>
+              </div>
+              <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
+                <div className="text-2xl font-bold text-[#ffed00]">98%</div>
+                <div className="text-xs text-gray-300">Success Rate</div>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Stats Bar */}
-      <div className="bg-white border-b">
-        <div className="container mx-auto px-4 py-6">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+        {/* Decorative Background Elements */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute -top-40 -right-40 w-80 h-80 bg-[#ffed00]/10 rounded-full blur-3xl"></div>
+          <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-[#ffed00]/10 rounded-full blur-3xl"></div>
+        </div>
+      </section>
+
+      {/* Workshops Section */}
+      <section id="workshops" className="py-16 scroll-mt-20">
+        <div className="max-w-screen-xl mx-auto px-4 lg:px-6">
+          {/* Section Header */}
+          <div className="max-w-3xl mx-auto text-center mb-12">
+            <div className="inline-flex items-center gap-2 bg-[#ffed00]/10 text-[#ffed00] px-4 py-2 rounded-full mb-4">
+              <Sparkles className="h-4 w-4" />
+              <span className="text-sm font-semibold">INTENSIVE TRAINING</span>
+            </div>
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+              BlackBoard <span className="text-[#ffed00]">Workshops</span>
+            </h2>
+            <p className="text-gray-600 text-lg">
+              Join our hands-on workshops and master specific foot training techniques in just a few days.
+              Perfect for professionals looking to expand their skillset quickly.
+            </p>
+          </div>
+
+          {/* Workshop Features */}
+          <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto mb-12">
             <div className="text-center">
-              <div className="text-3xl font-bold text-[#ffed00]">{courses.filter(c => c.has_access).length}</div>
-              <div className="text-sm text-gray-600">Available Courses</div>
+              <div className="w-12 h-12 bg-[#ffed00]/10 rounded-full flex items-center justify-center mx-auto mb-3">
+                <Calendar className="h-6 w-6 text-[#ffed00]" />
+              </div>
+              <h3 className="font-semibold mb-1">2-4 Day Format</h3>
+              <p className="text-sm text-gray-600">Intensive weekend or weekday sessions</p>
             </div>
             <div className="text-center">
-              <div className="text-3xl font-bold text-green-500">
-                {courses.filter(c => (c.progress || 0) === 100).length}
+              <div className="w-12 h-12 bg-[#ffed00]/10 rounded-full flex items-center justify-center mx-auto mb-3">
+                <Users className="h-6 w-6 text-[#ffed00]" />
               </div>
-              <div className="text-sm text-gray-600">Completed</div>
+              <h3 className="font-semibold mb-1">Small Groups</h3>
+              <p className="text-sm text-gray-600">Maximum 20 participants for personal attention</p>
             </div>
             <div className="text-center">
-              <div className="text-3xl font-bold text-blue-500">
-                {courses.filter(c => (c.progress || 0) > 0 && (c.progress || 0) < 100).length}
+              <div className="w-12 h-12 bg-[#ffed00]/10 rounded-full flex items-center justify-center mx-auto mb-3">
+                <Target className="h-6 w-6 text-[#ffed00]" />
               </div>
-              <div className="text-sm text-gray-600">In Progress</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold text-gray-900">
-                {courses.reduce((acc, c) => acc + (c.acf?.total_lessons || 0), 0)}
-              </div>
-              <div className="text-sm text-gray-600">Total Lessons</div>
+              <h3 className="font-semibold mb-1">Practical Focus</h3>
+              <p className="text-sm text-gray-600">80% hands-on practice with real equipment</p>
             </div>
           </div>
-        </div>
-      </div>
 
-      {/* Filter Tabs */}
-      <div className="container mx-auto px-4 py-6">
-        <div className="flex flex-wrap gap-2">
-          <button
-            onClick={() => setFilter('all')}
-            className={`px-6 py-2 rounded-full font-semibold transition-all ${
-              filter === 'all'
-                ? 'bg-[#ffed00] text-black'
-                : 'bg-white text-gray-600 hover:bg-gray-100'
-            }`}
-          >
-            All Courses
-          </button>
-          <button
-            onClick={() => setFilter('in-progress')}
-            className={`px-6 py-2 rounded-full font-semibold transition-all ${
-              filter === 'in-progress'
-                ? 'bg-[#ffed00] text-black'
-                : 'bg-white text-gray-600 hover:bg-gray-100'
-            }`}
-          >
-            In Progress
-          </button>
-          <button
-            onClick={() => setFilter('completed')}
-            className={`px-6 py-2 rounded-full font-semibold transition-all ${
-              filter === 'completed'
-                ? 'bg-[#ffed00] text-black'
-                : 'bg-white text-gray-600 hover:bg-gray-100'
-            }`}
-          >
-            Completed
-          </button>
-        </div>
-      </div>
-
-      {/* Courses Grid */}
-      <div className="container mx-auto px-4 pb-12">
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredCourses.map((course) => (
-            <div
-              key={course.id}
-              className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all group"
-            >
-              {/* Course Thumbnail */}
-              <div className="relative aspect-video bg-gradient-to-br from-gray-100 to-gray-200">
-                {course.acf?.course_thumbnail ? (
-                  <Image
-                    src={course.acf.course_thumbnail.url}
-                    alt={course.title}
-                    fill
-                    className="object-cover"
-                  />
-                ) : (
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <BookOpen className="h-16 w-16 text-gray-400" />
-                  </div>
-                )}
-
-                {/* Access Badge */}
-                {!course.has_access && (
-                  <div className="absolute top-4 right-4 bg-black/80 text-white px-3 py-1 rounded-full flex items-center gap-1">
-                    <Lock className="h-4 w-4" />
-                    <span className="text-sm">Locked</span>
-                  </div>
-                )}
-
-                {/* Progress Badge */}
-                {(course.progress || 0) > 0 && (
-                  <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full">
-                    <span className="text-sm font-semibold">
-                      {course.progress === 100 ? (
-                        <span className="flex items-center gap-1 text-green-600">
-                          <CheckCircle className="h-4 w-4" />
-                          Completed
-                        </span>
-                      ) : (
-                        <span className="text-blue-600">{course.progress || 0}% Complete</span>
-                      )}
-                    </span>
-                  </div>
-                )}
-              </div>
-
-              {/* Course Content */}
-              <div className="p-6">
-                {/* Category & Difficulty */}
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="text-xs bg-gray-100 px-2 py-1 rounded-full">
-                    {course.acf?.course_category || 'Training'}
-                  </span>
-                  <span className={`text-xs px-2 py-1 rounded-full ${getDifficultyColor(course.acf?.difficulty_level || 'Beginner')}`}>
-                    {course.acf?.difficulty_level || 'Beginner'}
-                  </span>
-                </div>
-
-                {/* Title */}
-                <h3 className="text-xl font-bold mb-2 group-hover:text-[#ffed00] transition-colors">
-                  {course.title}
-                </h3>
-
-                {/* Description */}
-                <div
-                  className="text-gray-600 text-sm mb-4 line-clamp-2"
-                  dangerouslySetInnerHTML={{ __html: course.excerpt }}
-                />
-
-                {/* Course Meta */}
-                <div className="flex items-center gap-4 text-sm text-gray-500 mb-4">
-                  <span className="flex items-center gap-1">
-                    <Video className="h-4 w-4" />
-                    {course.acf?.total_lessons || 0} Lessons
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Clock className="h-4 w-4" />
-                    {course.acf?.course_duration || 'Self-paced'}
-                  </span>
-                </div>
-
-                {/* Progress Bar */}
-                {course.has_access && (course.progress || 0) > 0 && (
-                  <div className="mb-4">
-                    <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-gradient-to-r from-[#ffed00] to-yellow-500 transition-all"
-                        style={{ width: `${course.progress || 0}%` }}
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {/* CTA Button */}
-                {course.has_access ? (
-                  <Link
-                    href={`/account/courses/${course.slug}`}
-                    className="flex items-center justify-center gap-2 w-full bg-[#ffed00] text-black py-3 rounded-xl font-semibold hover:bg-yellow-500 transition-colors"
-                  >
-                    View Course
-                    <ChevronRight className="h-4 w-4" />
-                  </Link>
-                ) : (
-                  <button
-                    disabled
-                    className="flex items-center justify-center gap-2 w-full bg-gray-100 text-gray-400 py-3 rounded-xl font-semibold cursor-not-allowed"
-                  >
-                    <Lock className="h-4 w-4" />
-                    Purchase Required
-                  </button>
-                )}
-              </div>
+          {/* Workshops Grid */}
+          {workshops.length > 0 ? (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
+              {workshops.map((workshop) => (
+                <CourseCard key={workshop.id} course={workshop} type="workshop" />
+              ))}
             </div>
-          ))}
-        </div>
+          ) : (
+            <div className="text-center py-12 bg-gray-50 rounded-2xl">
+              <Calendar className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+              <p className="text-xl text-gray-600 mb-2">No workshops scheduled</p>
+              <p className="text-gray-500">Check back soon for upcoming workshop dates!</p>
+            </div>
+          )}
 
-        {/* Empty State */}
-        {filteredCourses.length === 0 && (
-          <div className="text-center py-12">
-            <BookOpen className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold mb-2">No courses found</h3>
-            <p className="text-gray-600 mb-6">
-              {filter === 'all'
-                ? "You don't have access to any courses yet."
-                : `You don't have any ${filter.replace('-', ' ')} courses.`}
-            </p>
+          {/* View All Workshops Button */}
+          <div className="text-center mt-12">
             <Link
-              href="/shop"
-              className="inline-flex items-center gap-2 bg-[#ffed00] text-black px-6 py-3 rounded-full font-semibold hover:bg-yellow-500 transition-colors"
+              href="/workshops"
+              className="inline-flex items-center gap-2 bg-black text-white px-8 py-3 rounded-full font-semibold hover:bg-gray-900 transition-colors"
             >
-              Browse Products
-              <ChevronRight className="h-4 w-4" />
+              View All Workshops
+              <ChevronRight className="h-5 w-5" />
             </Link>
           </div>
-        )}
-      </div>
+        </div>
+      </section>
+
+      {/* Divider with Benefits */}
+      <section className="py-12 bg-gradient-to-r from-gray-50 via-white to-gray-50">
+        <div className="max-w-screen-xl mx-auto px-4 lg:px-6">
+          <div className="max-w-4xl mx-auto">
+            <div className="text-center mb-8">
+              <h3 className="text-2xl font-bold mb-4">Why Choose BlackBoard Training?</h3>
+            </div>
+            <div className="grid md:grid-cols-3 gap-6">
+              <div className="text-center">
+                <div className="w-16 h-16 bg-gradient-to-br from-[#ffed00] to-yellow-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Zap className="h-8 w-8 text-black" />
+                </div>
+                <h4 className="font-semibold mb-2">Evidence-Based Methods</h4>
+                <p className="text-sm text-gray-600">Scientifically proven techniques backed by research</p>
+              </div>
+              <div className="text-center">
+                <div className="w-16 h-16 bg-gradient-to-br from-[#ffed00] to-yellow-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Users className="h-8 w-8 text-black" />
+                </div>
+                <h4 className="font-semibold mb-2">Expert Instructors</h4>
+                <p className="text-sm text-gray-600">Learn from industry-leading professionals</p>
+              </div>
+              <div className="text-center">
+                <div className="w-16 h-16 bg-gradient-to-br from-[#ffed00] to-yellow-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Award className="h-8 w-8 text-black" />
+                </div>
+                <h4 className="font-semibold mb-2">Recognized Certification</h4>
+                <p className="text-sm text-gray-600">Globally accepted credentials for your career</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ProCoach Section */}
+      <section id="procoach" className="py-16 bg-gray-50 scroll-mt-20">
+        <div className="max-w-screen-xl mx-auto px-4 lg:px-6">
+          {/* Section Header */}
+          <div className="max-w-3xl mx-auto text-center mb-12">
+            <div className="inline-flex items-center gap-2 bg-[#ffed00]/10 text-[#ffed00] px-4 py-2 rounded-full mb-4">
+              <Award className="h-4 w-4" />
+              <span className="text-sm font-semibold">PROFESSIONAL CERTIFICATION</span>
+            </div>
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+              ProCoach <span className="text-[#ffed00]">Certification Program</span>
+            </h2>
+            <p className="text-gray-600 text-lg">
+              Become a certified BlackBoard ProCoach with our comprehensive training program.
+              Perfect for professionals seeking complete mastery and official certification.
+            </p>
+          </div>
+
+          {/* ProCoach Features */}
+          <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto mb-12">
+            <div className="text-center">
+              <div className="w-12 h-12 bg-[#ffed00]/10 rounded-full flex items-center justify-center mx-auto mb-3">
+                <Clock className="h-6 w-6 text-[#ffed00]" />
+              </div>
+              <h3 className="font-semibold mb-1">12-16 Week Program</h3>
+              <p className="text-sm text-gray-600">Comprehensive online and in-person training</p>
+            </div>
+            <div className="text-center">
+              <div className="w-12 h-12 bg-[#ffed00]/10 rounded-full flex items-center justify-center mx-auto mb-3">
+                <Video className="h-6 w-6 text-[#ffed00]" />
+              </div>
+              <h3 className="font-semibold mb-1">Hybrid Learning</h3>
+              <p className="text-sm text-gray-600">Video courses + live workshops + mentorship</p>
+            </div>
+            <div className="text-center">
+              <div className="w-12 h-12 bg-[#ffed00]/10 rounded-full flex items-center justify-center mx-auto mb-3">
+                <Award className="h-6 w-6 text-[#ffed00]" />
+              </div>
+              <h3 className="font-semibold mb-1">Official Certificate</h3>
+              <p className="text-sm text-gray-600">Industry-recognized ProCoach certification</p>
+            </div>
+          </div>
+
+          {/* ProCoach Courses Grid */}
+          {procoachCourses.length > 0 ? (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
+              {procoachCourses.map((course) => (
+                <CourseCard key={course.id} course={course} type="procoach" />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12 bg-white rounded-2xl">
+              <Award className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+              <p className="text-xl text-gray-600 mb-2">Certification programs coming soon!</p>
+              <p className="text-gray-500">Join the waitlist to be notified when enrollment opens.</p>
+            </div>
+          )}
+
+          {/* View ProCoach Details Button */}
+          <div className="text-center mt-12">
+            <Link
+              href="/procoach"
+              className="inline-flex items-center gap-2 bg-[#ffed00] text-black px-8 py-3 rounded-full font-semibold hover:bg-yellow-500 transition-colors"
+            >
+              Learn About ProCoach Certification
+              <ChevronRight className="h-5 w-5" />
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="py-16 bg-gradient-to-r from-black to-gray-900 text-white">
+        <div className="max-w-screen-xl mx-auto px-4 lg:px-6">
+          <div className="max-w-3xl mx-auto text-center">
+            <h2 className="text-3xl md:text-4xl font-bold mb-6">
+              Ready to Start Your <span className="text-[#ffed00]">Training Journey</span>?
+            </h2>
+            <p className="text-xl text-gray-300 mb-8">
+              Whether you&apos;re looking for a quick skill upgrade or complete certification,
+              we have the perfect program for you.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link
+                href="/contact"
+                className="inline-flex items-center justify-center gap-2 bg-[#ffed00] text-black px-8 py-4 rounded-full font-bold hover:bg-yellow-500 transition-all duration-300"
+              >
+                Get Started Today
+                <ArrowRight className="h-5 w-5" />
+              </Link>
+              <Link
+                href="/about"
+                className="inline-flex items-center justify-center gap-2 bg-white/10 backdrop-blur-sm text-white border border-white/20 px-8 py-4 rounded-full font-bold hover:bg-white/20 transition-all duration-300"
+              >
+                Learn More
+                <BookOpen className="h-5 w-5" />
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
     </div>
   )
 }

@@ -102,6 +102,7 @@ The project now includes a comprehensive design system with reusable UI componen
 9. **Container** (`/components/ui/Container.tsx`)
    - Consistent max-width constraints
    - Sizes: narrow (4xl), medium (5xl), wide (6xl), full (7xl)
+   - **IMPORTANT**: All main content sections should use `max-w-7xl` for consistency
 
 10. **PriceDisplay** (`/components/ui/PriceDisplay.tsx`)
     - Consistent price formatting
@@ -274,6 +275,130 @@ This gives you:
 - 🔄 Automatic updates from WordPress
 - 💰 Lower costs (no API calls on views)
 - 🎯 Better SEO (fast, full HTML pages)
+
+## 🎨 Layout & Container Standards
+
+### Container Width Consistency
+**CRITICAL**: All sections, navbar, and footer MUST use the exact same container pattern for visual consistency across ALL screen sizes.
+
+#### Standard Container Pattern:
+```jsx
+<div className="max-w-screen-xl mx-auto px-4 lg:px-6">
+  {/* Content here */}
+</div>
+```
+
+#### Full Section Example:
+```jsx
+<section className="py-20 bg-white">
+  <div className="max-w-screen-xl mx-auto px-4 lg:px-6">
+    {/* All content goes here */}
+  </div>
+</section>
+```
+
+#### Key Rules:
+1. **ALWAYS use `max-w-screen-xl mx-auto px-4 lg:px-6`** - This is the ONLY container pattern
+2. **NEVER nest container divs** - One container per section, no max-width wrappers inside
+3. **Apply to ALL components**:
+   - Navbar: `<div className="max-w-screen-xl mx-auto px-4 lg:px-6">`
+   - Footer: `<div className="max-w-screen-xl mx-auto px-4 lg:px-6">`
+   - All content sections: Same pattern
+4. **Responsive widths**:
+   - Desktop: 1280px (max-w-screen-xl)
+   - Mobile/Tablet padding: 1rem (px-4)
+   - Large screen padding: 1.5rem (lg:px-6)
+
+#### Why This Pattern:
+- **max-w-screen-xl** (1280px) provides better wide screen support than max-w-7xl
+- **lg:px-6** adds extra padding on larger screens for better readability
+- **mx-auto** centers the content consistently
+- **Single container per section** prevents nesting issues
+
+This ensures:
+- Perfect visual alignment across all sections at ANY screen width
+- No shifting or misalignment when viewport exceeds container width
+- Consistent content width on all screen sizes
+- Clean vertical lines when sections stack
+- Professional, polished appearance on ultra-wide monitors
+
+### Container Standardization Process
+
+#### How to Standardize Containers Across the Codebase:
+
+1. **Identify All Container Patterns**
+   ```bash
+   # Search for all container patterns
+   grep -r "container mx-auto\|max-w-.*mx-auto" --include="*.tsx" --include="*.jsx"
+   ```
+
+2. **Replace Non-Standard Patterns**
+   Replace ALL of these patterns:
+   - `container mx-auto px-4` → `max-w-screen-xl mx-auto px-4 lg:px-6`
+   - `container mx-auto px-3` → `max-w-screen-xl mx-auto px-4 lg:px-6`
+   - `max-w-7xl mx-auto px-4` → `max-w-screen-xl mx-auto px-4 lg:px-6`
+   - `max-w-6xl mx-auto px-4` → `max-w-screen-xl mx-auto px-4 lg:px-6`
+   - `max-w-5xl mx-auto px-4` → `max-w-screen-xl mx-auto px-4 lg:px-6`
+   - `max-w-4xl mx-auto px-4` → `max-w-screen-xl mx-auto px-4 lg:px-6`
+
+3. **Check for Nested Containers**
+   Remove any nested max-width divs. Structure should be:
+   ```jsx
+   // ✅ CORRECT
+   <section>
+     <div className="max-w-screen-xl mx-auto px-4 lg:px-6">
+       <div className="content">...</div>
+     </div>
+   </section>
+
+   // ❌ INCORRECT (nested containers)
+   <section>
+     <div className="max-w-screen-xl mx-auto px-4 lg:px-6">
+       <div className="max-w-4xl mx-auto">...</div>
+     </div>
+   </section>
+   ```
+
+4. **Fix Closing Div Balance**
+   After removing nested containers, ensure proper div closing:
+   - Count opening `<div>` tags
+   - Count closing `</div>` tags
+   - They must match exactly
+
+5. **Common Files to Check**:
+   - `/components/navbar.tsx`
+   - `/components/footer.tsx`
+   - `/components/home-content.tsx`
+   - `/app/shop/page.tsx`
+   - `/app/about/page.tsx`
+   - `/app/checkout/page.tsx`
+   - `/app/procoach/page.tsx`
+   - `/app/workshops/page.tsx`
+   - `/app/account/courses/page.tsx`
+   - `/components/product/product-detail.tsx`
+
+6. **Verify with Build**:
+   ```bash
+   npm run build
+   ```
+   Fix any syntax errors from mismatched div tags.
+
+#### Container Width Troubleshooting:
+
+**Problem**: Content doesn't align when viewport > 1312px
+**Solution**: Use `max-w-screen-xl` instead of `max-w-7xl` and ensure ALL sections use the same pattern
+
+**Problem**: Extra closing `</div>` tags after standardization
+**Solution**: When removing nested containers, remove both the opening AND closing div tags
+
+**Problem**: Different sections have different widths
+**Solution**: Search entire codebase and replace ALL container patterns with the standard one
+
+#### Visual Alignment Test:
+1. Set browser width to 1920px
+2. Draw an imaginary vertical line at the content edge
+3. ALL sections should align to this line
+4. Navbar, content, and footer should have identical margins
 
 ## 📁 Important Files & Directories
 

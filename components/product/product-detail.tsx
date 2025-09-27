@@ -87,7 +87,7 @@ export function ProductDetail({ product, variations, workshopProduct }: ProductD
     <div className="min-h-screen bg-white">
       {/* Mobile-First Hero Section */}
       <section className="lg:py-8">
-        <div className="container mx-auto lg:px-4">
+        <div className="max-w-screen-xl mx-auto px-4 lg:px-6">
           {/* Breadcrumb - Hidden on mobile */}
           <nav className="hidden lg:block mb-6">
             <ol className="flex items-center space-x-2 text-sm">
@@ -467,7 +467,7 @@ export function ProductDetail({ product, variations, workshopProduct }: ProductD
 
       {/* Tabs Section - Mobile Optimized */}
       <section className="py-8 lg:py-16 bg-gray-50">
-        <div className="container mx-auto px-4">
+        <div className="max-w-screen-xl mx-auto px-4 lg:px-6">
           {/* Tab Headers - Mobile Scrollable */}
           <div className="mb-8 lg:mb-12">
             <div className="flex gap-2 overflow-x-auto pb-2 lg:justify-center lg:overflow-visible">
@@ -644,7 +644,7 @@ export function ProductDetail({ product, variations, workshopProduct }: ProductD
       {/* Why Choose Section - Premium Feel, Mobile Optimized */}
       {isBlackBoard && (
         <section className="py-12 lg:py-16 bg-gradient-to-br from-gray-900 to-black text-white">
-          <div className="container mx-auto px-4">
+          <div className="max-w-screen-xl mx-auto px-4 lg:px-6">
             <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-center mb-8 lg:mb-12">
               Why Professionals Choose {getDisplayName(product.name)}
             </h2>

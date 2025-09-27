@@ -108,8 +108,8 @@ export default function HomeContent({ blackboardProducts, blackboardWithVariatio
 
   return (
     <div className="min-h-screen">
-      {/* Hero Section - Full Screen */}
-      <section className="relative min-h-screen flex items-center bg-gradient-to-br from-black via-gray-900 to-black overflow-hidden">
+      {/* Hero Section - Adjusted Height to Show Scroll Indicator */}
+      <section className="relative min-h-[85vh] md:min-h-[90vh] flex items-center bg-gradient-to-br from-black via-gray-900 to-black overflow-hidden">
         {/* Animated Background Pattern */}
         <div className="absolute inset-0 opacity-10">
           <div className="absolute inset-0" style={{
@@ -118,7 +118,7 @@ export default function HomeContent({ blackboardProducts, blackboardWithVariatio
           }}/>
         </div>
 
-        <div className="container mx-auto px-4 relative z-10">
+        <div className="max-w-screen-xl mx-auto px-4 lg:px-6 relative z-10">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="text-white">
               {/* Trustpilot and Trust Badges */}
@@ -217,8 +217,8 @@ export default function HomeContent({ blackboardProducts, blackboardWithVariatio
 
       {/* Problem/Solution Section - Design A */}
       <section className="py-20 bg-white">
-        <div className="container mx-auto px-4">
-              <div className="max-w-4xl mx-auto text-center mb-16">
+        <div className="max-w-screen-xl mx-auto px-4 lg:px-6">
+              <div className="text-center mb-16">
                 <h2 className="text-4xl md:text-5xl font-bold mb-6">
                   Your Feet Are Your <span className="text-[#ffed00]">Foundation</span>
                 </h2>
@@ -238,7 +238,7 @@ export default function HomeContent({ blackboardProducts, blackboardWithVariatio
                 </p>
               </div>
 
-              <div className="grid md:grid-cols-2 gap-8 max-w-6xl mx-auto mb-16">
+              <div className="grid md:grid-cols-2 gap-8 mb-16">
                 {/* Problem with Icons */}
                 <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-2xl p-8 border-2 border-red-200">
                   <div className="flex items-center gap-3 mb-6">
@@ -323,8 +323,8 @@ export default function HomeContent({ blackboardProducts, blackboardWithVariatio
       {/* Featured BlackBoard Products - Beautiful Cards */}
       {blackboardWithVariations.length > 0 && (
         <section className="py-20 bg-gray-50">
-          <div className="container mx-auto px-4">
-            <div className="text-center mb-16">
+          <div className="max-w-screen-xl mx-auto px-4 lg:px-6">
+              <div className="text-center mb-16">
               <div className="inline-flex items-center gap-2 bg-[#ffed00]/10 text-[#ffed00] px-4 py-2 rounded-full mb-4">
                 <Award className="h-4 w-4" />
                 <span className="text-sm font-semibold uppercase tracking-wider">Choose Your Equipment</span>
@@ -335,7 +335,7 @@ export default function HomeContent({ blackboardProducts, blackboardWithVariatio
               </p>
             </div>
 
-            <div className="grid lg:grid-cols-2 gap-8 max-w-7xl mx-auto">
+            <div className="grid lg:grid-cols-2 gap-8">
               {blackboardWithVariations.map((product: any) => {
                 const isProfessional = product.name.toLowerCase().includes('professional')
                 const priceFrom = product.variationData
@@ -517,8 +517,7 @@ export default function HomeContent({ blackboardProducts, blackboardWithVariatio
           }}/>
         </div>
 
-        <div className="container mx-auto px-4 relative z-10">
-          <div className="max-w-6xl mx-auto">
+        <div className="max-w-screen-xl mx-auto px-4 lg:px-6 relative z-10">
             <div className="grid lg:grid-cols-2 gap-12 items-center">
               {/* Content */}
               <div>
@@ -649,14 +648,12 @@ export default function HomeContent({ blackboardProducts, blackboardWithVariatio
                 </div>
               </div>
             </div>
-          </div>
         </div>
       </section>
 
       {/* Customer Reviews Section */}
       <section className="py-20 bg-white">
-        <div className="container mx-auto px-4">
-          <div className="max-w-7xl mx-auto">
+        <div className="max-w-screen-xl mx-auto px-4 lg:px-6">
             {/* Section Header */}
             <div className="text-center mb-12">
               <div className="inline-flex items-center gap-2 bg-[#ffed00]/10 text-gray-900 px-4 py-2 rounded-full mb-4">
@@ -769,14 +766,12 @@ export default function HomeContent({ blackboardProducts, blackboardWithVariatio
                 </div>
               </div>
             </div>
-          </div>
         </div>
       </section>
 
       {/* Team Members Section - WITH NEW HEADING */}
       <section className="py-20 bg-black text-white">
-        <div className="container mx-auto px-4">
-          <div className="max-w-7xl mx-auto">
+        <div className="max-w-screen-xl mx-auto px-4 lg:px-6">
             {/* NEW SECTION HEADING */}
             <div className="text-center mb-12">
               <h2 className="text-4xl md:text-5xl font-bold mb-4">
@@ -809,7 +804,6 @@ export default function HomeContent({ blackboardProducts, blackboardWithVariatio
                 </div>
               ))}
             </div>
-          </div>
         </div>
       </section>
 
@@ -828,8 +822,7 @@ export default function HomeContent({ blackboardProducts, blackboardWithVariatio
 
       {/* Transformation Results Section - Before/After */}
       <section className="py-20 bg-white">
-        <div className="container mx-auto px-4">
-          <div className="max-w-6xl mx-auto">
+        <div className="max-w-screen-xl mx-auto px-4 lg:px-6">
             <div className="text-center mb-12">
               <h2 className="text-4xl md:text-5xl font-bold mb-6">
                 Real <span className="text-[#ffed00]">Transformations</span>
@@ -957,14 +950,12 @@ export default function HomeContent({ blackboardProducts, blackboardWithVariatio
                 </div>
               </div>
             </div>
-          </div>
         </div>
       </section>
 
       {/* Professional Athletes Section */}
       <section className="py-16 bg-gradient-to-r from-gray-900 via-black to-gray-900">
-        <div className="container mx-auto px-4">
-          <div className="max-w-7xl mx-auto">
+        <div className="max-w-screen-xl mx-auto px-4 lg:px-6">
             {/* Section Header */}
             <div className="text-center mb-10">
               <div className="inline-flex items-center gap-2 bg-[#ffed00]/20 text-[#ffed00] px-4 py-2 rounded-full mb-4">
@@ -1025,15 +1016,13 @@ export default function HomeContent({ blackboardProducts, blackboardWithVariatio
                 <ChevronRight className="h-5 w-5 text-white animate-pulse" />
               </div>
             </div>
-
-          </div>
         </div>
       </section>
 
       {/* Guarantee Section */}
       <section className="py-20 bg-gradient-to-br from-[#ffed00] to-yellow-500">
-        <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto text-center">
+        <div className="max-w-screen-xl mx-auto px-4 lg:px-6">
+          <div className="text-center">
             <Shield className="h-20 w-20 mx-auto mb-6 text-black" />
             <h2 className="text-4xl md:text-5xl font-bold mb-6 text-black">
               30-Day Money Back Guarantee
@@ -1055,8 +1044,8 @@ export default function HomeContent({ blackboardProducts, blackboardWithVariatio
 
       {/* Final CTA Section */}
       <section className="py-20 bg-black text-white">
-        <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto text-center">
+        <div className="max-w-screen-xl mx-auto px-4 lg:px-6">
+          <div className="text-center">
             <h2 className="text-4xl md:text-5xl font-bold mb-6">
               Ready to Transform Your <span className="text-[#ffed00]">Foundation</span>?
             </h2>

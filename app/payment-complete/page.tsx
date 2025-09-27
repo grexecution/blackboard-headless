@@ -121,7 +121,7 @@ export default function PaymentCompletePage() {
 
   return (
     <div className="min-h-screen bg-gray-50 py-6 md:py-12">
-      <div className="container mx-auto px-3 sm:px-4 max-w-2xl">
+      <div className="max-w-screen-xl mx-auto px-4 lg:px-6">
         <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6 md:p-8 text-center">
           <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
           <h1 className="text-3xl font-bold mb-2">Payment Successful!</h1>

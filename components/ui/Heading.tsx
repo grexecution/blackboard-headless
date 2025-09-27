@@ -1,4 +1,4 @@
-import { ReactNode } from 'react'
+import React, { ReactNode } from 'react'
 import { cn } from '@/lib/utils'
 import { typography } from '@/lib/design-system/constants'
 
@@ -23,7 +23,7 @@ export default function Heading({
   accent = false,
   centered = false,
 }: HeadingProps) {
-  const Tag = `h${level}` as keyof JSX.IntrinsicElements
+  const Tag = `h${level}` as keyof React.JSX.IntrinsicElements
   const headingClass = cn(
     typography.heading[`h${level}`],
     typography.color[color],
