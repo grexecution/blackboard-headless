@@ -1,5 +1,103 @@
 # CLAUDE.md - Project Documentation & Reminders
 
+## 🔌 WORDPRESS PLUGIN ARCHITECTURE - CRITICAL
+
+### ⚠️ ONE PLUGIN TO RULE THEM ALL
+**NEVER CREATE NEW PLUGINS!** All WordPress functionality MUST be added to the main plugin:
+
+**Plugin Name:** `BlackBoard Next.js Sync` (in `/wp-content/plugins/blackboard-nextjs-sync/`)
+
+This single plugin handles ALL features:
+- WooCommerce product sync
+- Video Custom Post Type (CPT)
+- Course/Workshop CPT (replacing Tutor LMS)
+- REST API extensions
+- ACF field exposure
+- Automatic rebuilds/revalidation
+- Access control based on purchases
+- CORS configuration
+- Admin dashboards
+
+### When Adding New Features:
+1. **ALWAYS** add code to the existing `blackboard-nextjs-sync.php` file or create new classes within the same plugin folder
+2. **NEVER** create separate plugins
+3. **ALWAYS** update the plugin documentation section below
+4. **ALWAYS** add admin menu items to the existing dashboard
+
+### Current Plugin Features (v2.0.0):
+- ✅ WooCommerce product sync with webhooks
+- ✅ Video CPT with categories and ACF fields
+- ✅ REST API for videos with access control
+- ✅ Automatic Next.js rebuilds on content changes
+- ✅ CORS headers for headless setup
+- ✅ Admin dashboard with diagnostics
+- ✅ Settings page for API keys
+
+### Upcoming Features (To Be Added):
+- 🔜 Course CPT (replacing Tutor LMS)
+- 🔜 Workshop CPT (category of courses)
+- 🔜 WooCommerce product connection for courses
+- 🔜 Vimeo video integration for courses
+- 🔜 Progress tracking
+- 🔜 Certificate generation
+
+## 🎓 LMS REPLACEMENT ARCHITECTURE
+
+### Overview
+Replace Tutor LMS with a custom CPT-based solution integrated into the main plugin.
+
+### Course Structure:
+1. **Course CPT** (`course`)
+   - Title, description, featured image
+   - ACF fields for Vimeo videos
+   - Connected WooCommerce product (for pricing/purchase)
+   - Course materials/downloads
+
+2. **Course Categories**:
+   - **ProCoach** - Professional certification courses
+   - **Workshops** - Specialized training workshops
+
+3. **Access Control**:
+   - Check if connected WooCommerce product is purchased
+   - Use `wc_customer_bought_product()` for verification
+   - Show price from connected product if not purchased
+
+4. **Data Migration**:
+   - Transfer all existing Tutor LMS courses to new CPT
+   - Preserve enrollments via WooCommerce order history
+   - Maintain video content and descriptions
+
+5. **Frontend Features**:
+   - Course listing page
+   - Individual course pages with lessons
+   - Progress tracking (stored in user meta)
+   - Certificate generation on completion
+
+### Implementation Requirements:
+```php
+// Course CPT Registration
+register_post_type('course', [
+    'labels' => [...],
+    'public' => true,
+    'has_archive' => true,
+    'supports' => ['title', 'editor', 'thumbnail'],
+    'show_in_rest' => true
+]);
+
+// ACF Fields for Courses
+- course_product_id (relationship to WooCommerce product)
+- course_videos (repeater with Vimeo IDs)
+- course_duration
+- course_difficulty
+- course_materials (file uploads)
+
+// Access Check
+function check_course_access($course_id, $user_id) {
+    $product_id = get_field('course_product_id', $course_id);
+    return wc_customer_bought_product('', $user_id, $product_id);
+}
+```
+
 ## 🚨 PRODUCTION DEPLOYMENT CHECKLIST
 
 ### Before Going to Production:
