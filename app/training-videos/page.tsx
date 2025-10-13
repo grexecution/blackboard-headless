@@ -1,9 +1,9 @@
-import { getAllVideos, getVideoCategories, getVideoThumbnail, isVideoLocked, getVideoCategories2 } from '@/lib/woocommerce/videos'
-import VideoCard from '@/components/videos/video-card'
+import { getAllVideos, getVideoCategories } from '@/lib/woocommerce/videos'
 import VideoFilter from '@/components/videos/video-filter'
+import VideosGrid from '@/components/videos/videos-grid'
 import { Play } from 'lucide-react'
 
-// Static generation
+// Static generation for initial load
 export const revalidate = false
 export const dynamic = 'force-static'
 
@@ -43,27 +43,9 @@ export default async function TrainingVideosPage() {
               <VideoFilter categories={categories} />
             </div>
 
-            {/* Videos Grid */}
+            {/* Videos Grid with Filtering and Pagination */}
             <div className="lg:col-span-3">
-              <div className="mb-6">
-                <p className="text-gray-600">
-                  Showing <span className="font-semibold">{videos.length}</span> training videos
-                </p>
-              </div>
-
-              {videos.length > 0 ? (
-                <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
-                  {videos.map((video) => (
-                    <VideoCard key={video.id} video={video} />
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-12">
-                  <Play className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                  <h3 className="text-xl font-semibold text-gray-700 mb-2">No videos available</h3>
-                  <p className="text-gray-500">Check back soon for new training content.</p>
-                </div>
-              )}
+              <VideosGrid initialVideos={videos} allCategories={categories} />
             </div>
           </div>
         </div>

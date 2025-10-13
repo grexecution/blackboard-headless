@@ -53,17 +53,17 @@ export default async function VideoPage({ params }: { params: Promise<{ slug: st
                   <span
                     key={cat.id}
                     className="bg-white text-black px-4 py-1.5 rounded-full text-sm font-semibold"
-                  >
-                    {cat.name}
-                  </span>
+                    dangerouslySetInnerHTML={{ __html: cat.name }}
+                  />
                 ))}
               </div>
             )}
 
             {/* Title */}
-            <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4">
-              {video.title.rendered}
-            </h1>
+            <h1
+              className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4"
+              dangerouslySetInnerHTML={{ __html: video.title.rendered }}
+            />
 
             {/* Description */}
             {video.content?.rendered && (

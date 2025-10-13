@@ -1,4 +1,34 @@
-const WP_API_URL = process.env.WP_BASE_URL || 'https://blackboard-training.com'
+const WP_API_URL = process.env.NEXT_PUBLIC_WORDPRESS_API_URL || process.env.WORDPRESS_API_URL || process.env.WP_BASE_URL || 'http://localhost:10074'
+
+/**
+ * Parse JSON response, handling PHP warnings that may be prepended
+ */
+async function parseJsonResponse(response: Response): Promise<any> {
+  const text = await response.text()
+
+  // Try to parse as-is first
+  try {
+    return JSON.parse(text)
+  } catch (e) {
+    // If parsing fails, try to extract JSON from the text
+    // Look for the first '[' or '{' character
+    const jsonStart = Math.min(
+      text.indexOf('[') !== -1 ? text.indexOf('[') : Infinity,
+      text.indexOf('{') !== -1 ? text.indexOf('{') : Infinity
+    )
+
+    if (jsonStart !== Infinity) {
+      try {
+        return JSON.parse(text.substring(jsonStart))
+      } catch (e2) {
+        console.error('Failed to parse JSON even after cleanup:', e2)
+        throw e2
+      }
+    }
+
+    throw e
+  }
+}
 
 export interface VideoCategory {
   id: number
@@ -27,8 +57,10 @@ export interface Video {
     short_description?: string
     duration?: string
     exercises?: string
-    locked_for_non_customers?: boolean[]
+    locked_for_non_customers?: (boolean | string | number)[]
+    'locked_for_non-customers'?: (boolean | string | number)[] // Field with hyphens from API
     videos?: VideoItem[]
+    [key: string]: any // Allow other dynamic fields
   }
   _embedded?: {
     'wp:featuredmedia'?: [{
@@ -60,7 +92,7 @@ export interface VideoItem {
  */
 export async function getVideoCategories(): Promise<VideoCategory[]> {
   try {
-    const response = await fetch(`${WP_API_URL}/wp/v2/video_cat`, {
+    const response = await fetch(`${WP_API_URL}/wp-json/wp/v2/video_cat`, {
       headers: {
         'Content-Type': 'application/json',
       },
@@ -72,7 +104,7 @@ export async function getVideoCategories(): Promise<VideoCategory[]> {
       return []
     }
 
-    return await response.json()
+    return await parseJsonResponse(response)
   } catch (error) {
     console.error('Error fetching video categories:', error)
     return []
@@ -84,7 +116,7 @@ export async function getVideoCategories(): Promise<VideoCategory[]> {
  */
 export async function getAllVideos(category?: string): Promise<Video[]> {
   try {
-    let url = `${WP_API_URL}/wp/v2/video?_embed&per_page=100`
+    let url = `${WP_API_URL}/wp-json/wp/v2/video?_embed&per_page=100`
 
     // If category is specified, filter by category
     if (category) {
@@ -107,7 +139,7 @@ export async function getAllVideos(category?: string): Promise<Video[]> {
       return []
     }
 
-    return await response.json()
+    return await parseJsonResponse(response)
   } catch (error) {
     console.error('Error fetching videos:', error)
     return []
@@ -119,7 +151,7 @@ export async function getAllVideos(category?: string): Promise<Video[]> {
  */
 export async function getVideoBySlug(slug: string): Promise<Video | null> {
   try {
-    const response = await fetch(`${WP_API_URL}/wp/v2/video?slug=${slug}&_embed`, {
+    const response = await fetch(`${WP_API_URL}/wp-json/wp/v2/video?slug=${slug}&_embed`, {
       headers: {
         'Content-Type': 'application/json',
       },
@@ -131,7 +163,7 @@ export async function getVideoBySlug(slug: string): Promise<Video | null> {
       return null
     }
 
-    const videos = await response.json()
+    const videos = await parseJsonResponse(response)
     return videos[0] || null
   } catch (error) {
     console.error('Error fetching video:', error)
@@ -141,9 +173,24 @@ export async function getVideoBySlug(slug: string): Promise<Video | null> {
 
 /**
  * Check if a video is locked for non-customers
+ * ACF checkbox returns array with '1' (string) when checked, field missing when unchecked
+ * Note: Field key uses hyphens, not underscores: 'locked_for_non-customers'
  */
 export function isVideoLocked(video: Video): boolean {
-  return video.acf?.locked_for_non_customers?.[0] === true
+  // Check both possible field names (with underscores and with hyphens)
+  // The API returns it with hyphens: 'locked_for_non-customers'
+  const lockedField = video.acf?.locked_for_non_customers ||
+                     (video.acf as any)?.['locked_for_non-customers']
+
+  if (!lockedField || !Array.isArray(lockedField)) {
+    return false // Field missing or not an array = unlocked
+  }
+
+  // Check if array has a truthy value (ACF returns '1' as string)
+  return lockedField.length > 0 &&
+         (lockedField[0] === true ||
+          lockedField[0] === '1' ||
+          lockedField[0] === 1)
 }
 
 /**

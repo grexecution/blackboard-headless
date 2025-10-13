@@ -7,6 +7,7 @@ import { Clock, Activity, Lock, Play } from 'lucide-react'
 import { useSession } from 'next-auth/react'
 import { useState } from 'react'
 import { LoginModal } from '@/components/auth/login-modal'
+import { cleanHtmlText } from '@/lib/utils/html'
 
 interface VideoCardProps {
   video: Video
@@ -46,7 +47,7 @@ export default function VideoCard({ video }: VideoCardProps) {
             {thumbnail && thumbnail !== '/placeholder-video.jpg' ? (
               <Image
                 src={thumbnail}
-                alt={video.title.rendered}
+                alt={cleanHtmlText(video.title.rendered)}
                 fill
                 className="object-cover group-hover:scale-105 transition-transform duration-500"
               />
@@ -69,34 +70,32 @@ export default function VideoCard({ video }: VideoCardProps) {
               )}
             </div>
 
-            {/* Lock Badge */}
+            {/* Lock Badge with Hover Tooltip */}
             {isLocked && !hasAccess && (
-              <div className="absolute top-3 right-3 bg-black/80 backdrop-blur-sm text-[#ffed00] px-3 py-1.5 rounded-full flex items-center gap-1.5">
-                <Lock className="h-3.5 w-3.5" />
-                <span className="text-xs font-semibold">BlackBoard Customers Only</span>
-              </div>
-            )}
-
-            {/* Categories */}
-            {categories.length > 0 && (
-              <div className="absolute bottom-3 left-3 flex flex-wrap gap-2">
-                {categories.map((cat) => (
-                  <span
-                    key={cat.id}
-                    className="bg-black/60 backdrop-blur-sm text-white px-2.5 py-1 rounded-full text-xs font-medium"
-                  >
-                    {cat.name}
-                  </span>
-                ))}
+              <div className="absolute top-3 right-3 group/badge">
+                <div className="relative">
+                  <div className="bg-black/80 backdrop-blur-sm text-[#ffed00] px-3 py-1.5 rounded-full flex items-center gap-1.5">
+                    <Lock className="h-3.5 w-3.5" />
+                    <span className="text-xs font-semibold">Customers only</span>
+                  </div>
+                  {/* Tooltip */}
+                  <div className="absolute top-full right-0 mt-2 opacity-0 invisible group-hover/badge:opacity-100 group-hover/badge:visible transition-all duration-200 pointer-events-none">
+                    <div className="bg-gray-900 text-white text-xs px-3 py-2 rounded-lg whitespace-nowrap shadow-lg">
+                      Log in or purchase to access
+                      <div className="absolute -top-1 right-4 w-2 h-2 bg-gray-900 transform rotate-45"></div>
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
           </div>
 
           {/* Content */}
           <div className="p-5">
-            <h3 className="font-bold text-lg mb-2 line-clamp-2 group-hover:text-[#ffed00] transition-colors">
-              {video.title.rendered}
-            </h3>
+            <h3
+              className="font-bold text-lg mb-2 line-clamp-2 group-hover:text-[#ffed00] transition-colors"
+              dangerouslySetInnerHTML={{ __html: video.title.rendered }}
+            />
 
             {/* Metadata */}
             <div className="flex items-center gap-4 text-sm text-gray-600 mb-3">
@@ -114,6 +113,19 @@ export default function VideoCard({ video }: VideoCardProps) {
               )}
             </div>
 
+            {/* Categories */}
+            {categories.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-3">
+                {categories.map((cat) => (
+                  <span
+                    key={cat.id}
+                    className="bg-gray-100 text-gray-700 px-2.5 py-1 rounded-full text-xs font-medium hover:bg-[#ffed00]/20 transition-colors"
+                    dangerouslySetInnerHTML={{ __html: cat.name }}
+                  />
+                ))}
+              </div>
+            )}
+
             {/* Description */}
             {video.excerpt?.rendered && (
               <div
@@ -125,10 +137,16 @@ export default function VideoCard({ video }: VideoCardProps) {
             {/* CTA */}
             <div className="mt-4">
               {isLocked && !hasAccess ? (
-                <span className="text-sm font-semibold text-gray-500 flex items-center gap-2">
-                  <Lock className="h-4 w-4" />
-                  Login to watch
-                </span>
+                <div className="group/cta relative inline-block">
+                  <span className="text-sm font-semibold text-gray-500 flex items-center gap-2">
+                    <Lock className="h-4 w-4" />
+                    Customers only
+                  </span>
+                  {/* Hover text */}
+                  <span className="text-xs text-gray-400 opacity-0 group-hover/cta:opacity-100 transition-opacity duration-200 absolute left-0 -bottom-5 whitespace-nowrap">
+                    Log in or purchase to access
+                  </span>
+                </div>
               ) : (
                 <span className="text-sm font-semibold text-[#ffed00] group-hover:text-black transition-colors flex items-center gap-2">
                   Watch now
