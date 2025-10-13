@@ -160,7 +160,7 @@ export default function VideosGrid({ initialVideos, allCategories }: VideosGridP
           {!hasMore && displayedVideos.length > VIDEOS_PER_PAGE && (
             <div className="text-center py-8">
               <p className="text-gray-500 text-sm">
-                You've reached the end of the videos
+                You&apos;ve reached the end of the videos
               </p>
             </div>
           )}
