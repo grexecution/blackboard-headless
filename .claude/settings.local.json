@@ -33,7 +33,13 @@
       "Read(//Users/gregorwallner/Local Sites/blackboard-training/conf/**)",
       "Bash(cat:*)",
       "Read(//Users/gregorwallner/Local Sites/blackboard-training/**)",
-      "Bash(kill:*)"
+      "Bash(kill:*)",
+      "Bash(python3:*)",
+      "Read(//private/tmp/**)",
+      "Read(//Users/gregorwallner/Local Sites/blackboard-local/app/public/**)",
+      "Bash(cd:*)",
+      "Bash(php:*)",
+      "Bash(node:*)"
     ],
     "deny": [],
     "ask": []

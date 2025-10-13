@@ -1,0 +1,82 @@
+'use client'
+
+import { useState } from 'react'
+import { Course } from '@/lib/woocommerce/courses'
+import CourseCard from './course-card'
+import { Filter } from 'lucide-react'
+
+interface CoursesGridProps {
+  initialCourses: Course[]
+  allCategories: any[]
+}
+
+export default function CoursesGrid({ initialCourses, allCategories }: CoursesGridProps) {
+  const [selectedCategory, setSelectedCategory] = useState<string>('all')
+
+  // Filter courses based on selected category
+  const filteredCourses = selectedCategory === 'all'
+    ? initialCourses
+    : initialCourses.filter(course =>
+        course.course_categories.some(cat => cat.slug === selectedCategory)
+      )
+
+  return (
+    <div>
+      {/* Category Filter */}
+      <div className="mb-8">
+        <div className="flex items-center gap-3 mb-4">
+          <Filter className="h-5 w-5 text-gray-600" />
+          <span className="font-semibold text-gray-700">Filter by Category:</span>
+        </div>
+        <div className="flex flex-wrap gap-3">
+          <button
+            onClick={() => setSelectedCategory('all')}
+            className={`px-4 py-2 rounded-lg font-medium transition-all ${
+              selectedCategory === 'all'
+                ? 'bg-[#ffed00] text-black'
+                : 'bg-white border border-gray-200 text-gray-700 hover:border-[#ffed00]'
+            }`}
+          >
+            All Courses
+          </button>
+          {allCategories.map((category) => (
+            <button
+              key={category.id}
+              onClick={() => setSelectedCategory(category.slug)}
+              className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                selectedCategory === category.slug
+                  ? 'bg-[#ffed00] text-black'
+                  : 'bg-white border border-gray-200 text-gray-700 hover:border-[#ffed00]'
+              }`}
+            >
+              {category.name}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Results Count */}
+      <div className="mb-6">
+        <p className="text-gray-600">
+          Showing <span className="font-semibold">{filteredCourses.length}</span>
+          {selectedCategory !== 'all' && (
+            <> {allCategories.find(c => c.slug === selectedCategory)?.name}</>
+          )} course{filteredCourses.length !== 1 ? 's' : ''}
+        </p>
+      </div>
+
+      {/* Courses Grid */}
+      {filteredCourses.length > 0 ? (
+        <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
+          {filteredCourses.map((course) => (
+            <CourseCard key={course.id} course={course} />
+          ))}
+        </div>
+      ) : (
+        <div className="text-center py-12 bg-white rounded-lg">
+          <p className="text-gray-500">No courses found in this category.</p>
+        </div>
+      )}
+    </div>
+  )
+}
