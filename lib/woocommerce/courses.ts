@@ -143,34 +143,49 @@ export interface Course {
 
 // Fetch all courses
 export async function getAllCourses(): Promise<Course[]> {
-  const apiUrl = process.env.WORDPRESS_API_URL || process.env.NEXT_PUBLIC_WORDPRESS_API_URL || 'http://localhost:10074'
+  const apiUrl = process.env.WORDPRESS_API_URL || process.env.NEXT_PUBLIC_WORDPRESS_API_URL || process.env.WP_BASE_URL || 'https://blackboard-training.com'
+  const endpoint = `${apiUrl}/wp-json/blackboard/v1/courses`
+
+  console.log('[getAllCourses] Fetching from:', endpoint)
+  console.log('[getAllCourses] Env vars:', {
+    WORDPRESS_API_URL: process.env.WORDPRESS_API_URL,
+    NEXT_PUBLIC_WORDPRESS_API_URL: process.env.NEXT_PUBLIC_WORDPRESS_API_URL,
+    WP_BASE_URL: process.env.WP_BASE_URL
+  })
 
   try {
-    const response = await fetch(`${apiUrl}/wp-json/blackboard/v1/courses`, {
+    const response = await fetch(endpoint, {
       next: { revalidate: false },
       headers: {
         'Accept': 'application/json',
       },
     })
 
+    console.log('[getAllCourses] Response status:', response.status)
+
     if (!response.ok) {
-      console.error('Failed to fetch courses:', response.status)
+      console.error('[getAllCourses] Failed to fetch courses:', response.status, response.statusText)
+      const errorText = await response.text()
+      console.error('[getAllCourses] Error response:', errorText.substring(0, 500))
       return []
     }
 
     const text = await response.text()
+    console.log('[getAllCourses] Response length:', text.length)
+
     const courses = parseJsonResponse<Course[]>(text)
+    console.log('[getAllCourses] Parsed courses count:', courses?.length || 0)
 
     return courses || []
   } catch (error) {
-    console.error('Error fetching courses:', error)
+    console.error('[getAllCourses] Error fetching courses:', error)
     return []
   }
 }
 
 // Fetch single course by slug
 export async function getCourseBySlug(slug: string): Promise<Course | null> {
-  const apiUrl = process.env.WORDPRESS_API_URL || process.env.NEXT_PUBLIC_WORDPRESS_API_URL || 'http://localhost:10074'
+  const apiUrl = process.env.WORDPRESS_API_URL || process.env.NEXT_PUBLIC_WORDPRESS_API_URL || process.env.WP_BASE_URL || 'https://blackboard-training.com'
 
   try {
     const response = await fetch(`${apiUrl}/wp-json/blackboard/v1/courses/${slug}`, {
