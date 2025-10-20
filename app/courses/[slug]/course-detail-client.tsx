@@ -229,7 +229,7 @@ export function CourseDetailClient({ course }: CourseDetailClientProps) {
               )}
 
               {/* Metadata Grid */}
-              <div className="grid grid-cols-2 gap-4 mb-6">
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
                 {totalDuration && (
                   <div className="bg-gray-50 rounded-lg p-3">
                     <Clock className="h-5 w-5 text-[#ffed00] mb-1" />
@@ -285,19 +285,13 @@ export function CourseDetailClient({ course }: CourseDetailClientProps) {
                       One-time payment • Lifetime access • Includes certificate
                     </p>
                   </>
-                ) : hasAccess ? (
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                    <p className="text-green-800 font-semibold text-center">
-                      ✓ You have access to this course
-                    </p>
-                  </div>
-                ) : (
+                ) : !hasAccess ? (
                   <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                     <p className="text-green-800 font-semibold text-center">
                       ✓ Free Course
                     </p>
                   </div>
-                )}
+                ) : null}
               </div>
 
               {/* CTA Buttons */}
@@ -336,15 +330,13 @@ export function CourseDetailClient({ course }: CourseDetailClientProps) {
                     )}
                   </button>
                 ) : hasAccess ? (
-                  /* User has access - show open course button */
-                  <div className="space-y-2">
-                    {price && (
-                      <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-center">
-                        <p className="text-sm text-green-700">
-                          ✓ You already purchased this course!
-                        </p>
-                      </div>
-                    )}
+                  /* User has access - show green notice and open course button */
+                  <div className="space-y-3">
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-center">
+                      <p className="text-sm text-green-700 font-semibold">
+                        ✓ You have access to this course
+                      </p>
+                    </div>
                     <Link href={`/courses/${course.slug}/learn`} className="w-full bg-[#ffed00] text-black py-4 rounded-xl font-bold text-lg hover:bg-[#ffed00]/90 transition-colors flex items-center justify-center gap-2">
                       <PlayCircle className="h-6 w-6" />
                       Open Course

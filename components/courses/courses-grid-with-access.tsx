@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import { Course } from '@/lib/woocommerce/courses'
 import CoursesGrid from './courses-grid'
@@ -15,24 +15,7 @@ export default function CoursesGridWithAccess({ initialCourses, allCategories }:
   const [courses, setCourses] = useState(initialCourses)
   const [isLoadingAccess, setIsLoadingAccess] = useState(false)
 
-  useEffect(() => {
-    // If user is logged in, check their actual course access
-    if (session?.user) {
-      checkUserAccess()
-    } else {
-      // If not logged in, ensure all courses show as no access
-      setCourses(initialCourses.map(course => ({
-        ...course,
-        access: {
-          has_access: false,
-          reason: 'login_required',
-          product_id: course.acf?.product_id
-        }
-      })))
-    }
-  }, [session])
-
-  const checkUserAccess = async () => {
+  const checkUserAccess = useCallback(async () => {
     setIsLoadingAccess(true)
     try {
       const courseIds = initialCourses.map(c => c.id).join(',')
@@ -67,7 +50,24 @@ export default function CoursesGridWithAccess({ initialCourses, allCategories }:
     } finally {
       setIsLoadingAccess(false)
     }
-  }
+  }, [initialCourses])
+
+  useEffect(() => {
+    // If user is logged in, check their actual course access
+    if (session?.user) {
+      checkUserAccess()
+    } else {
+      // If not logged in, ensure all courses show as no access
+      setCourses(initialCourses.map(course => ({
+        ...course,
+        access: {
+          has_access: false,
+          reason: 'login_required',
+          product_id: course.acf?.product_id
+        }
+      })))
+    }
+  }, [session, checkUserAccess, initialCourses])
 
   return (
     <div>

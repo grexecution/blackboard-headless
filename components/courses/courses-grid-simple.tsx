@@ -12,8 +12,8 @@ interface CoursesGridSimpleProps {
 export default function CoursesGridSimple({ initialCourses }: CoursesGridSimpleProps) {
   const { data: session, status } = useSession()
 
-  // Get enrolled course IDs from session (cached at login)
-  const enrolledCourseIds = session?.enrolledCourseIds || []
+  // Get enrolled course IDs from session (cached at login) - wrapped in useMemo
+  const enrolledCourseIds = useMemo(() => session?.enrolledCourseIds || [], [session?.enrolledCourseIds])
 
   console.log('[CoursesGridSimple] Session status:', status)
   console.log('[CoursesGridSimple] Enrolled course IDs from session:', enrolledCourseIds)

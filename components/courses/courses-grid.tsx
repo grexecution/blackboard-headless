@@ -15,8 +15,8 @@ export default function CoursesGrid({ initialCourses, allCategories }: CoursesGr
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
   const { data: session, status } = useSession()
 
-  // Get enrolled course IDs from session (cached at login)
-  const enrolledCourseIds = session?.enrolledCourseIds || []
+  // Get enrolled course IDs from session (cached at login) - wrapped in useMemo
+  const enrolledCourseIds = useMemo(() => session?.enrolledCourseIds || [], [session?.enrolledCourseIds])
 
   console.log('[CoursesGrid] Session status:', status)
   console.log('[CoursesGrid] Enrolled course IDs from session:', enrolledCourseIds)
