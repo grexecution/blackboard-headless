@@ -2,6 +2,7 @@
 const nextConfig = {
   images: {
     remotePatterns: [
+      // Local Development - Local by Flywheel
       {
         protocol: 'http',
         hostname: 'localhost',
@@ -15,6 +16,12 @@ const nextConfig = {
         pathname: '/**',
       },
       {
+        protocol: 'http',
+        hostname: 'blackboard-training.local',
+        pathname: '/**',
+      },
+      // Third-party image sources
+      {
         protocol: 'https',
         hostname: '*.wp.com',
         pathname: '/**',
@@ -26,17 +33,24 @@ const nextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'blackboard-training.com',
-        pathname: '/**',
-      },
-      {
-        protocol: 'http',
-        hostname: 'blackboard-training.local',
+        hostname: 'images.unsplash.com',
         pathname: '/**',
       },
       {
         protocol: 'https',
-        hostname: 'images.unsplash.com',
+        hostname: 'i.vimeocdn.com',
+        pathname: '/**',
+      },
+      // Production & Staging - blackboard-training.com
+      // (includes both production and staging if on same domain)
+      {
+        protocol: 'https',
+        hostname: 'blackboard-training.com',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: '*.blackboard-training.com', // for staging.blackboard-training.com
         pathname: '/**',
       },
     ],

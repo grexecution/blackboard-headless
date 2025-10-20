@@ -3,40 +3,42 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { ArrowRight, Star, Shield, Truck, Award, Check, PlayCircle, Users, ChevronRight, Gift, RefreshCw, BookOpen, Video, FileText, Lock, Trophy, Activity, TrendingUp, AlertTriangle, Target, Zap, Brain } from 'lucide-react'
+import { ArrowRight, Star, Shield, Truck, Award, Check, PlayCircle, Users, ChevronRight, Gift, RefreshCw, BookOpen, Video as VideoIcon, FileText, Lock, Trophy, Activity, TrendingUp, AlertTriangle, Target, Zap, Brain } from 'lucide-react'
 import InstructorModal from '@/components/instructor-modal'
+import { useCurrency } from '@/lib/currency-context'
+import { ProductPriceDisplay } from '@/components/products/ProductPriceDisplay'
+import { Video, getVideoThumbnail } from '@/lib/woocommerce/videos'
 
 interface HomeContentProps {
   blackboardProducts: any[]
   blackboardWithVariations: any[]
+  videos: Video[]
+  totalVideoCount?: number
 }
 
-export default function HomeContent({ blackboardProducts, blackboardWithVariations }: HomeContentProps) {
+export default function HomeContent({ blackboardProducts, blackboardWithVariations, videos = [], totalVideoCount = 0 }: HomeContentProps) {
+  const { getCurrencySymbol } = useCurrency()
+  const currencySymbol = getCurrencySymbol()
+
   // Helper function to rename BlackBoard Normal to Basic
   const getDisplayName = (name: string) => {
     return name.replace(/BlackBoard Normal/gi, 'BlackBoard Basic')
   }
 
-  // Helper function to get price range
-  const getPriceRange = (product: any, variations: any) => {
-    if (!variations || variations.length === 0) {
-      return `€${product.price}`
-    }
-
-    const prices = variations.map((v: any) => parseFloat(v.price)).filter((p: number) => !isNaN(p))
-
-    if (prices.length === 0) {
-      return `€${product.price}`
-    }
-
-    const minPrice = Math.min(...prices)
-    const maxPrice = Math.max(...prices)
-
-    if (minPrice === maxPrice) {
-      return `€${minPrice.toFixed(2)}`
-    }
-
-    return `€${minPrice.toFixed(2)} - €${maxPrice.toFixed(2)}`
+  // Helper function to decode HTML entities (server-safe)
+  const decodeHtmlEntities = (text: string) => {
+    return text
+      .replace(/&#8211;/g, '–')
+      .replace(/&#8212;/g, '—')
+      .replace(/&#8220;/g, '"')
+      .replace(/&#8221;/g, '"')
+      .replace(/&#8216;/g, "'")
+      .replace(/&#8217;/g, "'")
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#039;/g, "'")
   }
 
   const [selectedInstructor, setSelectedInstructor] = useState<any>(null)
@@ -191,7 +193,12 @@ export default function HomeContent({ blackboardProducts, blackboardWithVariatio
                           <h3 className="font-bold text-gray-900 group-hover:text-[#ffed00] transition-colors">
                             {getDisplayName(blackboardProducts[0].name)}
                           </h3>
-                          <p className="text-sm text-gray-600">From €{blackboardProducts[0].price}</p>
+                          <ProductPriceDisplay
+                            product={blackboardProducts[0]}
+                            showFrom={true}
+                            size="sm"
+                            className="text-sm text-gray-600"
+                          />
                         </div>
                         <ChevronRight className="h-5 w-5 text-gray-400 group-hover:text-[#ffed00] transition-all group-hover:translate-x-1" />
                       </div>
@@ -338,9 +345,6 @@ export default function HomeContent({ blackboardProducts, blackboardWithVariatio
             <div className="grid lg:grid-cols-2 gap-8">
               {blackboardWithVariations.map((product: any) => {
                 const isProfessional = product.name.toLowerCase().includes('professional')
-                const priceFrom = product.variationData
-                  ? getPriceRange(product, product.variationData).split(' - ')[0].replace('€', '')
-                  : product.price
 
                 return (
                   <div
@@ -377,7 +381,7 @@ export default function HomeContent({ blackboardProducts, blackboardWithVariatio
                           <div className="flex items-center gap-2">
                             <Gift className="h-5 w-5 text-green-500 animate-bounce" />
                             <span className="text-sm font-semibold text-gray-900">
-                              Includes FREE Functional Foot Workshop (€49 value)
+                              Includes FREE Functional Foot Workshop ({currencySymbol}49 value)
                             </span>
                           </div>
                         </div>
@@ -402,16 +406,15 @@ export default function HomeContent({ blackboardProducts, blackboardWithVariatio
                       {/* Price */}
                       <div className="mb-6">
                         <div className="flex items-baseline gap-3">
-                          <span className="text-4xl font-semibold text-gray-900">
-                            <span className="text-2xl align-top">€</span>
-                            {priceFrom}
-                          </span>
-                          {product.variationData && (
-                            <span className="text-sm text-gray-500">starting price</span>
-                          )}
+                          <ProductPriceDisplay
+                            product={product}
+                            variations={product.variationData}
+                            showFrom={product.variationData && product.variationData.length > 0}
+                            size="lg"
+                          />
                         </div>
                         <p className="text-xs text-gray-500 mt-1">
-                          Includes 19% VAT • Free shipping over €100
+                          Includes 19% VAT • Free shipping over {currencySymbol}100
                         </p>
                       </div>
 
@@ -539,7 +542,7 @@ export default function HomeContent({ blackboardProducts, blackboardWithVariatio
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-[#ffed00]/20 rounded-lg flex items-center justify-center">
-                      <Video className="h-5 w-5 text-[#ffed00]" />
+                      <VideoIcon className="h-5 w-5 text-[#ffed00]" />
                     </div>
                     <div>
                       <p className="font-semibold">Video Tutorials</p>
@@ -593,58 +596,91 @@ export default function HomeContent({ blackboardProducts, blackboardWithVariatio
               <div className="relative">
                 <div className="grid grid-cols-2 gap-4">
                   {/* Video Cards */}
-                  <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-4 hover:bg-gray-800/70 transition-all cursor-pointer group">
-                    <div className="aspect-video bg-gray-700 rounded-lg mb-3 relative overflow-hidden">
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="w-12 h-12 bg-[#ffed00] rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
-                          <PlayCircle className="h-6 w-6 text-black ml-0.5" />
+                  {videos.length > 0 ? (
+                    videos.map((video) => {
+                      const thumbnail = getVideoThumbnail(video)
+                      const duration = video.acf?.duration || ''
+                      const decodedTitle = decodeHtmlEntities(video.title.rendered)
+                      return (
+                        <Link
+                          key={video.id}
+                          href="/training-videos"
+                          className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-4 hover:bg-gray-800/70 transition-all cursor-pointer group"
+                        >
+                          <div className="aspect-video bg-gray-700 rounded-lg mb-3 relative overflow-hidden">
+                            {thumbnail && thumbnail !== '/placeholder-video.jpg' ? (
+                              <Image
+                                src={thumbnail}
+                                alt={decodedTitle}
+                                fill
+                                className="object-cover"
+                              />
+                            ) : null}
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/30 group-hover:bg-black/50 transition-colors">
+                              <div className="w-12 h-12 bg-[#ffed00] rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                                <PlayCircle className="h-6 w-6 text-black" strokeWidth={2} />
+                              </div>
+                            </div>
+                          </div>
+                          <p className="text-sm font-semibold truncate">{decodedTitle}</p>
+                          {duration && <p className="text-xs text-gray-400">{duration}</p>}
+                        </Link>
+                      )
+                    })
+                  ) : (
+                    // Fallback placeholders if no videos
+                    <>
+                      <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-4 hover:bg-gray-800/70 transition-all cursor-pointer group">
+                        <div className="aspect-video bg-gray-700 rounded-lg mb-3 relative overflow-hidden">
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="w-12 h-12 bg-[#ffed00] rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                              <PlayCircle className="h-6 w-6 text-black ml-0.5" />
+                            </div>
+                          </div>
                         </div>
+                        <p className="text-sm font-semibold">Getting Started</p>
+                        <p className="text-xs text-gray-400">5 min</p>
                       </div>
-                    </div>
-                    <p className="text-sm font-semibold">Getting Started</p>
-                    <p className="text-xs text-gray-400">5 min</p>
-                  </div>
-
-                  <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-4 hover:bg-gray-800/70 transition-all cursor-pointer group">
-                    <div className="aspect-video bg-gray-700 rounded-lg mb-3 relative overflow-hidden">
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="w-12 h-12 bg-[#ffed00] rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
-                          <PlayCircle className="h-6 w-6 text-black ml-0.5" />
+                      <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-4 hover:bg-gray-800/70 transition-all cursor-pointer group">
+                        <div className="aspect-video bg-gray-700 rounded-lg mb-3 relative overflow-hidden">
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="w-12 h-12 bg-[#ffed00] rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                              <PlayCircle className="h-6 w-6 text-black ml-0.5" />
+                            </div>
+                          </div>
                         </div>
+                        <p className="text-sm font-semibold">Basic Exercises</p>
+                        <p className="text-xs text-gray-400">12 min</p>
                       </div>
-                    </div>
-                    <p className="text-sm font-semibold">Basic Exercises</p>
-                    <p className="text-xs text-gray-400">12 min</p>
-                  </div>
-
-                  <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-4 hover:bg-gray-800/70 transition-all cursor-pointer group">
-                    <div className="aspect-video bg-gray-700 rounded-lg mb-3 relative overflow-hidden">
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="w-12 h-12 bg-[#ffed00] rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
-                          <PlayCircle className="h-6 w-6 text-black ml-0.5" />
+                      <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-4 hover:bg-gray-800/70 transition-all cursor-pointer group">
+                        <div className="aspect-video bg-gray-700 rounded-lg mb-3 relative overflow-hidden">
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="w-12 h-12 bg-[#ffed00] rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                              <PlayCircle className="h-6 w-6 text-black ml-0.5" />
+                            </div>
+                          </div>
                         </div>
+                        <p className="text-sm font-semibold">Advanced Training</p>
+                        <p className="text-xs text-gray-400">18 min</p>
                       </div>
-                    </div>
-                    <p className="text-sm font-semibold">Advanced Training</p>
-                    <p className="text-xs text-gray-400">18 min</p>
-                  </div>
-
-                  <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-4 hover:bg-gray-800/70 transition-all cursor-pointer group">
-                    <div className="aspect-video bg-gray-700 rounded-lg mb-3 relative overflow-hidden">
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="w-12 h-12 bg-[#ffed00] rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
-                          <PlayCircle className="h-6 w-6 text-black ml-0.5" />
+                      <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-4 hover:bg-gray-800/70 transition-all cursor-pointer group">
+                        <div className="aspect-video bg-gray-700 rounded-lg mb-3 relative overflow-hidden">
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="w-12 h-12 bg-[#ffed00] rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                              <PlayCircle className="h-6 w-6 text-black ml-0.5" />
+                            </div>
+                          </div>
                         </div>
+                        <p className="text-sm font-semibold">Pro Techniques</p>
+                        <p className="text-xs text-gray-400">15 min</p>
                       </div>
-                    </div>
-                    <p className="text-sm font-semibold">Pro Techniques</p>
-                    <p className="text-xs text-gray-400">15 min</p>
-                  </div>
+                    </>
+                  )}
                 </div>
 
                 {/* Floating Badge */}
                 <div className="absolute -top-4 -right-4 bg-[#ffed00] text-black px-4 py-2 rounded-full font-bold text-sm shadow-xl">
-                  100+ Videos
+                  {totalVideoCount > 0 ? `${totalVideoCount} Videos` : '100+ Videos'}
                 </div>
               </div>
             </div>

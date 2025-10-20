@@ -12,6 +12,7 @@ declare module 'next-auth' {
     billing?: any
     shipping?: any
     avatar?: string
+    enrolledCourseIds?: number[]
   }
 
   interface Session {
@@ -27,7 +28,26 @@ declare module 'next-auth' {
       avatar?: string
     }
     accessToken: string
-    jwt?: string
-    userId?: string
+    jwt: string
+    userId: string
+    enrolledCourseIds: number[]
+  }
+}
+
+declare module 'next-auth/jwt' {
+  interface JWT {
+    id: string
+    email: string
+    name: string
+    accessToken: string
+    jwt: string
+    userId: string
+    username: string
+    firstName?: string
+    lastName?: string
+    billing?: any
+    shipping?: any
+    avatar?: string
+    enrolledCourseIds?: number[]
   }
 }

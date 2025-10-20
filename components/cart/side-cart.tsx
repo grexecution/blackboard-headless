@@ -3,7 +3,8 @@
 import { Fragment, useEffect, useState } from 'react'
 import { Dialog, Transition } from '@headlessui/react'
 import { X, Plus, Minus, ShoppingBag, Truck, Shield, CreditCard, Gift, Package } from 'lucide-react'
-import { useCart } from '@/lib/cart-context'
+import { useCart, CartItem } from '@/lib/cart-context'
+import { useCurrency, getProductPrice } from '@/lib/currency-context'
 import Image from 'next/image'
 import Link from 'next/link'
 
@@ -60,19 +61,41 @@ const getShippingRate = (country: string, subtotal: number) => {
 }
 
 export function SideCart() {
-  const { 
-    items, 
-    isOpen, 
-    closeCart, 
-    removeItem, 
-    updateQuantity, 
-    totalPrice,
-    totalItems 
+  const {
+    items,
+    isOpen,
+    closeCart,
+    removeItem,
+    updateQuantity,
+    totalItems
   } = useCart()
+
+  const { currency, formatPrice, getCurrencySymbol } = useCurrency()
 
   const [country, setCountry] = useState('DE')
   const [shipping, setShipping] = useState(0)
   const [tax, setTax] = useState(0)
+
+  // Helper to get currency-aware price for a cart item
+  const getItemPrice = (item: CartItem): number => {
+    if (item.isFreebie) return 0
+
+    if (!item.currency_prices) {
+      // Fallback to legacy price
+      return item.price
+    }
+
+    const priceData = getProductPrice(item as any, currency)
+    return parseFloat(priceData.displayPrice) || item.price
+  }
+
+  // Calculate total price with currency awareness
+  const totalPrice = items.reduce((total, item) => {
+    return total + (getItemPrice(item) * item.quantity)
+  }, 0)
+
+  // Get currency symbol
+  const currencySymbol = getCurrencySymbol()
 
   // Calculate shipping based on country
   useEffect(() => {
@@ -211,7 +234,7 @@ export function SideCart() {
                                     <h3 className="text-sm font-medium">
                                       {item.name}
                                       {item.isFreebie && (
-                                        <span className="ml-1 text-xs text-green-400">(€49 value)</span>
+                                        <span className="ml-1 text-xs text-green-400">({currencySymbol}49 value)</span>
                                       )}
                                     </h3>
                                     {item.variation?.attributes && (
@@ -250,7 +273,7 @@ export function SideCart() {
                                         </button>
                                       </div>
                                       <p className="text-sm font-medium">
-                                        €{(item.price * item.quantity).toFixed(2)}
+                                        {currencySymbol}{(getItemPrice(item) * item.quantity).toFixed(2)}
                                       </p>
                                     </>
                                   ) : (
@@ -277,32 +300,32 @@ export function SideCart() {
                         {/* Subtotal */}
                         <div className="flex justify-between text-sm">
                           <p>Subtotal</p>
-                          <p>€{totalPrice.toFixed(2)}</p>
+                          <p>{currencySymbol}{totalPrice.toFixed(2)}</p>
                         </div>
-                        
+
                         <div className="border-b border-gray-800 my-3" />
-                        
+
                         {/* Shipping */}
                         <div className="flex justify-between text-sm mb-2">
                           <div className="flex items-center gap-1">
                             <Truck className="h-3 w-3" />
                             <span>Shipping to {country}</span>
                           </div>
-                          <p>{shipping === 0 ? 'Free' : `€${shipping.toFixed(2)}`}</p>
+                          <p>{shipping === 0 ? 'Free' : `${currencySymbol}${shipping.toFixed(2)}`}</p>
                         </div>
-                        
+
                         {/* Tax Info */}
                         <div className="flex justify-between text-sm mb-3 text-gray-400">
                           <p>VAT included (19%)</p>
-                          <p>€{tax.toFixed(2)}</p>
+                          <p>{currencySymbol}{tax.toFixed(2)}</p>
                         </div>
-                        
+
                         <div className="border-b border-gray-800 my-3" />
-                        
+
                         {/* Total */}
                         <div className="flex justify-between text-lg font-bold mb-4">
                           <p>Total</p>
-                          <p>€{finalTotal.toFixed(2)}</p>
+                          <p>{currencySymbol}{finalTotal.toFixed(2)}</p>
                         </div>
 
                         {/* Trust Badges */}

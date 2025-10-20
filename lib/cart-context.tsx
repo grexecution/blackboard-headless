@@ -7,7 +7,7 @@ export interface CartItem {
   id: string
   productId: number
   name: string
-  price: number
+  price: number // Legacy field for backwards compatibility
   quantity: number
   image?: string
   slug: string
@@ -19,6 +19,17 @@ export interface CartItem {
   manage_stock?: boolean
   isFreebie?: boolean
   parentProductId?: number // ID of the product that triggered this freebie
+  // Currency-specific prices
+  currency_prices?: {
+    usd: {
+      regular_price: string
+      sale_price: string
+    }
+    eur: {
+      regular_price: string
+      sale_price: string
+    }
+  }
 }
 
 interface CartContextType {
@@ -80,12 +91,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
       }
       
       const price = variation ? parseFloat(variation.price) : parseFloat(product.price)
-      
+
+      // Get currency prices from variation or product
+      const currencyPrices = variation?.currency_prices || product.currency_prices
+
       const newItem: CartItem = {
         id: itemId,
         productId: product.id,
         name: product.name,
-        price: price,
+        price: price, // Keep for backwards compatibility
         quantity,
         image: product.images[0]?.src,
         slug: product.slug,
@@ -97,7 +111,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
           }))
         } : undefined,
         stock_quantity: variation?.stock_quantity ?? product.stock_quantity,
-        manage_stock: variation?.manage_stock ?? product.manage_stock
+        manage_stock: variation?.manage_stock ?? product.manage_stock,
+        currency_prices: currencyPrices
       }
       
       // Check if this is a BlackBoard Set and add freebie

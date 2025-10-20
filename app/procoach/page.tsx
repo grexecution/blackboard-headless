@@ -1,6 +1,6 @@
-import { getProCoachCourses } from '@/lib/lms/api'
+import { getAllCourses, getCoursesByCategory } from '@/lib/woocommerce/courses'
 import Link from 'next/link'
-import CourseCard from '@/components/lms/course-card'
+import CoursesGridSimple from '@/components/courses/courses-grid-simple'
 import {
   Award, Users, BookOpen, Target, Shield, Zap, Trophy, ChevronRight
 } from 'lucide-react'
@@ -10,7 +10,8 @@ export const dynamic = 'force-static'
 
 export default async function ProCoachPage() {
   // Get ProCoach courses from WooCommerce
-  const procoachCourses = await getProCoachCourses()
+  const allCourses = await getAllCourses()
+  const procoachCourses = getCoursesByCategory(allCourses, 'procoach')
 
   return (
     <div className="min-h-screen">
@@ -180,11 +181,7 @@ export default async function ProCoachPage() {
           </p>
 
           {procoachCourses.length > 0 ? (
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
-              {procoachCourses.map((course) => (
-                <CourseCard key={course.id} course={course} type="procoach" />
-              ))}
-            </div>
+            <CoursesGridSimple initialCourses={procoachCourses} />
           ) : (
             <div className="text-center py-12">
               <BookOpen className="h-16 w-16 text-gray-300 mx-auto mb-4" />

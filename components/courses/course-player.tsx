@@ -1,8 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Course, isCourseLocked } from '@/lib/woocommerce/courses'
-import { useSession } from 'next-auth/react'
+import { Course } from '@/lib/woocommerce/courses'
 import { LoginModal } from '@/components/auth/login-modal'
 import { Lock, PlayCircle, ChevronRight } from 'lucide-react'
 import Link from 'next/link'
@@ -12,22 +11,18 @@ interface CoursePlayerProps {
 }
 
 export default function CoursePlayer({ course }: CoursePlayerProps) {
-  const { data: session, status } = useSession()
   const [showLoginModal, setShowLoginModal] = useState(false)
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0)
 
-  const isLocked = isCourseLocked(course)
   const videos = course.acf?.course_videos || []
   const currentVideo = videos[currentVideoIndex]
 
-  // Check if user has customer role or is admin
-  const hasAccess = (session?.user as any)?.roles?.includes('customer') ||
-                   (session?.user as any)?.roles?.includes('administrator') ||
-                   (session?.user as any)?.roles?.includes('reseller') ||
-                   !isLocked
+  // Use access control from WordPress API
+  const hasAccess = course.access?.has_access || false
+  const accessReason = course.access?.reason || 'unknown'
 
-  // Show loading state while checking auth
-  if (status === 'loading') {
+  // Show loading state if access info is not available yet
+  if (!course.access) {
     return (
       <div className="bg-black rounded-xl overflow-hidden aspect-video flex items-center justify-center">
         <div className="text-center">
@@ -39,7 +34,7 @@ export default function CoursePlayer({ course }: CoursePlayerProps) {
   }
 
   // Show locked state if no access
-  if (isLocked && !hasAccess) {
+  if (!hasAccess) {
     return (
       <div className="bg-gradient-to-br from-gray-900 to-black rounded-xl overflow-hidden">
         <div className="aspect-video flex items-center justify-center p-8">
@@ -51,43 +46,44 @@ export default function CoursePlayer({ course }: CoursePlayerProps) {
               Course Locked
             </h3>
             <p className="text-gray-300 mb-6">
-              Purchase this course to access all video lessons, materials, and receive your certificate upon completion.
+              {accessReason === 'login_required'
+                ? 'Please log in to access this course content.'
+                : 'Purchase this course to access all video lessons, materials, and receive your certificate upon completion.'}
             </p>
 
-            {course.acf?.product_data ? (
-              <div className="space-y-3">
-                <div className="text-center mb-4">
-                  {course.acf.product_data.on_sale && course.acf.product_data.regular_price && (
-                    <span className="text-gray-400 line-through text-lg mr-2">
-                      R{course.acf.product_data.regular_price}
-                    </span>
-                  )}
-                  <span className="text-3xl font-bold text-[#ffed00]">
-                    R{course.acf.product_data.price}
-                  </span>
-                </div>
-                <Link
-                  href={`/shop/product/${course.acf.product_data.id}`}
-                  className="inline-block bg-[#ffed00] text-black px-8 py-3 rounded-lg font-semibold hover:bg-[#ffed00]/90 transition-colors"
-                >
-                  Purchase Course
-                </Link>
-                {!session && (
-                  <button
-                    onClick={() => setShowLoginModal(true)}
-                    className="block w-full text-gray-300 hover:text-white transition-colors"
-                  >
-                    Already purchased? <span className="underline">Log in</span>
-                  </button>
-                )}
-              </div>
-            ) : (
+            {accessReason === 'login_required' ? (
               <button
                 onClick={() => setShowLoginModal(true)}
                 className="inline-block bg-[#ffed00] text-black px-8 py-3 rounded-lg font-semibold hover:bg-[#ffed00]/90 transition-colors"
               >
                 Log in to Access
               </button>
+            ) : course.acf?.product_data ? (
+              <div className="space-y-3">
+                <div className="text-center mb-4">
+                  {course.acf.product_data.on_sale && course.acf.product_data.regular_price && (
+                    <span className="text-gray-400 line-through text-lg mr-2">
+                      €{course.acf.product_data.regular_price}
+                    </span>
+                  )}
+                  <span className="text-3xl font-bold text-[#ffed00]">
+                    €{course.acf.product_data.price}
+                  </span>
+                </div>
+                <Link
+                  href={`/courses/${course.slug}`}
+                  className="inline-block bg-[#ffed00] text-black px-8 py-3 rounded-lg font-semibold hover:bg-[#ffed00]/90 transition-colors"
+                >
+                  Purchase Course
+                </Link>
+              </div>
+            ) : (
+              <Link
+                href={`/courses/${course.slug}`}
+                className="inline-block bg-[#ffed00] text-black px-8 py-3 rounded-lg font-semibold hover:bg-[#ffed00]/90 transition-colors"
+              >
+                View Course Details
+              </Link>
             )}
           </div>
         </div>

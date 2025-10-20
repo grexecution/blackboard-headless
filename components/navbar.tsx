@@ -6,6 +6,7 @@ import { ShoppingCart, User, Menu, X, ChevronDown } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useCart } from '@/lib/cart-context'
 import { useAuth } from '@/lib/auth-context'
+import { useCurrency } from '@/lib/currency-context'
 import { usePathname } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 
@@ -15,6 +16,7 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false)
   const { totalItems, openCart } = useCart()
   const { openLoginModal } = useAuth()
+  const { currency, setCurrency } = useCurrency()
   const { data: session } = useSession()
   const pathname = usePathname()
 
@@ -34,6 +36,7 @@ export default function Navbar() {
       href: '#',
       label: 'Education',
       submenu: [
+        { href: '/courses', label: 'All Courses' },
         { href: '/procoach', label: 'ProCoach' },
         { href: '/workshops', label: 'Workshops' }
       ]
@@ -74,7 +77,7 @@ export default function Navbar() {
                         onClick={() => setEducationDropdownOpen(!educationDropdownOpen)}
                         onMouseEnter={() => setEducationDropdownOpen(true)}
                         onMouseLeave={() => setEducationDropdownOpen(false)}
-                        className={`inline-flex items-center gap-1 px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                        className={`inline-flex items-center gap-1 px-4 py-2 rounded-full font-medium transition-all duration-200 ${
                           isActive
                             ? 'bg-[#ffed00] text-black'
                             : 'text-gray-700 hover:bg-gray-100'
@@ -122,7 +125,7 @@ export default function Navbar() {
                     <Link
                       key={link.href}
                       href={link.href}
-                      className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                      className={`px-4 py-2 rounded-full font-medium transition-all duration-200 ${
                         isActive
                           ? 'bg-[#ffed00] text-black'
                           : 'text-gray-700 hover:bg-gray-100'
@@ -137,9 +140,33 @@ export default function Navbar() {
 
             {/* Right Icons */}
             <div className="flex items-center gap-2">
+              {/* Currency Toggle - Desktop */}
+              <div className="hidden md:flex items-center bg-gray-100 rounded-full p-1">
+                <button
+                  onClick={() => setCurrency('EUR')}
+                  className={`px-3 py-1.5 rounded-full text-sm font-semibold transition-all duration-300 ${
+                    currency === 'EUR'
+                      ? 'bg-[#ffed00] text-black shadow-md'
+                      : 'text-gray-600 hover:text-black'
+                  }`}
+                >
+                  EUR €
+                </button>
+                <button
+                  onClick={() => setCurrency('USD')}
+                  className={`px-3 py-1.5 rounded-full text-sm font-semibold transition-all duration-300 ${
+                    currency === 'USD'
+                      ? 'bg-[#ffed00] text-black shadow-md'
+                      : 'text-gray-600 hover:text-black'
+                  }`}
+                >
+                  USD $
+                </button>
+              </div>
+
               {/* Cart - Desktop */}
-              <button 
-                onClick={openCart} 
+              <button
+                onClick={openCart}
                 className="hidden md:flex relative p-3 rounded-lg hover:bg-gray-100 transition-colors"
               >
                 <ShoppingCart className="h-6 w-6 text-gray-700" />
@@ -265,8 +292,37 @@ export default function Navbar() {
                     })}
                   </div>
                   
-                  {/* Mobile Account Links */}
+                  {/* Mobile Currency Toggle */}
                   <div className="mt-8 pt-8 border-t border-gray-200">
+                    <div className="px-4 mb-4">
+                      <p className="text-sm font-semibold text-gray-700 mb-3">Currency</p>
+                      <div className="flex items-center bg-gray-100 rounded-full p-1">
+                        <button
+                          onClick={() => setCurrency('EUR')}
+                          className={`flex-1 px-4 py-2 rounded-full text-sm font-semibold transition-all duration-300 ${
+                            currency === 'EUR'
+                              ? 'bg-[#ffed00] text-black shadow-md'
+                              : 'text-gray-600'
+                          }`}
+                        >
+                          EUR €
+                        </button>
+                        <button
+                          onClick={() => setCurrency('USD')}
+                          className={`flex-1 px-4 py-2 rounded-full text-sm font-semibold transition-all duration-300 ${
+                            currency === 'USD'
+                              ? 'bg-[#ffed00] text-black shadow-md'
+                              : 'text-gray-600'
+                          }`}
+                        >
+                          USD $
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Mobile Account Links */}
+                  <div className="pt-4 border-t border-gray-200">
                     {session ? (
                       <Link
                         href="/account"

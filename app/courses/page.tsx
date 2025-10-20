@@ -2,9 +2,8 @@ import { getAllCourses, getUniqueCourseCategories } from '@/lib/woocommerce/cour
 import CoursesGrid from '@/components/courses/courses-grid'
 import { GraduationCap } from 'lucide-react'
 
-// Static generation
-export const revalidate = false
-export const dynamic = 'force-static'
+// Make dynamic for client-side access checking
+export const dynamic = 'force-dynamic'
 
 export default async function CoursesPage() {
   const courses = await getAllCourses()

@@ -1,6 +1,6 @@
-import { getWorkshopCourses } from '@/lib/lms/api'
+import { getAllCourses, getCoursesByCategory } from '@/lib/woocommerce/courses'
 import Link from 'next/link'
-import CourseCard from '@/components/lms/course-card'
+import CoursesGridSimple from '@/components/courses/courses-grid-simple'
 import {
   Users, Calendar, MapPin, Clock, ChevronRight, Video, BookOpen, Quote
 } from 'lucide-react'
@@ -10,7 +10,8 @@ export const dynamic = 'force-static'
 
 export default async function WorkshopsPage() {
   // Get Workshop courses from WooCommerce
-  const workshopCourses = await getWorkshopCourses()
+  const allCourses = await getAllCourses()
+  const workshopCourses = getCoursesByCategory(allCourses, 'workshop')
 
   return (
     <div className="min-h-screen">
@@ -80,11 +81,7 @@ export default async function WorkshopsPage() {
           </p>
 
           {workshopCourses.length > 0 ? (
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
-              {workshopCourses.map((course) => (
-                <CourseCard key={course.id} course={course} type="workshop" />
-              ))}
-            </div>
+            <CoursesGridSimple initialCourses={workshopCourses} />
           ) : (
             <div className="text-center py-12">
               <BookOpen className="h-16 w-16 text-gray-300 mx-auto mb-4" />

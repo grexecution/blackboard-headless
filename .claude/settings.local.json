@@ -39,7 +39,14 @@
       "Read(//Users/gregorwallner/Local Sites/blackboard-local/app/public/**)",
       "Bash(cd:*)",
       "Bash(php:*)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(wp post list:*)",
+      "Read(//Users/gregorwallner/Local/**)",
+      "Bash(pkill:*)",
+      "Bash(wp wc customer_key list:*)",
+      "Read(//Users/gregorwallner/Local Sites/**)",
+      "Bash(zip:*)",
+      "Bash(awk:*)"
     ],
     "deny": [],
     "ask": []

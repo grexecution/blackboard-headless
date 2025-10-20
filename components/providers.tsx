@@ -6,6 +6,7 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { useState } from 'react'
 import { CartProvider } from '@/lib/cart-context'
 import { AuthProvider } from '@/lib/auth-context'
+import { CurrencyProvider } from '@/lib/currency-context'
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -23,11 +24,13 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <SessionProvider>
       <QueryClientProvider client={queryClient}>
-        <CartProvider>
-          <AuthProvider>
-            {children}
-          </AuthProvider>
-        </CartProvider>
+        <CurrencyProvider>
+          <CartProvider>
+            <AuthProvider>
+              {children}
+            </AuthProvider>
+          </CartProvider>
+        </CurrencyProvider>
         <ReactQueryDevtools initialIsOpen={false} />
       </QueryClientProvider>
     </SessionProvider>

@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
+import { useSession } from 'next-auth/react'
 import { Course } from '@/lib/woocommerce/courses'
 import CourseCard from './course-card'
 import { Filter } from 'lucide-react'
@@ -12,13 +13,43 @@ interface CoursesGridProps {
 
 export default function CoursesGrid({ initialCourses, allCategories }: CoursesGridProps) {
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
+  const { data: session, status } = useSession()
+
+  // Get enrolled course IDs from session (cached at login)
+  const enrolledCourseIds = session?.enrolledCourseIds || []
+
+  console.log('[CoursesGrid] Session status:', status)
+  console.log('[CoursesGrid] Enrolled course IDs from session:', enrolledCourseIds)
+
+  // Update courses with access based on session's enrolled course IDs
+  const courses = useMemo(() => {
+    return initialCourses.map(course => ({
+      ...course,
+      access: {
+        ...course.access,
+        has_access: enrolledCourseIds.includes(course.id) || course.access?.is_free || false
+      }
+    }))
+  }, [initialCourses, enrolledCourseIds])
 
   // Filter courses based on selected category
-  const filteredCourses = selectedCategory === 'all'
-    ? initialCourses
-    : initialCourses.filter(course =>
-        course.course_categories.some(cat => cat.slug === selectedCategory)
-      )
+  const filteredCourses = useMemo(() => {
+    const filtered = selectedCategory === 'all'
+      ? courses
+      : courses.filter(course =>
+          course.course_categories?.some(cat => cat.slug === selectedCategory)
+        )
+
+    // Sort: unlocked courses first, then locked courses
+    return filtered.sort((a, b) => {
+      const aHasAccess = a.access?.has_access || false
+      const bHasAccess = b.access?.has_access || false
+
+      if (aHasAccess && !bHasAccess) return -1
+      if (!aHasAccess && bHasAccess) return 1
+      return 0
+    })
+  }, [courses, selectedCategory])
 
   return (
     <div>

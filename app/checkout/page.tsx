@@ -8,6 +8,7 @@ import { ShoppingCart, CreditCard, User, MapPin, ArrowLeft, Package, Truck, Chec
 import Link from 'next/link'
 import Image from 'next/image'
 import { LoginModal } from '@/components/auth/login-modal'
+import { useCurrency } from '@/lib/currency-context'
 
 interface CheckoutConfig {
   paymentMethods: Array<{
@@ -26,10 +27,13 @@ interface CheckoutConfig {
 }
 
 export default function CheckoutPage() {
+  const { getCurrencySymbol } = useCurrency()
+  const currencySymbol = getCurrencySymbol()
   const { items, clearCart, totalPrice } = useCart()
   const { data: session } = useSession()
   const router = useRouter()
   const [isProcessing, setIsProcessing] = useState(false)
+  const [processingStep, setProcessingStep] = useState<'creating' | 'payment' | 'redirecting'>('creating')
   const [error, setError] = useState('')
   const [checkoutConfig, setCheckoutConfig] = useState<CheckoutConfig | null>(null)
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('stripe')
@@ -304,6 +308,7 @@ export default function CheckoutPage() {
     }
     
     setIsProcessing(true)
+    setProcessingStep('creating')
     setError('')
 
     try {
@@ -374,13 +379,24 @@ export default function CheckoutPage() {
 
       // Clear cart after successful order creation
       clearCart()
-      
+
       // Store order details in sessionStorage for the success page
       sessionStorage.setItem('lastOrder', JSON.stringify(data.order))
-      
-      // Redirect to success page for all payment methods
-      // The success page will show appropriate instructions based on payment method
-      router.push(`/order-success?order=${data.order.id}&number=${data.order.orderNumber}&method=${data.order.paymentMethod}`)
+
+      // Check if we have a payment URL to redirect to
+      if (data.order.paymentUrl && selectedPaymentMethod !== 'bacs') {
+        console.log('Redirecting to payment URL:', data.order.paymentUrl)
+        setProcessingStep('redirecting')
+        // Small delay for animation before redirect
+        await new Promise(resolve => setTimeout(resolve, 800))
+        // Redirect to payment gateway (Stripe/PayPal)
+        window.location.href = data.order.paymentUrl
+      } else {
+        // For bank transfer or if no payment URL, go to success page
+        setProcessingStep('redirecting')
+        await new Promise(resolve => setTimeout(resolve, 500))
+        router.push(`/order-success?order=${data.order.id}&number=${data.order.orderNumber}&method=${data.order.paymentMethod}`)
+      }
     } catch (err: any) {
       setError(err.message || 'Failed to process order. Please try again.')
       setIsProcessing(false)
@@ -410,8 +426,51 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-6 md:py-12">
-      <div className="max-w-screen-xl mx-auto px-4 lg:px-6">
+    <>
+      {/* Processing Overlay */}
+      {isProcessing && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="bg-white rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl">
+            <div className="text-center">
+              {/* Animated Icon */}
+              <div className="mb-6 relative">
+                <div className="animate-spin rounded-full h-20 w-20 border-4 border-gray-200 border-t-[#ffed00] mx-auto"></div>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  {processingStep === 'creating' && <Package className="h-8 w-8 text-gray-400" />}
+                  {processingStep === 'payment' && <CreditCard className="h-8 w-8 text-gray-400" />}
+                  {processingStep === 'redirecting' && <CheckCircle className="h-8 w-8 text-green-500" />}
+                </div>
+              </div>
+
+              {/* Processing Steps */}
+              <div className="space-y-3 mb-6">
+                <div className={`flex items-center justify-center gap-3 transition-all ${processingStep === 'creating' ? 'text-black font-semibold' : 'text-gray-400'}`}>
+                  <div className={`w-2 h-2 rounded-full ${processingStep === 'creating' ? 'bg-[#ffed00] animate-pulse' : 'bg-gray-300'}`}></div>
+                  <span>Creating your order</span>
+                </div>
+                <div className={`flex items-center justify-center gap-3 transition-all ${processingStep === 'payment' ? 'text-black font-semibold' : 'text-gray-400'}`}>
+                  <div className={`w-2 h-2 rounded-full ${processingStep === 'payment' ? 'bg-[#ffed00] animate-pulse' : 'bg-gray-300'}`}></div>
+                  <span>Setting up payment</span>
+                </div>
+                <div className={`flex items-center justify-center gap-3 transition-all ${processingStep === 'redirecting' ? 'text-black font-semibold' : 'text-gray-400'}`}>
+                  <div className={`w-2 h-2 rounded-full ${processingStep === 'redirecting' ? 'bg-[#ffed00] animate-pulse' : 'bg-gray-300'}`}></div>
+                  <span>Redirecting to payment</span>
+                </div>
+              </div>
+
+              {/* Message */}
+              <p className="text-gray-600 text-sm">
+                {processingStep === 'creating' && 'Please wait while we create your order...'}
+                {processingStep === 'payment' && 'Preparing secure payment...'}
+                {processingStep === 'redirecting' && 'Taking you to complete payment...'}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="min-h-screen bg-gray-50 py-6 md:py-12">
+        <div className="max-w-screen-xl mx-auto px-4 lg:px-6">
         <div className="mb-6">
           <Link 
             href="/shop" 
@@ -1058,7 +1117,7 @@ export default function CheckoutPage() {
                         <div className="flex justify-between items-center mt-1">
                           <span className="text-xs text-gray-500">Qty: {item.quantity}</span>
                           <span className={`text-sm font-medium ${item.isFreebie ? 'text-green-600' : ''}`}>
-                            {item.isFreebie ? 'FREE' : `€${(item.price * item.quantity).toFixed(2)}`}
+                            {item.isFreebie ? 'FREE' : `${currencySymbol}${(item.price * item.quantity).toFixed(2)}`}
                           </span>
                         </div>
                       </div>
@@ -1070,34 +1129,34 @@ export default function CheckoutPage() {
                   {/* Subtotal */}
                   <div className="flex justify-between text-sm">
                     <span>Subtotal</span>
-                    <span>€{totalPrice.toFixed(2)}</span>
+                    <span>{currencySymbol}{totalPrice.toFixed(2)}</span>
                   </div>
-                  
+
                   {/* Shipping */}
                   <div className="flex justify-between text-sm">
                     <span>Shipping</span>
-                    <span>{shippingCost === 0 ? 'Free' : `€${shippingCost.toFixed(2)}`}</span>
+                    <span>{shippingCost === 0 ? 'Free' : `${currencySymbol}${shippingCost.toFixed(2)}`}</span>
                   </div>
-                  
+
                   {/* Free Shipping Message */}
                   {totalPrice < 100 && (
                     <div className="text-xs text-gray-500 py-2">
-                      Add €{(100 - totalPrice).toFixed(2)} more for free shipping
+                      Add {currencySymbol}{(100 - totalPrice).toFixed(2)} more for free shipping
                     </div>
                   )}
-                  
+
                   {/* Savings from freebies */}
                   {items.some(item => item.isFreebie) && (
                     <div className="flex justify-between text-sm text-green-600">
                       <span>Gift Value</span>
-                      <span>€49.00</span>
+                      <span>{currencySymbol}49.00</span>
                     </div>
                   )}
-                  
+
                   {/* Total */}
                   <div className="flex justify-between font-semibold text-lg pt-2 border-t">
                     <span>Total</span>
-                    <span>€{finalTotal.toFixed(2)}</span>
+                    <span>{currencySymbol}{finalTotal.toFixed(2)}</span>
                   </div>
                   
                   <p className="text-xs text-gray-500 pt-2">
@@ -1114,7 +1173,9 @@ export default function CheckoutPage() {
                   {isProcessing ? (
                     <>
                       <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-black"></div>
-                      Processing...
+                      {processingStep === 'creating' && 'Creating order...'}
+                      {processingStep === 'payment' && 'Processing payment...'}
+                      {processingStep === 'redirecting' && 'Redirecting to payment...'}
                     </>
                   ) : (
                     <>
@@ -1135,14 +1196,15 @@ export default function CheckoutPage() {
             </div>
           </div>
         </form>
+
+        {/* Login Modal */}
+        <LoginModal
+          isOpen={showLoginModal}
+          onClose={() => setShowLoginModal(false)}
+          redirectTo="/checkout"
+        />
       </div>
-      
-      {/* Login Modal */}
-      <LoginModal 
-        isOpen={showLoginModal} 
-        onClose={() => setShowLoginModal(false)}
-        redirectTo="/checkout"
-      />
     </div>
+    </>
   )
 }

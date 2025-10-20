@@ -23,6 +23,17 @@ export interface ProductAttribute {
   options: string[]
 }
 
+export interface CurrencyPrices {
+  usd: {
+    regular_price: string
+    sale_price: string
+  }
+  eur: {
+    regular_price: string
+    sale_price: string
+  }
+}
+
 export interface ProductVariation {
   id: number
   price: string
@@ -40,6 +51,7 @@ export interface ProductVariation {
   stock_status: string
   in_stock: boolean
   manage_stock: boolean
+  currency_prices?: CurrencyPrices
 }
 
 export interface Product {
@@ -68,6 +80,7 @@ export interface Product {
   attributes: ProductAttribute[]
   variations?: number[]
   price_html?: string
+  currency_prices?: CurrencyPrices
   acf?: {
     product_detail_description?: string
     scope_of_delivery?: string

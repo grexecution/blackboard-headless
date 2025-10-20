@@ -13,7 +13,7 @@ import { useRequireAuth } from '@/hooks/use-require-auth'
 import Link from 'next/link'
 import Image from 'next/image'
 import { getAllCourses, getUserProgress, checkCourseAccess } from '@/lib/lms/api'
-import CourseCard from '@/components/lms/course-card'
+import CoursesGridSimple from '@/components/courses/courses-grid-simple'
 
 export default function AccountPage() {
   const { session, isLoading: authLoading } = useRequireAuth('/account')
@@ -90,30 +90,43 @@ export default function AccountPage() {
 
   const fetchCourses = async () => {
     try {
-      // Fetch all courses (will return demo data in development)
-      const allCourses = await getAllCourses()
+      // Get enrolled course IDs from session
+      const enrolledCourseIds = session?.enrolledCourseIds || []
+      console.log('[Account] Enrolled course IDs from session:', enrolledCourseIds)
 
-      // If authenticated, get user progress
-      if (session?.user) {
-        const progress = await getUserProgress((session.user as any)?.token || '')
-
-        // Check access for each course
-        const coursesWithAccess = await Promise.all(
-          allCourses.map(async (course) => {
-            const hasAccess = await checkCourseAccess(course.id, (session.user as any)?.token || '')
-            const courseProgress = progress.find(p => p.course_id === course.id)
-            return {
-              ...course,
-              has_access: hasAccess,
-              progress: courseProgress?.percentage_complete || 0
-            }
-          })
-        )
-
-        // Only show courses user has access to (first 4 for demo)
-        const purchasedCourses = coursesWithAccess.filter(c => c.has_access)
-        setCourses(purchasedCourses)
+      if (enrolledCourseIds.length === 0) {
+        console.log('[Account] No enrolled courses in session')
+        setCourses([])
+        return
       }
+
+      // Fetch all courses
+      const wpUrl = process.env.NEXT_PUBLIC_WORDPRESS_API_URL || 'http://localhost:10074'
+      const coursesResponse = await fetch(`${wpUrl}/wp-json/blackboard/v1/courses`, {
+        cache: 'no-store',
+      })
+
+      if (!coursesResponse.ok) {
+        console.error('Failed to fetch courses:', coursesResponse.status)
+        return
+      }
+
+      const allCourses = await coursesResponse.json()
+
+      // Filter to only courses user has access to (from session)
+      const purchasedCourses = allCourses.filter((course: any) =>
+        enrolledCourseIds.includes(course.id)
+      ).map((course: any) => ({
+        ...course,
+        access: {
+          has_access: true,
+          reason: 'enrolled',
+          is_free: course.access?.is_free || false
+        }
+      }))
+
+      console.log('[Account] Purchased courses:', purchasedCourses.length)
+      setCourses(purchasedCourses)
     } catch (error) {
       console.error('Failed to fetch courses:', error)
     }
@@ -564,33 +577,78 @@ export default function AccountPage() {
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="bb-dashboard-section"
+              className="space-y-6"
             >
-              <div className="bb-section-header">
-                <h2>My Learning</h2>
-                <Link
-                  href="/workshops"
-                  className="bb-sync-button"
-                >
-                  Browse Workshops
-                  <ChevronRight className="w-4 h-4" />
-                </Link>
-              </div>
-              {courses.length > 0 ? (
-                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-                  {courses.map((course: any) => (
-                    <CourseCard key={course.id} course={course} type="course" />
-                  ))}
+              {/* Debug Info */}
+              <details className="bg-yellow-50 border-2 border-yellow-400 rounded-xl p-4">
+                <summary className="font-bold cursor-pointer flex items-center gap-2">
+                  🔍 Debug: Course Access Information
+                  <span className="text-sm font-normal text-gray-600 ml-2">
+                    (User: {session.user.email})
+                  </span>
+                </summary>
+                <div className="mt-4 space-y-4">
+                  <div className="grid md:grid-cols-3 gap-4">
+                    <div className="bg-white rounded-lg p-4 border border-gray-200">
+                      <div className="text-2xl font-bold text-gray-900">{courses.length}</div>
+                      <div className="text-sm text-gray-600">Courses with Access</div>
+                    </div>
+                  </div>
+
+                  {courses.length > 0 && (
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                      <h4 className="font-bold mb-3 text-green-800">Your Purchased Courses:</h4>
+                      <ul className="space-y-2">
+                        {courses.map((course: any) => (
+                          <li key={course.id} className="flex items-start gap-2 text-sm">
+                            <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                            <div className="flex-1">
+                              <div className="font-semibold">{course.title}</div>
+                              <div className="text-xs text-gray-600 space-y-0.5">
+                                <div>Access Reason: <span className="font-medium">{course.access?.reason || 'N/A'}</span></div>
+                                {course.access?.product_id && (
+                                  <div>Billing Product: <span className="font-medium">{course.access.product_id}</span></div>
+                                )}
+                                {course.access?.access_product_ids && course.access.access_product_ids.length > 0 && (
+                                  <div>Access Products: <span className="font-medium">{course.access.access_product_ids.join(', ')}</span></div>
+                                )}
+                                {course.access?.purchased_product_id && (
+                                  <div className="text-green-700">✓ Purchased: <span className="font-medium">{course.access.purchased_product_id}</span></div>
+                                )}
+                              </div>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 </div>
-              ) : (
-                <div className="bb-empty-state">
-                  <BookOpen className="w-16 h-16 mx-auto mb-4" />
-                  <p>No courses enrolled yet</p>
-                  <Link href="/workshops" className="bb-btn-primary">
-                    Browse Available Courses
+              </details>
+
+              {/* Courses Section */}
+              <div className="bb-dashboard-section">
+                <div className="bb-section-header">
+                  <h2>My Learning</h2>
+                  <Link
+                    href="/courses"
+                    className="bb-sync-button"
+                  >
+                    Browse All Courses
+                    <ChevronRight className="w-4 h-4" />
                   </Link>
                 </div>
-              )}
+                {courses.length > 0 ? (
+                  <CoursesGridSimple initialCourses={courses} />
+                ) : (
+                  <div className="bb-empty-state">
+                    <BookOpen className="w-16 h-16 mx-auto mb-4" />
+                    <p>No courses enrolled yet</p>
+                    <Link href="/courses" className="bb-btn-primary">
+                      Browse Available Courses
+                    </Link>
+                  </div>
+                )}
+              </div>
             </motion.div>
           )}
 

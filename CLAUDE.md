@@ -24,10 +24,13 @@ This single plugin handles ALL features:
 3. **ALWAYS** update the plugin documentation section below
 4. **ALWAYS** add admin menu items to the existing dashboard
 
-### Current Plugin Features (v2.0.0):
+### Current Plugin Features (v3.2.0):
 - ✅ WooCommerce product sync with webhooks
+- ✅ Multi-currency price fields (USD/EUR)
 - ✅ Video CPT with categories and ACF fields
-- ✅ REST API for videos with access control
+- ✅ Course CPT with LMS functionality
+- ✅ Free course toggle
+- ✅ REST API for videos/courses with access control
 - ✅ Automatic Next.js rebuilds on content changes
 - ✅ CORS headers for headless setup
 - ✅ Admin dashboard with diagnostics
@@ -291,6 +294,152 @@ import { Button, Card, Section, Grid, Heading } from '@/components/ui'
 - **Confirmation**: Call `/api/orders/[id]/complete-payment` after successful payment
 - **Webhooks**: Set up Stripe/PayPal webhooks for automatic payment confirmation
 
+## 💱 Multi-Currency Implementation
+
+### Overview
+The site supports USD and EUR currency switching with instant price updates across the entire frontend.
+
+### Architecture:
+
+**1. WordPress Plugin (v3.2.0)**
+- Added custom fields to WooCommerce products:
+  - `_nextjs_usd_regular_price`
+  - `_nextjs_usd_sale_price`
+  - `_nextjs_eur_regular_price`
+  - `_nextjs_eur_sale_price`
+- Fields appear in Product Data → General tab as "Next.js Multi-Currency Prices"
+- Prices automatically exposed via WooCommerce REST API in `currency_prices` object
+
+**2. Frontend Currency Context** (`/lib/currency-context.tsx`)
+```tsx
+// Global currency state management
+const { currency, setCurrency, formatPrice, getCurrencySymbol } = useCurrency()
+
+// Format price with current currency
+formatPrice(usdPrice, eurPrice) // Returns "$99.00" or "€89.00"
+```
+
+**3. Currency Toggle Switch**
+- Beautiful pill-style toggle in navbar (desktop)
+- Full-width toggle in mobile menu
+- Yellow (#ffed00) active state
+- Instant currency switching
+- Selection persisted in localStorage
+
+**4. Product Types Updated**
+```tsx
+interface CurrencyPrices {
+  usd: {
+    regular_price: string
+    sale_price: string
+  }
+  eur: {
+    regular_price: string
+    sale_price: string
+  }
+}
+
+interface Product {
+  // ... existing fields
+  currency_prices?: CurrencyPrices
+}
+```
+
+### How to Set Prices in WordPress:
+
+1. Edit any product in WooCommerce
+2. Go to Product Data → General tab
+3. Scroll to "Next.js Multi-Currency Prices" section
+4. Set USD and EUR prices (regular and sale)
+5. Save product
+
+### How Currency Switching Works:
+
+1. User clicks EUR or USD in navbar toggle
+2. Selection saved to localStorage: `blackboard_currency`
+3. `CurrencyContext` updates global state
+4. All price displays automatically update via `useCurrency()` hook
+5. Checkout uses correct currency prices for order creation
+
+### Usage in Components:
+
+**Simple Approach (using helper function):**
+```tsx
+import { useCurrency, getProductPrice } from '@/lib/currency-context'
+
+function ProductCard({ product }: { product: Product }) {
+  const { currency, formatPrice } = useCurrency()
+
+  // Get the correct prices with automatic fallback
+  const { regularPrice, salePrice, displayPrice, onSale } = getProductPrice(product, currency)
+
+  return (
+    <div>
+      {onSale && (
+        <span className="line-through text-gray-400">
+          {formatPrice(regularPrice, regularPrice)}
+        </span>
+      )}
+      <span className="font-bold">
+        {formatPrice(displayPrice, displayPrice)}
+      </span>
+    </div>
+  )
+}
+```
+
+**Manual Approach (for more control):**
+```tsx
+import { useCurrency } from '@/lib/currency-context'
+
+function ProductCard({ product }: { product: Product }) {
+  const { formatPrice } = useCurrency()
+
+  // Manually specify USD and EUR prices
+  const displayPrice = formatPrice(
+    product.currency_prices?.usd.regular_price || product.regular_price,
+    product.currency_prices?.eur.regular_price || product.regular_price
+  )
+
+  return <span>{displayPrice}</span>
+}
+```
+
+### Default Currency:
+- EUR is the default currency (European market)
+- User selection overrides default
+- Selection persists across sessions
+
+### Fallback Behavior:
+
+**When currency prices are not set:**
+- If USD is selected but USD price is empty → falls back to EUR price
+- If EUR is selected but EUR price is empty → falls back to USD price
+- If both are empty → returns empty string (no price shown)
+- If only one currency is set → that price is used for both currencies
+
+**Example Scenarios:**
+```typescript
+// Scenario 1: Both currencies set
+formatPrice('99.00', '89.00') // USD selected → "$99.00", EUR selected → "€89.00"
+
+// Scenario 2: Only USD price set
+formatPrice('99.00', '') // USD selected → "$99.00", EUR selected → "€99.00" (fallback)
+
+// Scenario 3: Only EUR price set
+formatPrice('', '89.00') // USD selected → "$89.00" (fallback), EUR selected → "€89.00"
+
+// Scenario 4: No prices set
+formatPrice('', '') // Returns "" (empty string)
+```
+
+### Important Notes:
+- Fallback ensures prices are always shown if at least one currency is set
+- Cart calculates totals in selected currency using fallback logic
+- Orders are created in WooCommerce with the selected currency price
+- Currency symbol changes automatically ($ vs €)
+- Zero prices are treated as empty (won't display)
+
 ## 📝 Project Architecture
 
 ### Technology Stack:
@@ -299,12 +448,14 @@ import { Button, Card, Section, Grid, Heading } from '@/components/ui'
 - **Backend**: WooCommerce REST API
 - **Auth**: NextAuth.js with WordPress credentials
 - **Cart**: React Context with localStorage persistence
+- **Currency**: React Context with localStorage persistence (USD/EUR)
 - **Performance**: Static Site Generation (SSG) with webhook rebuilds
 - **UI Components**: Custom design system in `/components/ui`
 - **Design Tokens**: Centralized in `/lib/design-system/constants.ts`
 
 ### Key Features:
 - ✅ Full e-commerce functionality
+- ✅ Multi-currency support (USD/EUR)
 - ✅ Static HTML generation for instant loads
 - ✅ Automatic WordPress/WooCommerce sync
 - ✅ Mobile-responsive with bottom navigation
@@ -474,6 +625,7 @@ This ensures:
    - `/app/workshops/page.tsx`
    - `/app/account/courses/page.tsx`
    - `/components/product/product-detail.tsx`
+   - `/app/courses/[slug]/learn/course-learn-client.tsx`
 
 6. **Verify with Build**:
    ```bash
@@ -498,6 +650,39 @@ This ensures:
 3. ALL sections should align to this line
 4. Navbar, content, and footer should have identical margins
 
+### Course Learn Page Layout
+
+The course learn page (`/app/courses/[slug]/learn/`) uses the standard container pattern with a special layout:
+
+```jsx
+<div className="min-h-screen bg-gray-50">
+  <div className="max-w-screen-xl mx-auto px-4 lg:px-6">
+    <div className="flex gap-6 py-6">
+      {/* Sidebar with course content */}
+      <div className="w-80 flex-shrink-0">
+        <div className="bg-white rounded-xl border overflow-hidden sticky top-6">
+          {/* Sidebar content */}
+        </div>
+      </div>
+
+      {/* Main video player area */}
+      <div className="flex-1">
+        <div className="bg-white rounded-xl border overflow-hidden">
+          {/* Video player and content */}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+```
+
+**Key Points:**
+- Uses standard `max-w-screen-xl mx-auto px-4 lg:px-6` container
+- Sidebar and main content are wrapped in rounded white cards
+- Sidebar is sticky (`sticky top-6`) for better UX
+- `flex gap-6 py-6` creates consistent spacing
+- Both sidebar and main content use `rounded-xl border` for visual consistency
+
 ## 📁 Important Files & Directories
 
 ### API Routes
@@ -510,6 +695,8 @@ This ensures:
 - `/lib/woocommerce/` - WooCommerce API integration
 - `/lib/lms/` - Learning Management System
 - `/lib/cart-context.tsx` - Cart state management
+- `/lib/currency-context.tsx` - Multi-currency state management
+- `/lib/auth-context.tsx` - Authentication state management
 - `/lib/design-system/` - Design tokens and constants
 
 ### UI Components

@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation'
-import { CourseDetailClient } from './course-detail-client'
+import { CourseLearnClient } from './course-learn-client'
 import { Course } from '@/lib/woocommerce/courses'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
@@ -26,7 +26,7 @@ async function getCourse(slug: string): Promise<Course | null> {
   }
 }
 
-export default async function CoursePage({ params }: { params: Promise<{ slug: string }> }) {
+export default async function CourseLearnPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
   const course = await getCourse(slug)
 
@@ -47,5 +47,5 @@ export default async function CoursePage({ params }: { params: Promise<{ slug: s
     reason: hasAccess ? 'enrolled' : (session ? 'not_enrolled' : 'login_required')
   }
 
-  return <CourseDetailClient course={course} />
+  return <CourseLearnClient course={course} />
 }

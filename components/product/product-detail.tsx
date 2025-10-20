@@ -8,6 +8,7 @@ import { ChevronLeft, ChevronRight, Check, Truck, Shield, Award, Users, Star, Cl
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import { PaymentIcons } from '@/components/ui/payment-icons'
+import { useCurrency, getProductPrice } from '@/lib/currency-context'
 
 interface ProductDetailProps {
   product: Product
@@ -18,10 +19,13 @@ interface ProductDetailProps {
 export function ProductDetail({ product, variations, workshopProduct }: ProductDetailProps) {
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
   const [selectedVariation, setSelectedVariation] = useState<ProductVariation | null>(null)
-  const [selectedAttributes, setSelectedAttributes] = useState<Record<string, string>>({})  
+  const [selectedAttributes, setSelectedAttributes] = useState<Record<string, string>>({})
   const [activeTab, setActiveTab] = useState<'description' | 'scope' | 'additional' | 'shipping'>('description')
   const [isMobileImageExpanded, setIsMobileImageExpanded] = useState(false)
   const [showWorkshopInfo, setShowWorkshopInfo] = useState(false)
+
+  // Currency context
+  const { currency, formatPrice, getCurrencySymbol } = useCurrency()
 
   // Helper function to rename BlackBoard Normal to Basic
   const getDisplayName = (name: string) => {
@@ -71,13 +75,45 @@ export function ProductDetail({ product, variations, workshopProduct }: ProductD
     }
   }
 
-  const currentPrice = selectedVariation?.price || product.price
-  const currentRegularPrice = selectedVariation?.regular_price || product.regular_price
-  const isOnSale = selectedVariation?.on_sale || product.on_sale
-  const discount = isOnSale ? Math.round(((parseFloat(currentRegularPrice) - parseFloat(currentPrice)) / parseFloat(currentRegularPrice)) * 100) : 0
-  
+  // Get currency-aware prices for the main product
+  const productPrices = getProductPrice(product, currency)
+
+  // Get currency-aware prices for selected variation or fallback to product prices
+  const variationPrices = selectedVariation
+    ? getProductPrice(selectedVariation as any, currency)
+    : null
+
+  // Determine which prices to use
+  const currentPriceData = variationPrices || productPrices
+  const currentPrice = currentPriceData.displayPrice
+  const currentRegularPrice = currentPriceData.regularPrice
+  const isOnSale = currentPriceData.onSale
+  const discount = isOnSale && currentRegularPrice && currentPrice
+    ? Math.round(((parseFloat(currentRegularPrice) - parseFloat(currentPrice)) / parseFloat(currentRegularPrice)) * 100)
+    : 0
+
+  // Format prices with currency
+  const formattedCurrentPrice = formatPrice(
+    selectedVariation?.currency_prices?.usd?.regular_price || product.currency_prices?.usd?.regular_price || currentPrice,
+    selectedVariation?.currency_prices?.eur?.regular_price || product.currency_prices?.eur?.regular_price || currentPrice
+  )
+
+  const formattedRegularPrice = isOnSale ? formatPrice(
+    selectedVariation?.currency_prices?.usd?.sale_price || product.currency_prices?.usd?.sale_price || currentRegularPrice,
+    selectedVariation?.currency_prices?.eur?.sale_price || product.currency_prices?.eur?.sale_price || currentRegularPrice
+  ) : null
+
+  // Get currency symbol
+  const currencySymbol = getCurrencySymbol()
+
   // Get proper stock status
   const stockStatus = getStockStatus(selectedVariation || product)
+
+  // Get workshop product price if available
+  const workshopPriceFormatted = workshopProduct ? formatPrice(
+    workshopProduct.currency_prices?.usd?.regular_price || workshopProduct.regular_price,
+    workshopProduct.currency_prices?.eur?.regular_price || workshopProduct.regular_price
+  ) : null
 
   // Check if this is a BlackBoard product
   const isBlackBoard = product.name.toLowerCase().includes('blackboard')
@@ -241,20 +277,18 @@ export function ProductDetail({ product, variations, workshopProduct }: ProductD
                     {variations.length > 0 && !selectedVariation ? (
                       <>
                         <span className="text-3xl sm:text-4xl font-semibold text-gray-900">
-                          <span className="text-lg sm:text-xl align-top">€</span>
-                          {product.price}
+                          {formattedCurrentPrice}
                         </span>
                         <span className="text-sm text-gray-500">starting price</span>
                       </>
                     ) : (
                       <>
                         <span className="text-3xl sm:text-4xl font-semibold text-gray-900">
-                          <span className="text-lg sm:text-xl align-top">€</span>
-                          {currentPrice}
+                          {formattedCurrentPrice}
                         </span>
-                        {isOnSale && currentRegularPrice !== currentPrice && (
+                        {isOnSale && formattedRegularPrice && (
                           <>
-                            <span className="text-xl sm:text-2xl text-gray-400 line-through">€{currentRegularPrice}</span>
+                            <span className="text-xl sm:text-2xl text-gray-400 line-through">{formattedRegularPrice}</span>
                             <span className="bg-gradient-to-r from-red-500 to-red-600 text-white px-2.5 py-1 rounded-md text-xs font-semibold">
                               SAVE {discount}%
                             </span>
@@ -331,7 +365,7 @@ export function ProductDetail({ product, variations, workshopProduct }: ProductD
                                 {workshopProduct?.name || 'Functional Foot Workshop'}
                               </span>
                               <span className="text-sm text-gray-500 line-through">
-                                €{workshopProduct?.price || '49'}
+                                {workshopPriceFormatted || `${currencySymbol}49`}
                               </span>
                             </div>
                           </div>
@@ -748,7 +782,7 @@ export function ProductDetail({ product, variations, workshopProduct }: ProductD
                 <div>
                   <h3 className="text-2xl font-bold mb-2">{workshopProduct.name}</h3>
                   <div className="flex items-center gap-4 mb-4">
-                    <span className="text-2xl text-gray-400 line-through">€{workshopProduct.price}</span>
+                    <span className="text-2xl text-gray-400 line-through">{workshopPriceFormatted}</span>
                     <span className="text-3xl font-bold text-green-600">FREE</span>
                     <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-medium">
                       Included with your purchase
@@ -788,7 +822,7 @@ export function ProductDetail({ product, variations, workshopProduct }: ProductD
                     </li>
                     <li className="flex items-start gap-2">
                       <Check className="h-4 w-4 text-green-600 mt-0.5" />
-                      <span className="text-sm">€{workshopProduct.price} value - absolutely free</span>
+                      <span className="text-sm">{workshopPriceFormatted} value - absolutely free</span>
                     </li>
                   </ul>
                 </div>

@@ -1,4 +1,5 @@
 import { getAllProducts, getProductVariations } from '@/lib/woocommerce/products'
+import { getAllVideos } from '@/lib/woocommerce/videos'
 import HomeContent from '@/components/home-content'
 
 // Static generation - rebuilds only on webhook
@@ -6,7 +7,23 @@ export const revalidate = false
 export const dynamic = 'force-static'
 
 export default async function Home() {
-  const products = await getAllProducts()
+  let products: any[] = []
+  let videos: any[] = []
+
+  try {
+    products = await getAllProducts()
+  } catch (error) {
+    console.error('Failed to fetch products for homepage:', error)
+    // Return empty state instead of crashing
+    products = []
+  }
+
+  try {
+    videos = await getAllVideos()
+  } catch (error) {
+    console.error('Failed to fetch videos for homepage:', error)
+    videos = []
+  }
 
   // Get BlackBoard products and sort them
   const blackboardProducts = products.filter(p =>
@@ -26,8 +43,13 @@ export default async function Home() {
   // Get variations for price ranges
   const getProductWithVariations = async (product: any) => {
     if (product.type === 'variable' && product.variations?.length > 0) {
-      const variations = await getProductVariations(product.id)
-      return { ...product, variationData: variations }
+      try {
+        const variations = await getProductVariations(product.id)
+        return { ...product, variationData: variations }
+      } catch (error) {
+        console.error(`Failed to fetch variations for product ${product.id}:`, error)
+        return product
+      }
     }
     return product
   }
@@ -40,6 +62,8 @@ export default async function Home() {
     <HomeContent
       blackboardProducts={blackboardProducts}
       blackboardWithVariations={blackboardWithVariations}
+      videos={videos.slice(0, 4)}
+      totalVideoCount={videos.length}
     />
   )
 }

@@ -1,4 +1,76 @@
-import { parseJsonResponse } from './utils'
+// Parse JSON response with PHP warning handling
+function parseJsonResponse<T>(text: string): T | null {
+  try {
+    // Remove any PHP warnings/notices that might be prepended
+    // Find the FIRST occurrence of either [ or {
+    const arrayStart = text.indexOf('[')
+    const objectStart = text.indexOf('{')
+
+    let jsonStart = -1
+    if (arrayStart === -1 && objectStart === -1) {
+      console.error('[JSON Parser] No JSON found in response')
+      return null
+    } else if (arrayStart === -1) {
+      jsonStart = objectStart
+    } else if (objectStart === -1) {
+      jsonStart = arrayStart
+    } else {
+      // Both exist, use whichever comes first
+      jsonStart = Math.min(arrayStart, objectStart)
+    }
+
+    // Get JSON text starting from the first { or [
+    let jsonText = text.substring(jsonStart)
+
+    // Find the last } or ] to trim any trailing content
+    let jsonEnd = -1
+    let braceCount = 0
+    let inString = false
+    let escapeNext = false
+
+    for (let i = 0; i < jsonText.length; i++) {
+      const char = jsonText[i]
+
+      if (escapeNext) {
+        escapeNext = false
+        continue
+      }
+
+      if (char === '\\') {
+        escapeNext = true
+        continue
+      }
+
+      if (char === '"') {
+        inString = !inString
+        continue
+      }
+
+      if (!inString) {
+        if (char === '{' || char === '[') {
+          braceCount++
+        } else if (char === '}' || char === ']') {
+          braceCount--
+          if (braceCount === 0) {
+            jsonEnd = i + 1
+            break
+          }
+        }
+      }
+    }
+
+    if (jsonEnd > 0) {
+      jsonText = jsonText.substring(0, jsonEnd)
+    }
+
+    const parsed = JSON.parse(jsonText) as T
+    return parsed
+  } catch (error) {
+    console.error('[JSON Parser] Error parsing JSON response:', error)
+    console.error('[JSON Parser] Raw response:', text.substring(0, 500))
+    return null
+  }
+}
 
 // Course Types
 export interface Course {
@@ -18,6 +90,9 @@ export interface Course {
   }[]
   acf?: {
     product_id?: number
+    billing_product_id?: number
+    access_product_ids?: number[]
+    is_free_course?: boolean | '1' | '0'
     product_data?: {
       id: number
       name: string
@@ -48,17 +123,27 @@ export interface Course {
     instructor?: string
     difficulty?: 'beginner' | 'intermediate' | 'advanced'
     certificate_awarded?: boolean
+    course_type?: 'on_demand' | 'online_live'
+    booking_widget?: string
+    course_includes?: {
+      item: string
+    }[]
+    what_you_will_learn?: string
+    equipment_requirements?: string
   }
   access: {
     has_access: boolean
     reason: string
+    is_free?: boolean
     product_id?: number
+    access_product_ids?: number[]
+    purchased_product_id?: number
   }
 }
 
 // Fetch all courses
 export async function getAllCourses(): Promise<Course[]> {
-  const apiUrl = process.env.WORDPRESS_API_URL || 'http://blackboard-local.local'
+  const apiUrl = process.env.WORDPRESS_API_URL || process.env.NEXT_PUBLIC_WORDPRESS_API_URL || 'http://localhost:10074'
 
   try {
     const response = await fetch(`${apiUrl}/wp-json/blackboard/v1/courses`, {
@@ -85,7 +170,7 @@ export async function getAllCourses(): Promise<Course[]> {
 
 // Fetch single course by slug
 export async function getCourseBySlug(slug: string): Promise<Course | null> {
-  const apiUrl = process.env.WORDPRESS_API_URL || 'http://blackboard-local.local'
+  const apiUrl = process.env.WORDPRESS_API_URL || process.env.NEXT_PUBLIC_WORDPRESS_API_URL || 'http://localhost:10074'
 
   try {
     const response = await fetch(`${apiUrl}/wp-json/blackboard/v1/courses/${slug}`, {

@@ -108,21 +108,31 @@ export async function POST(request: NextRequest) {
     console.log('Order status:', order.status)
     console.log('Payment method:', body.paymentMethod)
 
-    // For headless checkout, we don't redirect to WooCommerce
-    // Instead, we handle everything on our side
-    // The order is created with appropriate status:
-    // - 'on-hold' for bank transfer (awaiting payment)
-    // - 'pending' for other methods (payment to be processed)
-    
-    // In a production environment, you would:
-    // 1. For Stripe: Use Stripe.js to process payment client-side
-    // 2. For PayPal: Use PayPal SDK to process payment
-    // 3. For Bank Transfer: Show bank details for manual transfer
-    
-    // For now, we'll just return success and show order confirmation
+    // Fetch payment URL from WordPress plugin
+    let paymentUrl = null
+    let paymentData = null
 
-    // Return the order details without payment URL
-    // The frontend will handle the success flow
+    try {
+      const wpUrl = process.env.WORDPRESS_API_URL || process.env.NEXT_PUBLIC_WOO_API_URL?.replace('/wp-json/wc/v3', '')
+      const paymentUrlEndpoint = `${wpUrl}/wp-json/blackboard/v1/orders/${order.id}/payment-url`
+
+      console.log('Fetching payment URL from:', paymentUrlEndpoint)
+
+      const paymentResponse = await fetch(paymentUrlEndpoint)
+
+      if (paymentResponse.ok) {
+        paymentData = await paymentResponse.json()
+        paymentUrl = paymentData.payment_url
+        console.log('Payment URL retrieved:', paymentUrl)
+        console.log('Payment data:', paymentData)
+      } else {
+        console.error('Failed to fetch payment URL:', await paymentResponse.text())
+      }
+    } catch (error) {
+      console.error('Error fetching payment URL:', error)
+    }
+
+    // Return the order details with payment URL
     return NextResponse.json({
       success: true,
       order: {
@@ -135,6 +145,9 @@ export async function POST(request: NextRequest) {
         paymentMethodTitle: order.payment_method_title,
         billingAddress: order.billing,
         shippingAddress: order.shipping,
+        // Payment URL for redirect
+        paymentUrl: paymentUrl,
+        paymentData: paymentData,
         // Include bank details if bank transfer
         bankDetails: body.paymentMethod === 'bacs' ? {
           accountName: 'BlackBoard Training GmbH',
