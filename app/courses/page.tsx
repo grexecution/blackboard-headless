@@ -6,7 +6,14 @@ import { GraduationCap } from 'lucide-react'
 export const dynamic = 'force-dynamic'
 
 export default async function CoursesPage() {
-  const courses = await getAllCourses()
+  let courses: any[] = []
+  try {
+    courses = await getAllCourses()
+  } catch (error) {
+    console.error('Error fetching courses:', error)
+    // Return empty array to allow build to continue
+    courses = []
+  }
   const categories = getUniqueCourseCategories(courses)
 
   return (

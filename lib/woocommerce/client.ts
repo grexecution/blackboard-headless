@@ -24,22 +24,17 @@ export class WooCommerceClient {
     const consumerKey = process.env.WOO_CONSUMER_KEY || ''
     const consumerSecret = process.env.WOO_CONSUMER_SECRET || ''
 
-    // In production, throw clear errors (only server-side)
-    if (!url && process.env.NODE_ENV === 'production') {
-      throw new Error('WP_BASE_URL or NEXT_PUBLIC_WOO_API_URL environment variable is required')
-    }
-    if (!consumerKey && process.env.NODE_ENV === 'production') {
-      throw new Error('WOO_CONSUMER_KEY environment variable is required')
-    }
-    if (!consumerSecret && process.env.NODE_ENV === 'production') {
-      throw new Error('WOO_CONSUMER_SECRET environment variable is required')
-    }
-
+    // Store config even if empty - let individual requests handle missing credentials
     this.config = {
       url,
       consumerKey,
       consumerSecret,
     }
+  }
+
+  // Check if credentials are available
+  hasCredentials(): boolean {
+    return !!(this.config.url && this.config.consumerKey && this.config.consumerSecret)
   }
 
   private getAuthHeader(): string {
@@ -56,8 +51,13 @@ export class WooCommerceClient {
       throw new Error('WooCommerce API calls can only be made from the server')
     }
 
+    // Check if credentials are available
+    if (!this.hasCredentials()) {
+      throw new Error('WooCommerce credentials not configured')
+    }
+
     const url = `${this.config.url}/wp-json/wc/v3${endpoint}`
-    
+
     const response = await fetch(url, {
       ...options,
       headers: {

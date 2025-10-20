@@ -10,7 +10,14 @@ export const dynamic = 'force-static'
 
 export default async function ProCoachPage() {
   // Get ProCoach courses from WooCommerce
-  const allCourses = await getAllCourses()
+  let allCourses: any[] = []
+  try {
+    allCourses = await getAllCourses()
+  } catch (error) {
+    console.error('Error fetching courses:', error)
+    // Return empty array to allow build to continue
+    allCourses = []
+  }
   const procoachCourses = getCoursesByCategory(allCourses, 'procoach')
 
   return (

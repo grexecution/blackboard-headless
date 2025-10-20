@@ -13,8 +13,16 @@ export const metadata = {
 
 export default async function ShopPage() {
   console.log('[Shop] Rendering shop page...')
-  const products = await getAllProducts()
-  console.log(`[Shop] Loaded ${products.length} products`)
+
+  let products: any[] = []
+  try {
+    products = await getAllProducts()
+    console.log(`[Shop] Loaded ${products.length} products`)
+  } catch (error) {
+    console.error('[Shop] Failed to fetch products:', error)
+    // Return empty state instead of crashing
+    products = []
+  }
   
   // Categorize products
   const blackboardProducts = products.filter(p => 
@@ -31,25 +39,25 @@ export default async function ShopPage() {
     return 0
   })
   
-  const accessories = products.filter(p => 
-    p.categories.some(cat => 
-      cat.slug === 'zubehor' || 
-      cat.slug === 'accessories' || 
+  const accessories = products.filter(p =>
+    p.categories.some((cat: any) =>
+      cat.slug === 'zubehor' ||
+      cat.slug === 'accessories' ||
       cat.name.toLowerCase().includes('replacement')
     )
   )
-  
-  const procoachProducts = products.filter(p => 
-    p.categories.some(cat => 
-      cat.slug === 'procoach' || 
+
+  const procoachProducts = products.filter(p =>
+    p.categories.some((cat: any) =>
+      cat.slug === 'procoach' ||
       cat.slug === 'certifications' ||
       cat.name.toLowerCase().includes('certification')
     )
   )
-  
-  const workshopProducts = products.filter(p => 
-    p.categories.some(cat => 
-      cat.slug === 'workshops' || 
+
+  const workshopProducts = products.filter(p =>
+    p.categories.some((cat: any) =>
+      cat.slug === 'workshops' ||
       cat.name.toLowerCase().includes('workshop')
     )
   )

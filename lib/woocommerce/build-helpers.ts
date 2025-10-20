@@ -5,16 +5,22 @@ import { Product, ProductVariation } from './products'
 // Direct API calls without caching for build-time static generation
 export async function getAllProductsForBuild(): Promise<Product[]> {
   console.log('[Build Helper] Fetching all products directly from WooCommerce...')
-  
+
+  // Check if credentials are available
+  if (!wooClient.hasCredentials()) {
+    console.warn('[Build Helper] WooCommerce credentials not available, returning empty array')
+    return []
+  }
+
   const queryParams = new URLSearchParams()
   queryParams.append('per_page', '100')
   queryParams.append('status', 'publish')
-  
+
   const endpoint = `/products?${queryParams.toString()}`
   const products = await wooClient.request<Product[]>(endpoint)
-  
+
   console.log(`[Build Helper] Fetched ${products.length} products`)
-  
+
   // Filter to ensure only published products
   return products.filter(product => product.status === 'publish')
 }
