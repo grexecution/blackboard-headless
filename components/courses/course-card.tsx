@@ -73,30 +73,21 @@ export default function CourseCard({ course }: CourseCardProps) {
               </div>
             </div>
 
-            {/* Badges */}
-            <div className="absolute top-3 left-3 flex gap-2">
-              {/* Course Type Badge - Black with Icon */}
+            {/* Course Type Badge - Left side */}
+            <div className="absolute top-3 left-3">
               <span className="bg-black/80 backdrop-blur-sm text-white px-2.5 py-1 rounded-full text-xs font-semibold flex items-center gap-1">
                 <CourseTypeIcon className="h-3.5 w-3.5" />
                 {courseType}
               </span>
+            </div>
 
-              {/* Certificate Badge - Show on right if locked, otherwise here */}
-              {course.acf?.certificate_awarded && (!isLocked || hasAccess) && (
+            {/* Certificate Badge - Always on the RIGHT side */}
+            {course.acf?.certificate_awarded && (
+              <div className="absolute top-3 right-3">
                 <span className="bg-black/80 backdrop-blur-sm text-[#ffed00] px-2.5 py-1 rounded-full text-xs font-semibold flex items-center gap-1">
                   <Award className="h-3.5 w-3.5" />
                   Certificate
                 </span>
-              )}
-            </div>
-
-            {/* Certificate Badge on Right (when course is locked) */}
-            {isLocked && !hasAccess && course.acf?.certificate_awarded && (
-              <div className="absolute top-3 right-3">
-                <div className="bg-black/80 backdrop-blur-sm text-[#ffed00] px-3 py-1.5 rounded-full flex items-center gap-1.5">
-                  <Award className="h-3.5 w-3.5" />
-                  <span className="text-xs font-semibold">Certificate</span>
-                </div>
               </div>
             )}
           </div>
