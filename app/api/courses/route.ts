@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { authOptions } from '@/lib/auth'
 
 export async function GET(request: NextRequest) {
-  const apiUrl = process.env.WORDPRESS_API_URL || process.env.NEXT_PUBLIC_WORDPRESS_API_URL || 'http://localhost:10074'
+  const apiUrl = process.env.WORDPRESS_API_URL || process.env.NEXT_PUBLIC_WORDPRESS_API_URL || process.env.WP_BASE_URL || 'https://blackboard-training.com'
 
   // Get the user's session to extract JWT token
   const session = await getServerSession(authOptions) as any

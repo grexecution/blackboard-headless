@@ -195,6 +195,7 @@ export default function HomeContent({ blackboardProducts, blackboardWithVariatio
                           </h3>
                           <ProductPriceDisplay
                             product={blackboardProducts[0]}
+                            variations={blackboardWithVariations.find(p => p.id === blackboardProducts[0].id)?.variations}
                             showFrom={true}
                             size="sm"
                             className="text-sm text-gray-600"

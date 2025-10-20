@@ -78,7 +78,9 @@ export default function AccountPage() {
   const fetchOrders = async () => {
     setOrdersLoading(true)
     try {
-      const res = await fetch('/api/woo/orders?customer=' + session?.user.id)
+      // Fetch only recent orders (last 20) for faster loading
+      // User can always load more if needed
+      const res = await fetch('/api/woo/orders?customer=' + session?.user.id + '&per_page=20&orderby=date&order=desc')
       const data = await res.json()
       setOrders(data)
     } catch (error) {
@@ -100,9 +102,8 @@ export default function AccountPage() {
         return
       }
 
-      // Fetch all courses
-      const wpUrl = process.env.NEXT_PUBLIC_WORDPRESS_API_URL || 'http://localhost:10074'
-      const coursesResponse = await fetch(`${wpUrl}/wp-json/blackboard/v1/courses`, {
+      // Use API route to fetch courses (bypasses CORS issues)
+      const coursesResponse = await fetch('/api/courses', {
         cache: 'no-store',
       })
 
