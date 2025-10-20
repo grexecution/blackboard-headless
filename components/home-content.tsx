@@ -475,21 +475,6 @@ export default function HomeContent({ blackboardProducts, blackboardWithVariatio
                         <ChevronRight className="ml-2 h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" />
                       </Link>
 
-                      {/* Trust Badges */}
-                      <div className="mt-6 pt-6 border-t border-gray-200 grid grid-cols-3 gap-4 text-center">
-                        <div>
-                          <Shield className="h-5 w-5 mx-auto mb-1 text-gray-400" />
-                          <p className="text-xs text-gray-600">Lifetime<br/>Warranty</p>
-                        </div>
-                        <div>
-                          <RefreshCw className="h-5 w-5 mx-auto mb-1 text-gray-400" />
-                          <p className="text-xs text-gray-600">30-Day<br/>Returns</p>
-                        </div>
-                        <div>
-                          <Star className="h-5 w-5 mx-auto mb-1 text-gray-400" />
-                          <p className="text-xs text-gray-600">4.9/5<br/>Rating</p>
-                        </div>
-                      </div>
                     </div>
                   </div>
                 )
@@ -1056,6 +1041,7 @@ export default function HomeContent({ blackboardProducts, blackboardWithVariatio
       </section>
 
       {/* Guarantee Section */}
+        {/*
       <section className="py-20 bg-gradient-to-br from-[#ffed00] to-yellow-500">
         <div className="max-w-screen-xl mx-auto px-4 lg:px-6">
           <div className="text-center">
@@ -1077,6 +1063,7 @@ export default function HomeContent({ blackboardProducts, blackboardWithVariatio
           </div>
         </div>
       </section>
+*/}
 
       {/* Final CTA Section */}
       <section className="py-20 bg-black text-white">

@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
+import { useSession } from 'next-auth/react'
 import Link from 'next/link'
 import {
   PlayCircle, CheckCircle, Lock, Clock, FileText, Download,
@@ -13,7 +14,23 @@ interface CourseLearnClientProps {
   course: Course
 }
 
-export function CourseLearnClient({ course }: CourseLearnClientProps) {
+export function CourseLearnClient({ course: initialCourse }: CourseLearnClientProps) {
+  const { data: session, status } = useSession()
+
+  // Client-side access check - computed immediately to prevent FOUC
+  const course = useMemo(() => {
+    const enrolledCourseIds = (session as any)?.enrolledCourseIds || []
+    const hasAccess = enrolledCourseIds.includes(initialCourse.id) || initialCourse.access?.is_free || false
+
+    return {
+      ...initialCourse,
+      access: {
+        ...initialCourse.access,
+        has_access: hasAccess,
+        reason: hasAccess ? 'enrolled' : (session ? 'not_enrolled' : 'login_required')
+      }
+    }
+  }, [initialCourse, session])
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0)
   const [completedVideos, setCompletedVideos] = useState<number[]>([])
   const [sidebarOpen, setSidebarOpen] = useState(true)

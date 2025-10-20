@@ -2,8 +2,9 @@ import { getAllCourses, getUniqueCourseCategories } from '@/lib/woocommerce/cour
 import CoursesGrid from '@/components/courses/courses-grid'
 import { GraduationCap } from 'lucide-react'
 
-// Make dynamic for client-side access checking
-export const dynamic = 'force-dynamic'
+// Static generation for fast page loads
+export const revalidate = false
+export const dynamic = 'force-static'
 
 export default async function CoursesPage() {
   let courses: any[] = []

@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
+import { useSession } from 'next-auth/react'
 import { Course, getCoursePrice } from '@/lib/woocommerce/courses'
 import { Clock, PlayCircle, Award, Users, BookOpen, Download, Check, Lock, Package, Wrench, ShoppingCart, X, Calendar } from 'lucide-react'
 import Link from 'next/link'
@@ -13,13 +14,29 @@ interface CourseDetailClientProps {
   course: Course
 }
 
-export function CourseDetailClient({ course }: CourseDetailClientProps) {
+export function CourseDetailClient({ course: initialCourse }: CourseDetailClientProps) {
+  const { data: session, status } = useSession()
   const { getCurrencySymbol } = useCurrency()
   const currencySymbol = getCurrencySymbol()
   const [activeTab, setActiveTab] = useState<'description' | 'includes' | 'learn' | 'equipment'>('description')
   const [isAdding, setIsAdding] = useState(false)
   const [showBookingModal, setShowBookingModal] = useState(false)
   const { addItem } = useCart()
+
+  // Client-side access check - computed immediately to prevent FOUC
+  const course = useMemo(() => {
+    const enrolledCourseIds = (session as any)?.enrolledCourseIds || []
+    const hasAccess = enrolledCourseIds.includes(initialCourse.id) || initialCourse.access?.is_free || false
+
+    return {
+      ...initialCourse,
+      access: {
+        ...initialCourse.access,
+        has_access: hasAccess,
+        reason: hasAccess ? 'enrolled' : (session ? 'not_enrolled' : 'login_required')
+      }
+    }
+  }, [initialCourse, session])
 
   // Get course type and booking widget
   const rawCourseType = course.acf?.course_type || 'on_demand'
