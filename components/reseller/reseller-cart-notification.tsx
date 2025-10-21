@@ -46,9 +46,15 @@ export function ResellerCartNotification() {
             </p>
             <p className="text-green-100 text-xs mt-1">
               You&apos;re saving {currencySymbol}
-              {totalSavings.toFixed(2)} on {itemsWithDiscount} product
-              {itemsWithDiscount > 1 ? 's' : ''} in your cart
+              {totalSavings.toFixed(2)} total
             </p>
+            <div className="mt-2 space-y-1">
+              {eligibleProducts.map((item) => (
+                <div key={item.id} className="text-green-100 text-xs">
+                  • <span className="font-medium">{item.name}</span> ({item.quantity}x) - Discount applied
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
@@ -57,7 +63,6 @@ export function ResellerCartNotification() {
 
   // Show products nearing discount threshold
   if (nearingDiscount.length > 0) {
-    const firstProduct = nearingDiscount[0]
     return (
       <div className="sticky top-0 z-10 bg-gradient-to-r from-yellow-900 to-yellow-700 border-b border-yellow-600 px-4 py-3">
         <div className="flex items-start gap-3">
@@ -69,13 +74,15 @@ export function ResellerCartNotification() {
               Reseller Discount Available!
             </p>
             <p className="text-yellow-100 text-xs mt-1">
-              Add {firstProduct.quantityNeeded} more{' '}
-              <span className="font-medium">{firstProduct.item.name}</span> to
-              unlock your bulk pricing
-              {nearingDiscount.length > 1 && (
-                <span> (and {nearingDiscount.length - 1} other product{nearingDiscount.length > 2 ? 's' : ''})</span>
-              )}
+              Add more products to unlock bulk pricing:
             </p>
+            <div className="mt-2 space-y-1">
+              {nearingDiscount.map(({ item, quantityNeeded }) => (
+                <div key={item.id} className="text-yellow-100 text-xs">
+                  • <span className="font-medium">{item.name}</span> - Add {quantityNeeded} more (currently {item.quantity}x)
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
