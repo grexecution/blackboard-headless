@@ -374,7 +374,7 @@ export function SideCart({ taxRates, shippingZones }: SideCartProps) {
                                             const saved = resellerPriceInfo.discountAmount * item.quantity
                                             return (
                                               <div className="inline-flex items-center gap-1 bg-green-900/40 border border-green-700/50 text-green-400 px-2 py-0.5 rounded text-[10px] font-medium">
-                                                Reseller Discount • {currencySymbol}{saved.toFixed(2)} saved
+                                                Reseller Discount • {currencySymbol}{saved.toFixed(2)}
                                               </div>
                                             )
                                           }
@@ -460,7 +460,7 @@ export function SideCart({ taxRates, shippingZones }: SideCartProps) {
                           <div className="flex justify-between text-sm mb-2 bg-green-500/10 -mx-4 px-4 py-1.5 rounded">
                             <p className="text-green-400 font-medium flex items-center gap-1">
                               <Gift className="h-3.5 w-3.5" />
-                              Reseller Discount Saved
+                              Reseller Discount
                             </p>
                             <p className="text-green-400 font-semibold">-{currencySymbol}{totalSavings.toFixed(2)}</p>
                           </div>

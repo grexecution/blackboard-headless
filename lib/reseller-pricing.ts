@@ -31,13 +31,16 @@ export function calculateResellerPrice(
   discountAmount: number
   discountPercentage: number
 } {
-  // Get the regular price based on currency
-  const originalPriceStr =
-    currency === 'USD'
-      ? item.currency_prices?.usd.regular_price || '0'
-      : item.currency_prices?.eur.regular_price || '0'
+  // Get the regular price based on currency with proper fallback
+  // For variable products, currency_prices.regular_price may be empty, so fall back to item.price
+  const usdRegular = item.currency_prices?.usd?.regular_price || String(item.price || '0')
+  const eurRegular = item.currency_prices?.eur?.regular_price || String(item.price || '0')
 
-  const originalPrice = parseFloat(originalPriceStr)
+  const originalPriceStr = currency === 'USD'
+    ? (usdRegular || eurRegular)
+    : (eurRegular || usdRegular)
+
+  const originalPrice = parseFloat(originalPriceStr) || 0
 
   // Check if reseller pricing applies
   if (!shouldApplyResellerPricing(item, isReseller)) {
