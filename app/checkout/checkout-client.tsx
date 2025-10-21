@@ -393,9 +393,6 @@ export default function CheckoutClient({ countries, taxRates, shippingZones }: C
         throw new Error(data.error || 'Failed to process checkout')
       }
 
-      // Clear cart after successful order creation
-      clearCart()
-
       // Store order details in sessionStorage for the success page
       sessionStorage.setItem('lastOrder', JSON.stringify(data.order))
 
@@ -424,25 +421,30 @@ export default function CheckoutClient({ countries, taxRates, shippingZones }: C
         }
 
         console.log('Redirecting to Stripe Checkout...')
-        setProcessingStep('redirecting')
-        await new Promise(resolve => setTimeout(resolve, 500))
-        // Redirect to Stripe's hosted checkout page
+        // Clear cart only right before redirect (prevents flash of empty cart)
+        clearCart()
+        // Redirect to Stripe's hosted checkout page (keep isProcessing true so modal stays visible)
         window.location.href = stripeData.url
+        // Note: No code runs after this line - page navigation begins immediately
+        return
 
       } else if (selectedPaymentMethod === 'paypal') {
         // TODO: Implement PayPal - for now redirect to WordPress
         console.log('PayPal payment - redirecting to WordPress for now...')
+        clearCart()
         if (data.order.paymentUrl) {
           window.location.href = data.order.paymentUrl
         } else {
           router.push(`/order-success?order=${data.order.id}&number=${data.order.orderNumber}&method=${data.order.paymentMethod}`)
         }
+        return
 
       } else {
         // For bank transfer, go directly to success page
         setProcessingStep('redirecting')
-        await new Promise(resolve => setTimeout(resolve, 500))
+        clearCart()
         router.push(`/order-success?order=${data.order.id}&number=${data.order.orderNumber}&method=${data.order.paymentMethod}`)
+        return
       }
     } catch (err: any) {
       setError(err.message || 'Failed to process order. Please try again.')
