@@ -448,17 +448,20 @@ export function SideCart({ taxRates, shippingZones }: SideCartProps) {
                           </div>
                         </div>
 
-                        {/* Subtotal (excl. tax) - show before discount if reseller discount applied */}
+                        {/* Subtotal (excl. tax) */}
                         <div className="flex justify-between text-sm mb-2">
                           <p className="text-gray-400">Subtotal (excl. tax)</p>
-                          <p className="text-white">{currencySymbol}{(subtotalBeforeDiscount - tax).toFixed(2)}</p>
+                          <p className="text-white">{currencySymbol}{totalPrice.toFixed(2)}</p>
                         </div>
 
-                        {/* Reseller Discount */}
+                        {/* Reseller Discount - show savings achieved */}
                         {totalSavings > 0 && (
-                          <div className="flex justify-between text-sm mb-2">
-                            <p className="text-green-400">Reseller Discount</p>
-                            <p className="text-green-400">-{currencySymbol}{totalSavings.toFixed(2)}</p>
+                          <div className="flex justify-between text-sm mb-2 bg-green-500/10 -mx-4 px-4 py-1.5 rounded">
+                            <p className="text-green-400 font-medium flex items-center gap-1">
+                              <Gift className="h-3.5 w-3.5" />
+                              Reseller Discount Saved
+                            </p>
+                            <p className="text-green-400 font-semibold">-{currencySymbol}{totalSavings.toFixed(2)}</p>
                           </div>
                         )}
 
