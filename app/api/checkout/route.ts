@@ -61,12 +61,15 @@ export async function POST(request: NextRequest) {
         })),
       shipping_lines: [
         {
-          method_id: 'flat_rate',
-          method_title: body.totalPrice >= 100 ? 'Free Shipping' : 'Flat Rate',
-          total: body.totalPrice >= 100 ? '0.00' : '7.95',
+          method_id: 'flexible_shipping_single',
+          method_title: body.shippingMethodTitle || 'Shipping',
+          total: (body.shippingCost || 0).toFixed(2),
         }
       ],
-      customer_note: body.customerNote || '',
+      customer_note: [
+        body.customerNote || '',
+        body.resellerDiscount > 0 ? `\n---\n📊 Reseller Discount Applied: ${body.resellerDiscount.toFixed(2)} ${body.billing?.country === 'US' ? 'USD' : 'EUR'}\nThis is a reseller bulk order with discounted pricing.` : ''
+      ].filter(Boolean).join(''),
       customer_id: body.customerId || 0, // Link to WooCommerce customer if logged in
       status: orderStatus,
       meta_data: [
@@ -90,6 +93,14 @@ export async function POST(request: NextRequest) {
         ...(body.paymentIntentId ? [{
           key: '_stripe_intent_id',
           value: body.paymentIntentId,
+        }] : []),
+        // Store reseller discount info
+        ...(body.resellerDiscount > 0 ? [{
+          key: '_reseller_discount',
+          value: body.resellerDiscount.toString(),
+        }, {
+          key: '_is_reseller_order',
+          value: 'yes',
         }] : []),
       ],
     }

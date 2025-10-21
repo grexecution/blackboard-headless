@@ -15,6 +15,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { getAllCourses, getUserProgress, checkCourseAccess } from '@/lib/lms/api'
 import CoursesGridSimple from '@/components/courses/courses-grid-simple'
+import { ResellerBenefitsTable } from '@/components/reseller/reseller-benefits-table'
 
 interface AccountClientProps {
   initialCourses: any[]
@@ -146,9 +147,13 @@ export default function AccountClient({ initialCourses, initialOrders }: Account
     return null
   }
 
+  // Check affiliate status (from affiliate system API)
   const isAffiliate = affiliateData && affiliateData.status === 'active'
 
-  // Add affiliate dashboard if user is an affiliate
+  // Check reseller role (from WooCommerce user role)
+  const isReseller = session?.user?.role === 'reseller'
+
+  // Add affiliate dashboard if user is an affiliate (NOT related to reseller role)
   const menuItems = isAffiliate ? [
     ...baseMenuItems,
     { id: 'affiliate', label: 'Affiliate Dashboard', icon: TrendingUp }
@@ -173,6 +178,9 @@ export default function AccountClient({ initialCourses, initialOrders }: Account
                 Welcome back, {session.user.firstName || session.user.name}!
                 {isAffiliate && (
                   <span className="bb-affiliate-badge">AFFILIATE</span>
+                )}
+                {isReseller && (
+                  <span className="bb-affiliate-badge" style={{ backgroundColor: '#10b981', marginLeft: '0.5rem' }}>RESELLER</span>
                 )}
               </h1>
               <p className="bb-welcome-subtitle">
@@ -259,6 +267,13 @@ export default function AccountClient({ initialCourses, initialOrders }: Account
                   </div>
                 </div>
               </div>
+
+              {/* Reseller Benefits - Show for resellers only */}
+              {isReseller && (
+                <div className="bb-dashboard-section">
+                  <ResellerBenefitsTable />
+                </div>
+              )}
 
               {/* Recent Orders */}
               <div className="bb-dashboard-section">

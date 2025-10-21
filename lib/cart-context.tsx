@@ -1,7 +1,7 @@
 'use client'
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
-import { Product, ProductVariation } from '@/lib/woocommerce/products'
+import { Product, ProductVariation, ResellerPricing } from '@/lib/woocommerce/products'
 
 export interface CartItem {
   id: string
@@ -11,6 +11,7 @@ export interface CartItem {
   quantity: number
   image?: string
   slug: string
+  weight?: string | number // Product weight for shipping calculations
   variationId?: number
   variation?: {
     attributes: Array<{ name: string; value: string }>
@@ -29,6 +30,15 @@ export interface CartItem {
       regular_price: string
       sale_price: string
     }
+  }
+  // Reseller pricing data
+  reseller_pricing?: ResellerPricing
+  // Applied reseller discount
+  reseller_discount?: {
+    original_price_eur: string
+    original_price_usd: string
+    discounted_price_eur: string
+    discounted_price_usd: string
   }
 }
 
@@ -103,6 +113,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         quantity,
         image: product.images[0]?.src,
         slug: product.slug,
+        weight: variation?.weight ?? product.weight, // Include weight for shipping calculations
         variationId: variation?.id,
         variation: variation ? {
           attributes: variation.attributes.map(attr => ({
@@ -112,7 +123,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
         } : undefined,
         stock_quantity: variation?.stock_quantity ?? product.stock_quantity,
         manage_stock: variation?.manage_stock ?? product.manage_stock,
-        currency_prices: currencyPrices
+        currency_prices: currencyPrices,
+        reseller_pricing: product.reseller_pricing
       }
       
       // Check if this is a BlackBoard Set and add freebie
@@ -145,6 +157,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
             quantity: 1,
             image: workshopImage,
             slug: 'functional-foot-workshop',
+            weight: 0, // Virtual product - no weight
             isFreebie: true,
             parentProductId: product.id
           }

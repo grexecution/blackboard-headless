@@ -84,6 +84,10 @@ export const authOptions: NextAuthOptions = {
             const enrolledCourseIds: number[] = data.enrolled_course_ids || []
             console.log('[LOGIN] ✅ Enrolled courses from JWT response:', enrolledCourseIds)
 
+            // Extract role from customer data (WooCommerce stores user role)
+            const userRole = customerData.role || 'customer'
+            console.log('[LOGIN] User role:', userRole)
+
             return {
               id: userId.toString(),
               email: data.user_email,
@@ -96,6 +100,7 @@ export const authOptions: NextAuthOptions = {
               shipping: customerData.shipping || {},
               avatar: undefined,
               enrolledCourseIds,
+              role: userRole,
             }
           }
 
@@ -127,6 +132,7 @@ export const authOptions: NextAuthOptions = {
         token.jwt = user.token
         token.userId = user.id
         token.enrolledCourseIds = user.enrolledCourseIds || []
+        token.role = user.role
       }
       return token
     },
@@ -142,6 +148,7 @@ export const authOptions: NextAuthOptions = {
           billing: token.billing as any,
           shipping: token.shipping as any,
           avatar: token.avatar as string,
+          role: token.role as string,
         }
         session.accessToken = token.accessToken as string
         session.jwt = token.jwt as string

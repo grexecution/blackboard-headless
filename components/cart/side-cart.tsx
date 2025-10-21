@@ -5,6 +5,12 @@ import { Dialog, Transition } from '@headlessui/react'
 import { X, Plus, Minus, ShoppingBag, Truck, Shield, CreditCard, Gift, Package } from 'lucide-react'
 import { useCart, CartItem } from '@/lib/cart-context'
 import { useCurrency, getProductPrice } from '@/lib/currency-context'
+import { calculateTax, TaxRate } from '@/lib/woocommerce/countries-taxes'
+import { calculateCartWeight, findShippingZoneForCountry, calculateShippingCost, ShippingZoneWithMethods } from '@/lib/woocommerce/shipping'
+import { getCountryFromIPClient } from '@/lib/geolocation'
+import { ResellerCartNotification } from '@/components/reseller/reseller-cart-notification'
+import { calculateResellerPrice, calculateTotalResellerSavings } from '@/lib/reseller-pricing'
+import { useSession } from 'next-auth/react'
 import Image from 'next/image'
 import Link from 'next/link'
 
@@ -38,29 +44,32 @@ const PaymentIcons = () => (
   </div>
 )
 
-// Shipping rates by country
-const getShippingRate = (country: string, subtotal: number) => {
-  // Free shipping over €100 for most countries
-  if (subtotal >= 100) return 0
-  
-  // Country-specific shipping rates
-  const rates: Record<string, number> = {
-    'DE': 5.95,  // Germany
-    'AT': 7.95,  // Austria
-    'CH': 12.95, // Switzerland
-    'FR': 8.95,  // France
-    'IT': 9.95,  // Italy
-    'ES': 9.95,  // Spain
-    'NL': 7.95,  // Netherlands
-    'BE': 7.95,  // Belgium
-    'GB': 14.95, // UK
-    'US': 19.95, // USA
+// Country name lookup
+const getCountryName = (code: string): string => {
+  const countryNames: Record<string, string> = {
+    'DE': 'Germany',
+    'AT': 'Austria',
+    'CH': 'Switzerland',
+    'FR': 'France',
+    'IT': 'Italy',
+    'ES': 'Spain',
+    'NL': 'Netherlands',
+    'BE': 'Belgium',
+    'GB': 'United Kingdom',
+    'US': 'United States',
+    'CA': 'Canada',
+    'AU': 'Australia',
+    'RO': 'Romania',
   }
-  
-  return rates[country] || 12.95 // Default international rate
+  return countryNames[code] || code
 }
 
-export function SideCart() {
+interface SideCartProps {
+  taxRates: TaxRate[]
+  shippingZones: ShippingZoneWithMethods[]
+}
+
+export function SideCart({ taxRates, shippingZones }: SideCartProps) {
   const {
     items,
     isOpen,
@@ -70,16 +79,30 @@ export function SideCart() {
     totalItems
   } = useCart()
 
+  const { data: session } = useSession()
   const { currency, formatPrice, getCurrencySymbol } = useCurrency()
 
   const [country, setCountry] = useState('DE')
+  const [countryName, setCountryName] = useState('Germany')
   const [shipping, setShipping] = useState(0)
   const [tax, setTax] = useState(0)
+  const [taxRate, setTaxRate] = useState(0)
+  const [isLoadingCountry, setIsLoadingCountry] = useState(true)
+  const [hasPhysicalProducts, setHasPhysicalProducts] = useState(false)
 
-  // Helper to get currency-aware price for a cart item
+  const isReseller = session?.user?.role === 'reseller'
+
+  // Helper to get currency-aware price for a cart item (with reseller pricing)
   const getItemPrice = (item: CartItem): number => {
     if (item.isFreebie) return 0
 
+    // Check if reseller pricing applies
+    const resellerPriceInfo = calculateResellerPrice(item, currency, isReseller)
+    if (resellerPriceInfo.hasDiscount) {
+      return resellerPriceInfo.price
+    }
+
+    // Regular pricing
     if (!item.currency_prices) {
       // Fallback to legacy price
       return item.price
@@ -97,34 +120,82 @@ export function SideCart() {
   // Get currency symbol
   const currencySymbol = getCurrencySymbol()
 
-  // Calculate shipping based on country
+  // Detect country from IP on mount
   useEffect(() => {
-    const shippingRate = getShippingRate(country, totalPrice)
-    setShipping(shippingRate)
-  }, [totalPrice, country])
-
-  // Calculate tax based on country (VAT included in price for EU)
-  useEffect(() => {
-    // For EU countries, VAT is included in the price
-    // Show the VAT amount that's included
-    const vatRate = 0.19 // 19% German VAT
-    const vatAmount = (totalPrice / (1 + vatRate)) * vatRate
-    setTax(vatAmount)
-  }, [totalPrice])
-
-  // Detect country from IP
-  useEffect(() => {
-    fetch('https://ipapi.co/json/')
-      .then(res => res.json())
-      .then(data => {
-        if (data.country_code) {
-          setCountry(data.country_code)
-        }
-      })
-      .catch(() => {
+    const detectCountry = async () => {
+      setIsLoadingCountry(true)
+      try {
+        const detectedCountry = await getCountryFromIPClient()
+        setCountry(detectedCountry)
+        setCountryName(getCountryName(detectedCountry))
+      } catch (error) {
+        console.error('[Side Cart] Failed to detect country:', error)
         setCountry('DE')
-      })
+        setCountryName('Germany')
+      } finally {
+        setIsLoadingCountry(false)
+      }
+    }
+
+    detectCountry()
   }, [])
+
+  // Calculate tax and shipping when cart changes or country changes
+  useEffect(() => {
+    if (!country || items.length === 0) {
+      setShipping(0)
+      setTax(0)
+      setTaxRate(0)
+      return
+    }
+
+    // Calculate subtotal (excluding tax)
+    const { taxAmount, taxRate: calculatedTaxRate } = calculateTax(totalPrice, country, '', taxRates)
+    setTax(taxAmount)
+    setTaxRate(calculatedTaxRate)
+
+    // Calculate shipping based on cart weight and destination country
+    const cartItems = items.map(item => ({
+      id: item.id,
+      weight: item.weight,
+      quantity: item.quantity
+    }))
+
+    const totalWeight = calculateCartWeight(cartItems)
+
+    // If cart has no weight (virtual products only), shipping is not needed
+    if (totalWeight === 0) {
+      setShipping(0)
+      setHasPhysicalProducts(false)
+      return
+    }
+
+    // Cart has physical products
+    setHasPhysicalProducts(true)
+
+    // Find shipping zone for country
+    const zone = findShippingZoneForCountry(shippingZones, country)
+
+    if (!zone) {
+      console.warn(`[Side Cart] No shipping zone found for country ${country}`)
+      setShipping(0)
+      return
+    }
+
+    // Calculate shipping cost based on weight
+    const result = calculateShippingCost(zone, totalWeight)
+
+    if (!result) {
+      console.warn(`[Side Cart] No shipping rate found for weight ${totalWeight}kg in zone ${zone.name}`)
+      setShipping(0)
+      return
+    }
+
+    setShipping(result.cost)
+  }, [totalPrice, country, items, taxRates, shippingZones])
+
+  // Calculate reseller savings
+  const { totalSavings: resellerDiscount, itemsWithDiscount } = calculateTotalResellerSavings(items, currency, isReseller)
 
   const finalTotal = totalPrice + shipping
 
@@ -176,6 +247,9 @@ export function SideCart() {
                         <X className="h-5 w-5" />
                       </button>
                     </div>
+
+                    {/* Reseller Notification */}
+                    <ResellerCartNotification />
 
                     {/* Cart Items */}
                     <div className="flex-1 overflow-y-auto px-6 py-6">
@@ -272,9 +346,28 @@ export function SideCart() {
                                           <Plus className="h-3 w-3" />
                                         </button>
                                       </div>
-                                      <p className="text-sm font-medium">
-                                        {currencySymbol}{(getItemPrice(item) * item.quantity).toFixed(2)}
-                                      </p>
+                                      <div className="text-right">
+                                        {(() => {
+                                          const resellerPriceInfo = calculateResellerPrice(item, currency, isReseller)
+                                          if (resellerPriceInfo.hasDiscount) {
+                                            return (
+                                              <div>
+                                                <p className="text-xs text-gray-500 line-through">
+                                                  {currencySymbol}{(resellerPriceInfo.originalPrice * item.quantity).toFixed(2)}
+                                                </p>
+                                                <p className="text-sm font-medium text-green-400">
+                                                  {currencySymbol}{(resellerPriceInfo.price * item.quantity).toFixed(2)}
+                                                </p>
+                                              </div>
+                                            )
+                                          }
+                                          return (
+                                            <p className="text-sm font-medium">
+                                              {currencySymbol}{(getItemPrice(item) * item.quantity).toFixed(2)}
+                                            </p>
+                                          )
+                                        })()}
+                                      </div>
                                     </>
                                   ) : (
                                     <>
@@ -297,28 +390,61 @@ export function SideCart() {
                     {/* Checkout Section */}
                     {items.length > 0 && (
                       <div className="border-t border-gray-800 px-6 py-6">
-                        {/* Subtotal */}
-                        <div className="flex justify-between text-sm">
-                          <p>Subtotal</p>
-                          <p>{currencySymbol}{totalPrice.toFixed(2)}</p>
-                        </div>
-
-                        <div className="border-b border-gray-800 my-3" />
-
-                        {/* Shipping */}
-                        <div className="flex justify-between text-sm mb-2">
-                          <div className="flex items-center gap-1">
-                            <Truck className="h-3 w-3" />
-                            <span>Shipping to {country}</span>
+                        {/* Estimate Notice */}
+                        <div className="mb-4 p-3 bg-gray-900 rounded-md border border-gray-800">
+                          <div className="flex items-start gap-2">
+                            <Truck className="h-4 w-4 text-[#ffed00] mt-0.5 flex-shrink-0" />
+                            <div className="text-xs">
+                              <p className="text-gray-400">
+                                Shipping and tax based on <span className="text-white font-medium">{countryName}</span>.
+                                {isLoadingCountry && <span className="ml-1 text-gray-500">(Detecting...)</span>}
+                              </p>
+                              <p className="text-gray-500 mt-1">
+                                Final prices calculated at checkout.
+                              </p>
+                            </div>
                           </div>
-                          <p>{shipping === 0 ? 'Free' : `${currencySymbol}${shipping.toFixed(2)}`}</p>
                         </div>
 
-                        {/* Tax Info */}
-                        <div className="flex justify-between text-sm mb-3 text-gray-400">
-                          <p>VAT included (19%)</p>
-                          <p>{currencySymbol}{tax.toFixed(2)}</p>
+                        {/* Subtotal (excl. tax) */}
+                        <div className="flex justify-between text-sm mb-2">
+                          <p className="text-gray-400">Subtotal (excl. tax)</p>
+                          <p className="text-white">{currencySymbol}{(totalPrice - tax).toFixed(2)}</p>
                         </div>
+
+                        {/* Reseller Discount */}
+                        {resellerDiscount > 0 && (
+                          <div className="flex justify-between text-sm mb-2">
+                            <p className="text-green-400">Reseller Discount</p>
+                            <p className="text-green-400">-{currencySymbol}{resellerDiscount.toFixed(2)}</p>
+                          </div>
+                        )}
+
+                        {/* Tax */}
+                        {tax > 0 && (
+                          <div className="flex justify-between text-sm mb-2">
+                            <p className="text-gray-400">
+                              Tax ({taxRate > 0 ? `${taxRate.toFixed(0)}%` : 'VAT'})
+                            </p>
+                            <p className="text-white">{currencySymbol}{tax.toFixed(2)}</p>
+                          </div>
+                        )}
+
+                        {/* Shipping - only show if cart has physical products */}
+                        {hasPhysicalProducts && (
+                          <div className="flex justify-between text-sm mb-3">
+                            <div className="flex items-center gap-1">
+                              <span className="text-gray-400">Shipping</span>
+                            </div>
+                            <p className="text-white">
+                              {shipping === 0 ? (
+                                <span className="text-green-400 font-medium">Free</span>
+                              ) : (
+                                `${currencySymbol}${shipping.toFixed(2)}`
+                              )}
+                            </p>
+                          </div>
+                        )}
 
                         <div className="border-b border-gray-800 my-3" />
 
@@ -342,12 +468,7 @@ export function SideCart() {
                         >
                           Proceed to Checkout
                         </Link>
-                        
-                        {/* Info Text */}
-                        <p className="mt-3 text-xs text-gray-400 text-center">
-                          Prices include VAT. Shipping calculated at checkout.
-                        </p>
-                        
+
                         {/* Payment Methods */}
                         <div className="mt-4">
                           <PaymentIcons />

@@ -34,6 +34,13 @@ export interface CurrencyPrices {
   }
 }
 
+export interface ResellerPricing {
+  enabled: boolean
+  min_quantity: number
+  price_eur: string
+  price_usd: string
+}
+
 export interface ProductVariation {
   id: number
   price: string
@@ -51,6 +58,7 @@ export interface ProductVariation {
   stock_status: string
   in_stock: boolean
   manage_stock: boolean
+  weight?: string
   currency_prices?: CurrencyPrices
 }
 
@@ -75,12 +83,14 @@ export interface Product {
   stock_status: string
   in_stock: boolean
   manage_stock: boolean
+  weight?: string
   images: ProductImage[]
   categories: ProductCategory[]
   attributes: ProductAttribute[]
   variations?: number[]
   price_html?: string
   currency_prices?: CurrencyPrices
+  reseller_pricing?: ResellerPricing
   acf?: {
     product_detail_description?: string
     scope_of_delivery?: string
