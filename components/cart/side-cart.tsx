@@ -111,10 +111,28 @@ export function SideCart({ taxRates, shippingZones }: SideCartProps) {
     return parseFloat(priceData.displayPrice) || item.price
   }
 
-  // Calculate total price with currency awareness
-  const totalPrice = items.reduce((total, item) => {
-    return total + (getItemPrice(item) * item.quantity)
-  }, 0)
+  // Calculate total price with currency awareness and reseller savings
+  let totalPrice = 0
+  let totalSavings = 0
+  let subtotalBeforeDiscount = 0
+
+  items.forEach(item => {
+    if (item.isFreebie) return
+
+    const resellerPriceInfo = calculateResellerPrice(item, currency, isReseller)
+    const itemPrice = getItemPrice(item)
+
+    totalPrice += itemPrice * item.quantity
+
+    if (resellerPriceInfo.hasDiscount) {
+      // Add original price to subtotal before discount
+      subtotalBeforeDiscount += resellerPriceInfo.originalPrice * item.quantity
+      totalSavings += resellerPriceInfo.discountAmount * item.quantity
+    } else {
+      // No discount, so add regular price
+      subtotalBeforeDiscount += itemPrice * item.quantity
+    }
+  })
 
   // Get currency symbol
   const currencySymbol = getCurrencySymbol()
@@ -244,11 +262,11 @@ export function SideCart({ taxRates, shippingZones }: SideCartProps) {
                       </button>
                     </div>
 
-                    {/* Reseller Notification - Simple version */}
+                    {/* Reseller Notification - Premium version */}
                     {isReseller && items.some(item => item.reseller_pricing?.enabled) && (
-                      <div className="bg-gradient-to-r from-green-900/50 to-green-700/50 border-b border-green-600/30 px-4 py-2">
-                        <p className="text-green-100 text-xs text-center">
-                          🎯 Reseller bulk pricing active on eligible products
+                      <div className="bg-gradient-to-r from-green-900/30 to-green-800/30 border-b border-green-700/20 px-4 py-2.5">
+                        <p className="text-green-400 text-xs font-medium text-center tracking-wide">
+                          RESELLER BULK PRICING ACTIVE
                         </p>
                       </div>
                     )}
@@ -352,17 +370,18 @@ export function SideCart({ taxRates, shippingZones }: SideCartProps) {
                                         {(() => {
                                           const resellerPriceInfo = calculateResellerPrice(item, currency, isReseller)
                                           if (resellerPriceInfo.hasDiscount) {
+                                            const saved = resellerPriceInfo.discountAmount * item.quantity
                                             return (
-                                              <div className="text-[10px] text-green-400 font-medium">
-                                                💰 Bulk discount
+                                              <div className="inline-flex items-center gap-1 bg-green-900/40 border border-green-700/50 text-green-400 px-2 py-0.5 rounded text-[10px] font-medium">
+                                                Reseller Discount • {currencySymbol}{saved.toFixed(2)} saved
                                               </div>
                                             )
                                           }
                                           if (isReseller && item.reseller_pricing?.enabled && item.quantity < item.reseller_pricing.min_quantity) {
                                             const needed = item.reseller_pricing.min_quantity - item.quantity
                                             return (
-                                              <div className="text-[10px] text-yellow-400 font-medium">
-                                                +{needed} for discount
+                                              <div className="inline-flex items-center gap-1 bg-yellow-900/40 border border-yellow-700/50 text-yellow-400 px-2 py-0.5 rounded text-[10px] font-medium">
+                                                Add {needed} more for reseller discount
                                               </div>
                                             )
                                           }
@@ -429,11 +448,19 @@ export function SideCart({ taxRates, shippingZones }: SideCartProps) {
                           </div>
                         </div>
 
-                        {/* Subtotal (excl. tax) */}
+                        {/* Subtotal (excl. tax) - show before discount if reseller discount applied */}
                         <div className="flex justify-between text-sm mb-2">
                           <p className="text-gray-400">Subtotal (excl. tax)</p>
-                          <p className="text-white">{currencySymbol}{(totalPrice - tax).toFixed(2)}</p>
+                          <p className="text-white">{currencySymbol}{(subtotalBeforeDiscount - tax).toFixed(2)}</p>
                         </div>
+
+                        {/* Reseller Discount */}
+                        {totalSavings > 0 && (
+                          <div className="flex justify-between text-sm mb-2">
+                            <p className="text-green-400">Reseller Discount</p>
+                            <p className="text-green-400">-{currencySymbol}{totalSavings.toFixed(2)}</p>
+                          </div>
+                        )}
 
                         {/* Tax */}
                         {tax > 0 && (
