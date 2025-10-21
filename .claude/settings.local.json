@@ -46,7 +46,8 @@
       "Bash(wp wc customer_key list:*)",
       "Read(//Users/gregorwallner/Local Sites/**)",
       "Bash(zip:*)",
-      "Bash(awk:*)"
+      "Bash(awk:*)",
+      "Bash(xargs kill:*)"
     ],
     "deny": [],
     "ask": []

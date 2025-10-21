@@ -110,8 +110,8 @@ export default function HomeContent({ blackboardProducts, blackboardWithVariatio
 
   return (
     <div className="min-h-screen">
-      {/* Hero Section - Adjusted Height to Show Scroll Indicator */}
-      <section className="relative min-h-[85vh] md:min-h-[90vh] flex items-center bg-gradient-to-br from-black via-gray-900 to-black overflow-hidden">
+      {/* Hero Section - HIDDEN - Adjusted Height to Show Scroll Indicator */}
+      <section className="hidden relative min-h-[85vh] md:min-h-[90vh] flex items-center bg-gradient-to-br from-black via-gray-900 to-black overflow-hidden">
         {/* Animated Background Pattern */}
         <div className="absolute inset-0 opacity-10">
           <div className="absolute inset-0" style={{
@@ -215,12 +215,190 @@ export default function HomeContent({ blackboardProducts, blackboardWithVariatio
           </div>
         </div>
 
-        {/* Scroll Indicator */}
-        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce">
+        {/* Scroll Indicator - Clickable */}
+        <button
+          onClick={() => {
+            const nextSection = document.querySelector('section:nth-of-type(2)')
+            nextSection?.scrollIntoView({ behavior: 'smooth' })
+          }}
+          className="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce cursor-pointer hover:scale-110 transition-transform"
+          aria-label="Scroll to next section"
+        >
           <div className="w-6 h-10 border-2 border-white rounded-full flex justify-center">
             <div className="w-1 h-3 bg-white rounded-full mt-2 animate-pulse"></div>
           </div>
+        </button>
+      </section>
+
+      {/* Hero Section - Best of Both Worlds */}
+      <section className="relative min-h-[100vh] md:min-h-[90vh] flex items-center overflow-hidden">
+        {/* Video Background */}
+        <div className="absolute inset-0 w-full h-full">
+          <video
+            autoPlay
+            muted
+            loop
+            playsInline
+            className="absolute inset-0 w-full h-full object-cover"
+          >
+            <source src="https://blackboard-training.com/wp-content/uploads/2023/11/blackboard_landing_short_2_mini.mp4" type="video/mp4" />
+          </video>
+          {/* Dark Overlay for Text Readability - Mobile optimized */}
+          <div className="absolute inset-0 bg-gradient-to-b from-black/90 via-black/85 to-black/80 md:bg-gradient-to-r md:from-black/95 md:via-black/75 md:to-black/60"></div>
         </div>
+
+        {/* Animated Dot Pattern Overlay (from original hero) */}
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute inset-0" style={{
+            backgroundImage: `radial-gradient(circle at 2px 2px, #ffed00 1px, transparent 1px)`,
+            backgroundSize: '40px 40px'
+          }}/>
+        </div>
+
+        <div className="max-w-screen-xl mx-auto px-4 lg:px-6 relative z-10 w-full">
+          <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center py-8 md:py-0">
+            {/* Left Column - Text Content from Original Hero */}
+            <div className="text-white order-2 lg:order-1">
+              {/* Trustpilot and Trust Badges - Mobile optimized */}
+              <div className="flex flex-wrap items-center gap-2 sm:gap-4 mb-4 sm:mb-6">
+                <div className="inline-flex items-center gap-2 bg-[#ffed00]/20 text-[#ffed00] px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm">
+                  <Star className="h-3 w-3 sm:h-4 sm:w-4 fill-current" />
+                  <span className="font-semibold">20,000+ Athletes</span>
+                </div>
+                <div className="inline-flex items-center gap-2 bg-white/10 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm">
+                  <div className="flex gap-0.5">
+                    {[...Array(5)].map((_, i) => (
+                      <Star key={i} className="h-3 w-3 sm:h-4 sm:w-4 fill-[#ffed00] text-[#ffed00]" />
+                    ))}
+                  </div>
+                  <span className="text-white hidden sm:inline">50+ Trustpilot Reviews</span>
+                  <span className="text-white sm:hidden">5.0 Rating</span>
+                </div>
+              </div>
+
+              <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold mb-4 sm:mb-6 leading-tight">
+                Transform Your
+                <span className="block text-[#ffed00] mt-1 sm:mt-2">Foundation</span>
+              </h1>
+
+              <p className="text-base sm:text-xl md:text-2xl text-gray-300 mb-6 sm:mb-8 leading-relaxed">
+                Professional foot training equipment designed by experts, proven by science, trusted by champions.
+              </p>
+
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-8 sm:mb-12">
+                <Link
+                  href="/shop"
+                  className="inline-flex items-center justify-center gap-2 bg-[#ffed00] text-black px-6 py-3 sm:px-8 sm:py-4 rounded-full font-bold text-base sm:text-lg hover:bg-[#ffed00]/90 transform hover:scale-105 transition-all shadow-2xl"
+                >
+                  Shop Now
+                  <ArrowRight className="h-5 w-5" />
+                </Link>
+                <button className="inline-flex items-center justify-center gap-2 border-2 border-white text-white px-6 py-3 sm:px-8 sm:py-4 rounded-full font-bold text-base sm:text-lg hover:bg-white hover:text-black transition-all">
+                  <PlayCircle className="h-5 w-5" />
+                  Watch Demo
+                </button>
+              </div>
+            </div>
+
+            {/* Right Column - Floating Product Card from Alternative Hero */}
+            <div className="relative max-w-sm sm:max-w-md mx-auto lg:mx-0 order-1 lg:order-2">
+              <div className="relative group">
+                {/* Glowing Background */}
+                <div className="absolute -inset-4 bg-gradient-to-r from-[#ffed00] to-yellow-300 rounded-3xl opacity-25 blur-2xl group-hover:opacity-50 transition-opacity"></div>
+
+                {/* Product Card */}
+                <div className="relative bg-white/95 backdrop-blur-sm rounded-3xl p-4 sm:p-6 shadow-2xl">
+                  {blackboardProducts[0]?.images[0] && (
+                    <>
+                      {/* Product Image */}
+                      <div className="relative mb-3 sm:mb-4 rounded-2xl overflow-hidden">
+                        <Image
+                          src={blackboardProducts[0].images[0].src}
+                          alt="BlackBoard Training Equipment"
+                          width={400}
+                          height={400}
+                          className="w-full h-auto transform group-hover:scale-105 transition-transform duration-500"
+                        />
+                      </div>
+
+                      {/* Product Info */}
+                      <div className="space-y-2 sm:space-y-3">
+                        <h3 className="text-xl sm:text-2xl font-bold text-gray-900">
+                          {getDisplayName(blackboardProducts[0].name)}
+                        </h3>
+
+                        <ProductPriceDisplay
+                          product={blackboardProducts[0]}
+                          variations={blackboardWithVariations.find(p => p.id === blackboardProducts[0].id)?.variations || []}
+                          showFrom={blackboardWithVariations.find(p => p.id === blackboardProducts[0].id)?.variations && blackboardWithVariations.find(p => p.id === blackboardProducts[0].id)?.variations.length > 0}
+                          size="md"
+                        />
+
+                        {/* Quick Features */}
+                        <div className="grid grid-cols-2 gap-2 sm:gap-3 pt-3 sm:pt-4 border-t border-gray-200">
+                          <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-gray-700">
+                            <Truck className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-[#ffed00] flex-shrink-0" />
+                            <span>Free Shipping</span>
+                          </div>
+                          <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-gray-700">
+                            <Shield className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-[#ffed00] flex-shrink-0" />
+                            <span className="hidden sm:inline">2-Year Warranty</span>
+                            <span className="sm:hidden">Warranty</span>
+                          </div>
+                          <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-gray-700">
+                            <Award className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-[#ffed00] flex-shrink-0" />
+                            <span>Pro Quality</span>
+                          </div>
+                          <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-gray-700">
+                            <Star className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-[#ffed00] fill-[#ffed00] flex-shrink-0" />
+                            <span>5.0 Rating</span>
+                          </div>
+                        </div>
+
+                        {/* Quick Add Button */}
+                        <Link
+                          href={`/product/${blackboardProducts[0].slug}`}
+                          className="block w-full bg-black text-white text-center py-2.5 sm:py-3 rounded-xl font-bold text-sm sm:text-base hover:bg-gray-900 transition-all transform hover:scale-[1.02] shadow-lg"
+                        >
+                          View Details
+                        </Link>
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {/* Floating Stats with Tilt Effect on Card Hover - Mobile optimized */}
+                <div className="absolute -bottom-4 sm:-bottom-6 -left-4 sm:-left-6 bg-[#ffed00] text-black px-4 py-3 sm:px-6 sm:py-4 rounded-xl sm:rounded-2xl shadow-xl transform rotate-[-3deg] group-hover:rotate-[-5deg] transition-transform duration-300">
+                  <div className="text-2xl sm:text-3xl font-black">20K+</div>
+                  <div className="text-[10px] sm:text-xs font-bold uppercase">Happy Athletes</div>
+                </div>
+
+                <div className="absolute -top-4 sm:-top-6 -right-4 sm:-right-6 bg-white text-black px-4 py-3 sm:px-6 sm:py-4 rounded-xl sm:rounded-2xl shadow-xl transform rotate-[3deg] group-hover:rotate-[5deg] transition-transform duration-300">
+                  <div className="flex items-center gap-0.5 sm:gap-1">
+                    {[...Array(5)].map((_, i) => (
+                      <Star key={i} className="h-3 w-3 sm:h-4 sm:w-4 fill-[#ffed00] text-[#ffed00]" />
+                    ))}
+                  </div>
+                  <div className="text-[10px] sm:text-xs font-bold mt-0.5 sm:mt-1">50+ Reviews</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Scroll Indicator - Clickable - Mobile optimized */}
+        <button
+          onClick={() => {
+            const problemSection = document.querySelector('section:nth-of-type(2)')
+            problemSection?.scrollIntoView({ behavior: 'smooth' })
+          }}
+          className="absolute bottom-6 sm:bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce cursor-pointer hover:scale-110 transition-transform hidden md:block"
+          aria-label="Scroll to next section"
+        >
+          <div className="w-6 h-10 border-2 border-white rounded-full flex justify-center">
+            <div className="w-1 h-3 bg-white rounded-full mt-2 animate-pulse"></div>
+          </div>
+        </button>
       </section>
 
       {/* Problem/Solution Section - Design A */}
@@ -411,7 +589,7 @@ export default function HomeContent({ blackboardProducts, blackboardWithVariatio
                             product={product}
                             variations={product.variationData}
                             showFrom={product.variationData && product.variationData.length > 0}
-                            size="lg"
+                            size="md"
                           />
                         </div>
                         <p className="text-xs text-gray-500 mt-1">

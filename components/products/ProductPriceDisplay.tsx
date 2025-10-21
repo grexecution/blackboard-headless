@@ -43,13 +43,13 @@ export function ProductPriceDisplay({
 
     const sizeClasses = {
       sm: 'text-sm',
-      md: 'text-lg',
+      md: 'text-xl sm:text-2xl',
       lg: 'text-3xl sm:text-4xl'
     }
 
     return (
       <div className={`flex items-baseline gap-2 ${className}`}>
-        {showFrom && <span className="text-sm text-gray-500">from</span>}
+        {showFrom && <span className="text-sm text-gray-500 font-normal">from</span>}
         {onSale && displaySalePrice && (
           <span className={`text-gray-400 line-through ${sizeClasses[size]}`}>
             {displayPrice}
@@ -66,16 +66,16 @@ export function ProductPriceDisplay({
   if (variations && variations.length > 0) {
     // Get all prices in the current currency
     const prices = variations.map(v => {
-      const usdPrice = v.currency_prices?.usd?.regular_price || v.regular_price
-      const eurPrice = v.currency_prices?.eur?.regular_price || v.regular_price
+      const usdPrice = v.currency_prices?.usd?.regular_price || v.regular_price || v.price
+      const eurPrice = v.currency_prices?.eur?.regular_price || v.regular_price || v.price
       const price = currency === 'USD' ? (usdPrice || eurPrice) : (eurPrice || usdPrice)
       return parseFloat(price || '0')
     }).filter(p => p > 0)
 
     if (prices.length === 0) {
       // Fallback to product price if no variation prices
-      const usdRegularPrice = product.currency_prices?.usd?.regular_price || product.regular_price
-      const eurRegularPrice = product.currency_prices?.eur?.regular_price || product.regular_price
+      const usdRegularPrice = product.currency_prices?.usd?.regular_price || product.regular_price || product.price
+      const eurRegularPrice = product.currency_prices?.eur?.regular_price || product.regular_price || product.price
       const displayPrice = formatPrice(usdRegularPrice, eurRegularPrice)
 
       const sizeClasses = {
@@ -86,7 +86,7 @@ export function ProductPriceDisplay({
 
       return (
         <div className={`flex items-baseline gap-2 ${className}`}>
-          {showFrom && <span className="text-sm text-gray-500">starting from</span>}
+          {showFrom && <span className="text-sm text-gray-500 font-normal">starting from</span>}
           <span className={`font-bold ${sizeClasses[size]}`}>
             {displayPrice}
           </span>
@@ -98,27 +98,27 @@ export function ProductPriceDisplay({
 
     // Get the variation with minimum price to get proper currency prices
     const minVariation = variations.find(v => {
-      const usdPrice = v.currency_prices?.usd?.regular_price || v.regular_price
-      const eurPrice = v.currency_prices?.eur?.regular_price || v.regular_price
+      const usdPrice = v.currency_prices?.usd?.regular_price || v.regular_price || v.price
+      const eurPrice = v.currency_prices?.eur?.regular_price || v.regular_price || v.price
       const price = currency === 'USD' ? (usdPrice || eurPrice) : (eurPrice || usdPrice)
       return parseFloat(price || '0') === minPrice
     })
 
-    const minUsdPrice = minVariation?.currency_prices?.usd?.regular_price || minVariation?.regular_price || '0'
-    const minEurPrice = minVariation?.currency_prices?.eur?.regular_price || minVariation?.regular_price || '0'
+    const minUsdPrice = minVariation?.currency_prices?.usd?.regular_price || minVariation?.regular_price || minVariation?.price || '0'
+    const minEurPrice = minVariation?.currency_prices?.eur?.regular_price || minVariation?.regular_price || minVariation?.price || '0'
 
     const formattedMinPrice = formatPrice(minUsdPrice, minEurPrice)
 
     const sizeClasses = {
       sm: 'text-sm',
-      md: 'text-lg',
+      md: 'text-xl sm:text-2xl',
       lg: 'text-3xl sm:text-4xl'
     }
 
     // Show only minimum price with "starting from" text
     return (
       <div className={`flex items-baseline gap-2 ${className}`}>
-        {showFrom && <span className="text-sm text-gray-500">starting from</span>}
+        {showFrom && <span className="text-sm text-gray-500 font-normal">starting from</span>}
         <span className={`font-bold ${sizeClasses[size]}`}>
           {formattedMinPrice}
         </span>
