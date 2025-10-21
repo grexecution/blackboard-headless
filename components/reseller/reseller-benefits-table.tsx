@@ -111,16 +111,15 @@ export function ResellerBenefitsTable({
           </thead>
           <tbody className="divide-y">
             {products.map((product) => {
-              const regularPrice =
-                currency === 'USD'
-                  ? parseFloat(
-                      product.currency_prices?.usd.regular_price ||
-                        product.regular_price
-                    )
-                  : parseFloat(
-                      product.currency_prices?.eur.regular_price ||
-                        product.regular_price
-                    )
+              // Get currency-specific prices with proper fallback
+              const usdRegular = product.currency_prices?.usd?.regular_price || product.regular_price || ''
+              const eurRegular = product.currency_prices?.eur?.regular_price || product.regular_price || ''
+
+              const regularPriceStr = currency === 'USD'
+                ? (usdRegular || eurRegular)
+                : (eurRegular || usdRegular)
+
+              const regularPrice = parseFloat(regularPriceStr) || 0
 
               const resellerPrice =
                 currency === 'USD'

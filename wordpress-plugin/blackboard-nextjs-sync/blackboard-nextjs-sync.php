@@ -2,7 +2,7 @@
 /**
  * Plugin Name: BlackBoard Headless Options
  * Description: Complete headless CMS solution for BlackBoard Training - WooCommerce sync, Course & Video CPTs, REST API extensions, automatic rebuilds, course access management, reseller pricing, and import/export tools
- * Version: 4.2.1
+ * Version: 4.3.0
  * Author: BlackBoard Training
  * Author URI: https://blackboard-training.com
  * Text Domain: blackboard-headless-options
@@ -23,7 +23,7 @@
  * - Manual sync and build triggers
  * - CORS configuration for headless setup
  * - Course access management based on WooCommerce purchases
- * - Reseller bulk pricing for simple & variable products (v4.2.0)
+ * - Reseller bulk pricing for simple & variable products (v4.3.0 - single price applies to all variations)
  * - Admin dashboard with diagnostics
  *
  * If you need to add new features, add them HERE.
@@ -4204,10 +4204,11 @@ NEXT_PUBLIC_BASE_URL=<?php echo $this->nextjs_url ?: 'https://your-site.vercel.a
 
     /**
      * ===================================================================
-     * RESELLER PRICING SYSTEM (v4.1.0)
+     * RESELLER PRICING SYSTEM (v4.3.0)
      * ===================================================================
      * Provides bulk pricing discounts for users with "reseller" role
      * - Per-product configuration (min quantity, EUR price, USD price)
+     * - Works for simple and variable products (single price applies to all variations)
      * - Automatically exposed via WooCommerce REST API
      * - Frontend applies discounts when quantity threshold is met
      */
@@ -4219,21 +4220,14 @@ NEXT_PUBLIC_BASE_URL=<?php echo $this->nextjs_url ?: 'https://your-site.vercel.a
         // Add product data tab
         add_filter('woocommerce_product_data_tabs', array($this, 'add_reseller_pricing_tab'));
 
-        // Add tab content for simple products
+        // Add tab content
         add_action('woocommerce_product_data_panels', array($this, 'add_reseller_pricing_panel'));
 
-        // Add fields to variations
-        add_action('woocommerce_variation_options_pricing', array($this, 'add_variation_reseller_pricing_fields'), 10, 3);
-
-        // Save reseller pricing data for simple products
+        // Save reseller pricing data
         add_action('woocommerce_process_product_meta', array($this, 'save_reseller_pricing_data'));
 
-        // Save variation reseller pricing
-        add_action('woocommerce_save_product_variation', array($this, 'save_variation_reseller_pricing'), 10, 2);
-
-        // Expose reseller pricing in REST API
+        // Expose reseller pricing in REST API (applies to all product types)
         add_filter('woocommerce_rest_prepare_product_object', array($this, 'add_reseller_pricing_to_api'), 10, 3);
-        add_filter('woocommerce_rest_prepare_product_variation_object', array($this, 'add_variation_reseller_pricing_to_api'), 10, 3);
     }
 
     /**
@@ -4262,145 +4256,80 @@ NEXT_PUBLIC_BASE_URL=<?php echo $this->nextjs_url ?: 'https://your-site.vercel.a
         <div id="reseller_pricing_product_data" class="panel woocommerce_options_panel">
             <div class="options_group">
                 <?php if ($is_variable): ?>
-                    <!-- Variable Product: Show only notice -->
+                    <!-- Variable Product: Show warning notice -->
                     <p class="form-field" style="background: #fff3cd; padding: 16px; border-left: 4px solid #ffc107; margin: 15px 12px;">
-                        <label style="font-weight: bold; color: #856404; font-size: 14px;">📋 Variable Product Detected</label><br/>
+                        <label style="font-weight: bold; color: #856404; font-size: 14px;">⚠️ Variable Product Notice</label><br/>
                         <span class="description" style="color: #856404; font-size: 13px; line-height: 1.6;">
-                            This is a variable product. Configure reseller pricing on each variation individually in the <strong>"Variations"</strong> tab below.<br>
-                            Each variation can have its own reseller prices (EUR/USD) and minimum quantity.
-                        </span>
-                    </p>
-                <?php else: ?>
-                    <!-- Simple Product: Show all fields -->
-                    <?php
-                    woocommerce_wp_checkbox(
-                        array(
-                            'id' => '_reseller_pricing_enabled',
-                            'label' => __('Enable Reseller Pricing', 'blackboard-headless-options'),
-                            'description' => __('Enable special pricing for resellers who purchase in bulk', 'blackboard-headless-options'),
-                        )
-                    );
-
-                    woocommerce_wp_text_input(
-                        array(
-                            'id' => '_reseller_min_quantity',
-                            'label' => __('Minimum Quantity', 'blackboard-headless-options'),
-                            'placeholder' => '10',
-                            'description' => __('Minimum quantity required to get reseller pricing (e.g., 10 means "10 or more")', 'blackboard-headless-options'),
-                            'type' => 'number',
-                            'custom_attributes' => array(
-                                'step' => '1',
-                                'min' => '1',
-                            ),
-                        )
-                    );
-
-                    woocommerce_wp_text_input(
-                        array(
-                            'id' => '_reseller_price_eur',
-                            'label' => __('Reseller Price EUR', 'blackboard-headless-options') . ' (€)',
-                            'placeholder' => '0.00',
-                            'description' => __('Price in EUR for resellers when minimum quantity is met', 'blackboard-headless-options'),
-                            'type' => 'number',
-                            'custom_attributes' => array(
-                                'step' => '0.01',
-                                'min' => '0',
-                            ),
-                        )
-                    );
-
-                    woocommerce_wp_text_input(
-                        array(
-                            'id' => '_reseller_price_usd',
-                            'label' => __('Reseller Price USD', 'blackboard-headless-options') . ' ($)',
-                            'placeholder' => '0.00',
-                            'description' => __('Price in USD for resellers when minimum quantity is met', 'blackboard-headless-options'),
-                            'type' => 'number',
-                            'custom_attributes' => array(
-                                'step' => '0.01',
-                                'min' => '0',
-                            ),
-                        )
-                    );
-                    ?>
-
-                    <p class="form-field">
-                        <label style="font-weight: bold; color: #2271b1;">How Reseller Pricing Works:</label><br/>
-                        <span class="description">
-                            When a user with the "Reseller" role adds this product to their cart and the quantity meets or exceeds the minimum quantity,
-                            the reseller price will be automatically applied. The discount will be shown visually in the cart.
+                            This is a variable product. <strong>Reseller prices set below will override the prices of ALL variations.</strong><br>
+                            Individual per-variation reseller pricing is not supported.
                         </span>
                     </p>
                 <?php endif; ?>
+
+                <?php
+                woocommerce_wp_checkbox(
+                    array(
+                        'id' => '_reseller_pricing_enabled',
+                        'label' => __('Enable Reseller Pricing', 'blackboard-headless-options'),
+                        'description' => __('Enable special pricing for resellers who purchase in bulk', 'blackboard-headless-options'),
+                    )
+                );
+
+                woocommerce_wp_text_input(
+                    array(
+                        'id' => '_reseller_min_quantity',
+                        'label' => __('Minimum Quantity', 'blackboard-headless-options'),
+                        'placeholder' => '10',
+                        'description' => __('Minimum quantity required to get reseller pricing (e.g., 10 means "10 or more")', 'blackboard-headless-options'),
+                        'type' => 'number',
+                        'custom_attributes' => array(
+                            'step' => '1',
+                            'min' => '1',
+                        ),
+                    )
+                );
+
+                woocommerce_wp_text_input(
+                    array(
+                        'id' => '_reseller_price_eur',
+                        'label' => __('Reseller Price EUR', 'blackboard-headless-options') . ' (€)',
+                        'placeholder' => '0.00',
+                        'description' => __('Price in EUR for resellers when minimum quantity is met', 'blackboard-headless-options'),
+                        'type' => 'number',
+                        'custom_attributes' => array(
+                            'step' => '0.01',
+                            'min' => '0',
+                        ),
+                    )
+                );
+
+                woocommerce_wp_text_input(
+                    array(
+                        'id' => '_reseller_price_usd',
+                        'label' => __('Reseller Price USD', 'blackboard-headless-options') . ' ($)',
+                        'placeholder' => '0.00',
+                        'description' => __('Price in USD for resellers when minimum quantity is met', 'blackboard-headless-options'),
+                        'type' => 'number',
+                        'custom_attributes' => array(
+                            'step' => '0.01',
+                            'min' => '0',
+                        ),
+                    )
+                );
+                ?>
+
+                <p class="form-field">
+                    <label style="font-weight: bold; color: #2271b1;">How Reseller Pricing Works:</label><br/>
+                    <span class="description">
+                        When a user with the "Reseller" role adds this product to their cart and the quantity meets or exceeds the minimum quantity,
+                        the reseller price will be automatically applied. The discount will be shown visually in the cart.
+                    </span>
+                </p>
             </div>
         </div>
         <?php
     }
 
-    /**
-     * Add reseller pricing fields to product variations
-     */
-    public function add_variation_reseller_pricing_fields($loop, $variation_data, $variation) {
-        ?>
-        <div style="border-top: 1px solid #ddd; padding-top: 12px; margin-top: 12px;">
-            <p class="form-row form-row-full" style="background: #f0f6fc; padding: 10px; border-left: 3px solid #2271b1;">
-                <strong style="color: #2271b1;">💰 Reseller Pricing (Bulk Discount)</strong>
-            </p>
-
-            <?php
-            woocommerce_wp_checkbox(array(
-                'id' => "_variation_reseller_pricing_enabled[{$loop}]",
-                'name' => "_variation_reseller_pricing_enabled[{$loop}]",
-                'label' => __('Enable Reseller Pricing', 'blackboard-headless-options'),
-                'value' => get_post_meta($variation->ID, '_variation_reseller_pricing_enabled', true) === 'yes' ? 'yes' : 'no',
-                'wrapper_class' => 'form-row form-row-full',
-            ));
-
-            woocommerce_wp_text_input(array(
-                'id' => "_variation_reseller_min_quantity[{$loop}]",
-                'name' => "_variation_reseller_min_quantity[{$loop}]",
-                'label' => __('Min Quantity', 'blackboard-headless-options'),
-                'placeholder' => '10',
-                'type' => 'number',
-                'value' => get_post_meta($variation->ID, '_variation_reseller_min_quantity', true),
-                'wrapper_class' => 'form-row form-row-first',
-                'custom_attributes' => array(
-                    'step' => '1',
-                    'min' => '1',
-                ),
-            ));
-
-            woocommerce_wp_text_input(array(
-                'id' => "_variation_reseller_price_eur[{$loop}]",
-                'name' => "_variation_reseller_price_eur[{$loop}]",
-                'label' => __('Reseller Price EUR (€)', 'blackboard-headless-options'),
-                'placeholder' => '0.00',
-                'type' => 'number',
-                'value' => get_post_meta($variation->ID, '_variation_reseller_price_eur', true),
-                'wrapper_class' => 'form-row form-row-last',
-                'custom_attributes' => array(
-                    'step' => '0.01',
-                    'min' => '0',
-                ),
-            ));
-
-            woocommerce_wp_text_input(array(
-                'id' => "_variation_reseller_price_usd[{$loop}]",
-                'name' => "_variation_reseller_price_usd[{$loop}]",
-                'label' => __('Reseller Price USD ($)', 'blackboard-headless-options'),
-                'placeholder' => '0.00',
-                'type' => 'number',
-                'value' => get_post_meta($variation->ID, '_variation_reseller_price_usd', true),
-                'wrapper_class' => 'form-row form-row-full',
-                'custom_attributes' => array(
-                    'step' => '0.01',
-                    'min' => '0',
-                ),
-            ));
-            ?>
-        </div>
-        <?php
-    }
 
     /**
      * Save reseller pricing data
@@ -4430,34 +4359,6 @@ NEXT_PUBLIC_BASE_URL=<?php echo $this->nextjs_url ?: 'https://your-site.vercel.a
         }
     }
 
-    /**
-     * Save variation reseller pricing data
-     */
-    public function save_variation_reseller_pricing($variation_id, $i) {
-        // Enabled checkbox
-        $enabled = isset($_POST['_variation_reseller_pricing_enabled'][$i]) ? 'yes' : 'no';
-        update_post_meta($variation_id, '_variation_reseller_pricing_enabled', $enabled);
-
-        // Min quantity - only save if not empty and greater than 0
-        if (isset($_POST['_variation_reseller_min_quantity'][$i]) && $_POST['_variation_reseller_min_quantity'][$i] !== '') {
-            $min_qty = absint($_POST['_variation_reseller_min_quantity'][$i]);
-            if ($min_qty > 0) {
-                update_post_meta($variation_id, '_variation_reseller_min_quantity', $min_qty);
-            }
-        }
-
-        // EUR price - only save if not empty
-        if (isset($_POST['_variation_reseller_price_eur'][$i]) && $_POST['_variation_reseller_price_eur'][$i] !== '') {
-            $price = sanitize_text_field($_POST['_variation_reseller_price_eur'][$i]);
-            update_post_meta($variation_id, '_variation_reseller_price_eur', $price);
-        }
-
-        // USD price - only save if not empty
-        if (isset($_POST['_variation_reseller_price_usd'][$i]) && $_POST['_variation_reseller_price_usd'][$i] !== '') {
-            $price = sanitize_text_field($_POST['_variation_reseller_price_usd'][$i]);
-            update_post_meta($variation_id, '_variation_reseller_price_usd', $price);
-        }
-    }
 
     /**
      * Add reseller pricing to WooCommerce REST API response
@@ -4477,23 +4378,6 @@ NEXT_PUBLIC_BASE_URL=<?php echo $this->nextjs_url ?: 'https://your-site.vercel.a
         return $response;
     }
 
-    /**
-     * Add reseller pricing to variation REST API response
-     */
-    public function add_variation_reseller_pricing_to_api($response, $variation, $request) {
-        $variation_id = $variation->get_id();
-
-        $reseller_pricing = array(
-            'enabled' => get_post_meta($variation_id, '_variation_reseller_pricing_enabled', true) === 'yes',
-            'min_quantity' => (int) get_post_meta($variation_id, '_variation_reseller_min_quantity', true),
-            'price_eur' => get_post_meta($variation_id, '_variation_reseller_price_eur', true),
-            'price_usd' => get_post_meta($variation_id, '_variation_reseller_price_usd', true),
-        );
-
-        $response->data['reseller_pricing'] = $reseller_pricing;
-
-        return $response;
-    }
 }
 
 // Initialize the plugin
