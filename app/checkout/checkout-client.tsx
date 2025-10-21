@@ -399,16 +399,47 @@ export default function CheckoutClient({ countries, taxRates, shippingZones }: C
       // Store order details in sessionStorage for the success page
       sessionStorage.setItem('lastOrder', JSON.stringify(data.order))
 
-      // Check if we have a payment URL to redirect to
-      if (data.order.paymentUrl && selectedPaymentMethod !== 'bacs') {
-        console.log('Redirecting to payment URL:', data.order.paymentUrl)
+      // Handle payment based on method
+      if (selectedPaymentMethod === 'stripe') {
+        // Create Stripe Checkout Session
+        console.log('Creating Stripe checkout session...')
+        setProcessingStep('Creating payment session...')
+
+        const stripeResponse = await fetch('/api/create-stripe-checkout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            orderId: data.order.id,
+            orderNumber: data.order.orderNumber,
+            total: data.order.total,
+            currency: billingData.country === 'US' ? 'USD' : 'EUR',
+            customerEmail: billingData.email,
+          }),
+        })
+
+        const stripeData = await stripeResponse.json()
+
+        if (!stripeData.success) {
+          throw new Error(stripeData.error || 'Failed to create payment session')
+        }
+
+        console.log('Redirecting to Stripe Checkout...')
         setProcessingStep('redirecting')
-        // Small delay for animation before redirect
-        await new Promise(resolve => setTimeout(resolve, 800))
-        // Redirect to payment gateway (Stripe/PayPal)
-        window.location.href = data.order.paymentUrl
+        await new Promise(resolve => setTimeout(resolve, 500))
+        // Redirect to Stripe's hosted checkout page
+        window.location.href = stripeData.url
+
+      } else if (selectedPaymentMethod === 'paypal') {
+        // TODO: Implement PayPal - for now redirect to WordPress
+        console.log('PayPal payment - redirecting to WordPress for now...')
+        if (data.order.paymentUrl) {
+          window.location.href = data.order.paymentUrl
+        } else {
+          router.push(`/order-success?order=${data.order.id}&number=${data.order.orderNumber}&method=${data.order.paymentMethod}`)
+        }
+
       } else {
-        // For bank transfer or if no payment URL, go to success page
+        // For bank transfer, go directly to success page
         setProcessingStep('redirecting')
         await new Promise(resolve => setTimeout(resolve, 500))
         router.push(`/order-success?order=${data.order.id}&number=${data.order.orderNumber}&method=${data.order.paymentMethod}`)
