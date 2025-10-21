@@ -403,7 +403,7 @@ export default function CheckoutClient({ countries, taxRates, shippingZones }: C
       if (selectedPaymentMethod === 'stripe') {
         // Create Stripe Checkout Session
         console.log('Creating Stripe checkout session...')
-        setProcessingStep('Creating payment session...')
+        setProcessingStep('redirecting')
 
         const stripeResponse = await fetch('/api/create-stripe-checkout', {
           method: 'POST',
