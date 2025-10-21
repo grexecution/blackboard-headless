@@ -2,7 +2,7 @@
 /**
  * Plugin Name: BlackBoard Headless Options
  * Description: Complete headless CMS solution for BlackBoard Training - WooCommerce sync, Course & Video CPTs, REST API extensions, automatic rebuilds, course access management, reseller pricing, and import/export tools
- * Version: 4.2.0
+ * Version: 4.2.1
  * Author: BlackBoard Training
  * Author URI: https://blackboard-training.com
  * Text Domain: blackboard-headless-options
@@ -4409,16 +4409,24 @@ NEXT_PUBLIC_BASE_URL=<?php echo $this->nextjs_url ?: 'https://your-site.vercel.a
         $enabled = isset($_POST['_reseller_pricing_enabled']) ? 'yes' : 'no';
         update_post_meta($post_id, '_reseller_pricing_enabled', $enabled);
 
-        if (isset($_POST['_reseller_min_quantity'])) {
-            update_post_meta($post_id, '_reseller_min_quantity', absint($_POST['_reseller_min_quantity']));
+        // Min quantity - only save if not empty and greater than 0
+        if (isset($_POST['_reseller_min_quantity']) && $_POST['_reseller_min_quantity'] !== '') {
+            $min_qty = absint($_POST['_reseller_min_quantity']);
+            if ($min_qty > 0) {
+                update_post_meta($post_id, '_reseller_min_quantity', $min_qty);
+            }
         }
 
-        if (isset($_POST['_reseller_price_eur'])) {
-            update_post_meta($post_id, '_reseller_price_eur', wc_format_decimal($_POST['_reseller_price_eur']));
+        // EUR price - only save if not empty
+        if (isset($_POST['_reseller_price_eur']) && $_POST['_reseller_price_eur'] !== '') {
+            $price = sanitize_text_field($_POST['_reseller_price_eur']);
+            update_post_meta($post_id, '_reseller_price_eur', $price);
         }
 
-        if (isset($_POST['_reseller_price_usd'])) {
-            update_post_meta($post_id, '_reseller_price_usd', wc_format_decimal($_POST['_reseller_price_usd']));
+        // USD price - only save if not empty
+        if (isset($_POST['_reseller_price_usd']) && $_POST['_reseller_price_usd'] !== '') {
+            $price = sanitize_text_field($_POST['_reseller_price_usd']);
+            update_post_meta($post_id, '_reseller_price_usd', $price);
         }
     }
 
@@ -4430,19 +4438,24 @@ NEXT_PUBLIC_BASE_URL=<?php echo $this->nextjs_url ?: 'https://your-site.vercel.a
         $enabled = isset($_POST['_variation_reseller_pricing_enabled'][$i]) ? 'yes' : 'no';
         update_post_meta($variation_id, '_variation_reseller_pricing_enabled', $enabled);
 
-        // Min quantity
-        if (isset($_POST['_variation_reseller_min_quantity'][$i])) {
-            update_post_meta($variation_id, '_variation_reseller_min_quantity', absint($_POST['_variation_reseller_min_quantity'][$i]));
+        // Min quantity - only save if not empty and greater than 0
+        if (isset($_POST['_variation_reseller_min_quantity'][$i]) && $_POST['_variation_reseller_min_quantity'][$i] !== '') {
+            $min_qty = absint($_POST['_variation_reseller_min_quantity'][$i]);
+            if ($min_qty > 0) {
+                update_post_meta($variation_id, '_variation_reseller_min_quantity', $min_qty);
+            }
         }
 
-        // EUR price
-        if (isset($_POST['_variation_reseller_price_eur'][$i])) {
-            update_post_meta($variation_id, '_variation_reseller_price_eur', wc_format_decimal($_POST['_variation_reseller_price_eur'][$i]));
+        // EUR price - only save if not empty
+        if (isset($_POST['_variation_reseller_price_eur'][$i]) && $_POST['_variation_reseller_price_eur'][$i] !== '') {
+            $price = sanitize_text_field($_POST['_variation_reseller_price_eur'][$i]);
+            update_post_meta($variation_id, '_variation_reseller_price_eur', $price);
         }
 
-        // USD price
-        if (isset($_POST['_variation_reseller_price_usd'][$i])) {
-            update_post_meta($variation_id, '_variation_reseller_price_usd', wc_format_decimal($_POST['_variation_reseller_price_usd'][$i]));
+        // USD price - only save if not empty
+        if (isset($_POST['_variation_reseller_price_usd'][$i]) && $_POST['_variation_reseller_price_usd'][$i] !== '') {
+            $price = sanitize_text_field($_POST['_variation_reseller_price_usd'][$i]);
+            update_post_meta($variation_id, '_variation_reseller_price_usd', $price);
         }
     }
 

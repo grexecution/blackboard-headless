@@ -51,7 +51,7 @@ export function ResellerCartNotification() {
             <div className="mt-2 space-y-1">
               {eligibleProducts.map((item) => (
                 <div key={item.id} className="text-green-100 text-xs">
-                  • <span className="font-medium">{item.name}</span> ({item.quantity}x) - Discount applied
+                  <span className="font-medium">{item.name}</span> ({item.quantity}x) - Discount applied
                 </div>
               ))}
             </div>
@@ -79,7 +79,7 @@ export function ResellerCartNotification() {
             <div className="mt-2 space-y-1">
               {nearingDiscount.map(({ item, quantityNeeded }) => (
                 <div key={item.id} className="text-yellow-100 text-xs">
-                  • <span className="font-medium">{item.name}</span> - Add {quantityNeeded} more (currently {item.quantity}x)
+                  <span className="font-medium">{item.name}</span> - Add {quantityNeeded} more (currently {item.quantity}x)
                 </div>
               ))}
             </div>
