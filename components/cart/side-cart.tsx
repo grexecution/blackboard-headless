@@ -8,8 +8,7 @@ import { useCurrency, getProductPrice } from '@/lib/currency-context'
 import { calculateTax, TaxRate } from '@/lib/woocommerce/countries-taxes'
 import { calculateCartWeight, findShippingZoneForCountry, calculateShippingCost, ShippingZoneWithMethods } from '@/lib/woocommerce/shipping'
 import { getCountryFromIPClient } from '@/lib/geolocation'
-import { ResellerCartNotification } from '@/components/reseller/reseller-cart-notification'
-import { calculateResellerPrice, calculateTotalResellerSavings } from '@/lib/reseller-pricing'
+import { calculateResellerPrice } from '@/lib/reseller-pricing'
 import { useSession } from 'next-auth/react'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -194,9 +193,6 @@ export function SideCart({ taxRates, shippingZones }: SideCartProps) {
     setShipping(result.cost)
   }, [totalPrice, country, items, taxRates, shippingZones])
 
-  // Calculate reseller savings
-  const { totalSavings: resellerDiscount, itemsWithDiscount } = calculateTotalResellerSavings(items, currency, isReseller)
-
   const finalTotal = totalPrice + shipping
 
   return (
@@ -248,8 +244,14 @@ export function SideCart({ taxRates, shippingZones }: SideCartProps) {
                       </button>
                     </div>
 
-                    {/* Reseller Notification */}
-                    <ResellerCartNotification />
+                    {/* Reseller Notification - Simple version */}
+                    {isReseller && items.some(item => item.reseller_pricing?.enabled) && (
+                      <div className="bg-gradient-to-r from-green-900/50 to-green-700/50 border-b border-green-600/30 px-4 py-2">
+                        <p className="text-green-100 text-xs text-center">
+                          🎯 Reseller bulk pricing active on eligible products
+                        </p>
+                      </div>
+                    )}
 
                     {/* Cart Items */}
                     <div className="flex-1 overflow-y-auto px-6 py-6">
@@ -328,23 +330,44 @@ export function SideCart({ taxRates, shippingZones }: SideCartProps) {
                                     </button>
                                   )}
                                 </div>
-                                <div className="mt-2 flex items-center justify-between">
+                                <div className="mt-2 flex items-end justify-between">
                                   {!item.isFreebie ? (
                                     <>
-                                      <div className="flex items-center gap-2">
-                                        <button
-                                          onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                                          className="rounded-md border border-gray-700 p-1 hover:bg-gray-900 transition-colors"
-                                        >
-                                          <Minus className="h-3 w-3" />
-                                        </button>
-                                        <span className="w-8 text-center text-sm">{item.quantity}</span>
-                                        <button
-                                          onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                                          className="rounded-md border border-gray-700 p-1 hover:bg-gray-900 transition-colors"
-                                        >
-                                          <Plus className="h-3 w-3" />
-                                        </button>
+                                      <div className="flex flex-col gap-1">
+                                        <div className="flex items-center gap-2">
+                                          <button
+                                            onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                                            className="rounded-md border border-gray-700 p-1 hover:bg-gray-900 transition-colors"
+                                          >
+                                            <Minus className="h-3 w-3" />
+                                          </button>
+                                          <span className="w-8 text-center text-sm">{item.quantity}</span>
+                                          <button
+                                            onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                                            className="rounded-md border border-gray-700 p-1 hover:bg-gray-900 transition-colors"
+                                          >
+                                            <Plus className="h-3 w-3" />
+                                          </button>
+                                        </div>
+                                        {(() => {
+                                          const resellerPriceInfo = calculateResellerPrice(item, currency, isReseller)
+                                          if (resellerPriceInfo.hasDiscount) {
+                                            return (
+                                              <div className="text-[10px] text-green-400 font-medium">
+                                                💰 Bulk discount
+                                              </div>
+                                            )
+                                          }
+                                          if (isReseller && item.reseller_pricing?.enabled && item.quantity < item.reseller_pricing.min_quantity) {
+                                            const needed = item.reseller_pricing.min_quantity - item.quantity
+                                            return (
+                                              <div className="text-[10px] text-yellow-400 font-medium">
+                                                +{needed} for discount
+                                              </div>
+                                            )
+                                          }
+                                          return null
+                                        })()}
                                       </div>
                                       <div className="text-right">
                                         {(() => {
@@ -411,14 +434,6 @@ export function SideCart({ taxRates, shippingZones }: SideCartProps) {
                           <p className="text-gray-400">Subtotal (excl. tax)</p>
                           <p className="text-white">{currencySymbol}{(totalPrice - tax).toFixed(2)}</p>
                         </div>
-
-                        {/* Reseller Discount */}
-                        {resellerDiscount > 0 && (
-                          <div className="flex justify-between text-sm mb-2">
-                            <p className="text-green-400">Reseller Discount</p>
-                            <p className="text-green-400">-{currencySymbol}{resellerDiscount.toFixed(2)}</p>
-                          </div>
-                        )}
 
                         {/* Tax */}
                         {tax > 0 && (
