@@ -119,7 +119,9 @@ export function ResellerBenefitsTable({
                 ? (usdRegular || eurRegular)
                 : (eurRegular || usdRegular)
 
-              const regularPrice = parseFloat(regularPriceStr) || 0
+              // For variable products with empty regular_price, use the "price" field (min variation price)
+              const fallbackPrice = product.type === 'variable' && !regularPriceStr ? product.price : regularPriceStr
+              const regularPrice = parseFloat(fallbackPrice) || 0
 
               const resellerPrice =
                 currency === 'USD'
