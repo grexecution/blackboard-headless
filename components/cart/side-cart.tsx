@@ -122,14 +122,15 @@ export function SideCart({ taxRates, shippingZones }: SideCartProps) {
     const resellerPriceInfo = calculateResellerPrice(item, currency, isReseller)
     const itemPrice = getItemPrice(item)
 
-    totalPrice += itemPrice * item.quantity
-
     if (resellerPriceInfo.hasDiscount) {
-      // Add original price to subtotal before discount
+      // Use discounted price for total
+      totalPrice += resellerPriceInfo.price * item.quantity
+      // Track original price and savings
       subtotalBeforeDiscount += resellerPriceInfo.originalPrice * item.quantity
       totalSavings += resellerPriceInfo.discountAmount * item.quantity
     } else {
-      // No discount, so add regular price
+      // No discount, use regular price
+      totalPrice += itemPrice * item.quantity
       subtotalBeforeDiscount += itemPrice * item.quantity
     }
   })
