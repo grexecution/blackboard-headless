@@ -45,7 +45,7 @@ export function ResellerCartNotification() {
               Reseller Discount Active!
             </p>
             <p className="text-green-100 text-xs mt-1">
-              You're saving {currencySymbol}
+              You&apos;re saving {currencySymbol}
               {totalSavings.toFixed(2)} on {itemsWithDiscount} product
               {itemsWithDiscount > 1 ? 's' : ''} in your cart
             </p>
