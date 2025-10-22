@@ -47,7 +47,8 @@
       "Read(//Users/gregorwallner/Local Sites/**)",
       "Bash(zip:*)",
       "Bash(awk:*)",
-      "Bash(xargs kill:*)"
+      "Bash(xargs kill:*)",
+      "Bash(echo:*)"
     ],
     "deny": [],
     "ask": []

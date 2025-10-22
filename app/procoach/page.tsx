@@ -1,8 +1,10 @@
 import { getAllCourses, getCoursesByCategory } from '@/lib/woocommerce/courses'
+import { getAllProCoaches } from '@/lib/woocommerce/procoaches'
 import Link from 'next/link'
 import CoursesGridSimple from '@/components/courses/courses-grid-simple'
+import ProCoachFinder from '@/components/procoach/procoach-finder'
 import {
-  Award, Users, BookOpen, Target, Shield, Zap, Trophy, ChevronRight
+  Award, Users, BookOpen, Target, Shield, Zap, Trophy, ChevronRight, MapPin
 } from 'lucide-react'
 
 export const revalidate = false
@@ -19,6 +21,16 @@ export default async function ProCoachPage() {
     allCourses = []
   }
   const procoachCourses = getCoursesByCategory(allCourses, 'procoach')
+
+  // Get all ProCoaches
+  let procoaches: any[] = []
+  try {
+    procoaches = await getAllProCoaches()
+  } catch (error) {
+    console.error('Error fetching procoaches:', error)
+    // Return empty array to allow build to continue
+    procoaches = []
+  }
 
   return (
     <div className="min-h-screen">
@@ -250,6 +262,27 @@ export default async function ProCoachPage() {
         </div>
       </section>
 
+      {/* ProCoach Finder Section */}
+      <section id="find-procoach" className="pt-16 scroll-mt-20">
+        <div className="max-w-screen-xl mx-auto px-4 lg:px-6 mb-12">
+          <div className="text-center max-w-3xl mx-auto">
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#ffed00] bg-opacity-20 rounded-full text-sm font-semibold text-gray-900 mb-4">
+              <MapPin className="h-4 w-4" />
+              Find a Certified ProCoach Near You
+            </div>
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+              Connect with a <span className="text-[#ffed00]">Certified ProCoach</span>
+            </h2>
+            <p className="text-lg text-gray-600">
+              Our network of certified BlackBoard ProCoaches spans across Europe and beyond.
+              Find an expert near you to begin your journey to optimal foot health and movement.
+            </p>
+          </div>
+        </div>
+
+        <ProCoachFinder procoaches={procoaches} />
+      </section>
+
 
       {/* CTA Section */}
       <section className="py-16 bg-gradient-to-r from-black to-gray-900 text-white">
@@ -263,10 +296,17 @@ export default async function ProCoachPage() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <a
               href="#courses"
-              className="bg-[#ffed00] text-black px-8 py-3 rounded-full font-semibold hover:bg-yellow-400 transition inline-flex items-center gap-2"
+              className="bg-[#ffed00] text-black px-8 py-3 rounded-full font-semibold hover:bg-yellow-400 transition inline-flex items-center justify-center gap-2"
             >
               View All Courses
               <ChevronRight className="h-4 w-4" />
+            </a>
+            <a
+              href="#find-procoach"
+              className="bg-white/10 backdrop-blur-sm border border-white/20 text-white px-8 py-3 rounded-full font-semibold hover:bg-white/20 transition inline-flex items-center justify-center gap-2"
+            >
+              <MapPin className="h-4 w-4" />
+              Find a ProCoach Near You
             </a>
             <Link
               href="/contact"

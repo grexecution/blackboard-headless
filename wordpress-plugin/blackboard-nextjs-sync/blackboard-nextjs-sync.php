@@ -1,8 +1,8 @@
 <?php
 /**
  * Plugin Name: BlackBoard Headless Options
- * Description: Complete headless CMS solution for BlackBoard Training - WooCommerce sync, Course & Video CPTs, REST API extensions, automatic rebuilds, course access management, reseller pricing, and import/export tools
- * Version: 4.3.0
+ * Description: Complete headless CMS solution for BlackBoard Training - WooCommerce sync, Course & Video CPTs, ProCoach Finder, REST API extensions, automatic rebuilds, course access management, reseller pricing, and import/export tools
+ * Version: 4.7.3
  * Author: BlackBoard Training
  * Author URI: https://blackboard-training.com
  * Text Domain: blackboard-headless-options
@@ -16,6 +16,7 @@
  * - WooCommerce product sync with webhooks
  * - Course Custom Post Type with categories and ACF fields
  * - Video Custom Post Type with categories and ACF fields
+ * - ProCoach Custom Post Type with location data and REST API (v4.4.0)
  * - Course Import/Export (JSON-based)
  * - REST API extensions with access control
  * - ACF field exposure for headless consumption
@@ -61,6 +62,9 @@ class BlackBoardHeadlessSync {
         // Migrate old course post type to blackboard-course (one-time)
         $this->migrate_course_post_type();
 
+        // Migrate old coach post types to bb_procoach (one-time)
+        $this->migrate_coach_post_types();
+
         // Create course access table on activation
         register_activation_hook(__FILE__, array($this, 'create_course_access_table'));
         $this->create_course_access_table();
@@ -71,6 +75,7 @@ class BlackBoardHeadlessSync {
         $this->init_course_cpt();  // NEW: Initialize Course CPT
         $this->init_course_access_system();  // NEW: Course access management
         $this->init_reseller_pricing();  // NEW: Reseller bulk pricing (v4.1.0)
+        $this->init_coach_finder();  // NEW: Coach Finder (v4.7.0)
         $this->init_admin_interface();
 
         // Add admin styles
@@ -99,6 +104,66 @@ class BlackBoardHeadlessSync {
 
         // Mark migration as complete
         update_option('blackboard_course_migration_done', true);
+    }
+
+    /**
+     * Migrate old coach post types to bb_procoach (one-time migration)
+     */
+    private function migrate_coach_post_types() {
+        // Check if migration has already been done (v4.7.3 forces remigration for meta fields)
+        $migration_version = get_option('bb_coach_migration_version', '0');
+        if (version_compare($migration_version, '4.7.3', '>=')) {
+            return;
+        }
+
+        global $wpdb;
+
+        // Migrate all old coach post types to bb_procoach
+        $old_types = array('procoach', 'blackboard-procoach', 'bb_coach');
+
+        foreach ($old_types as $old_type) {
+            $wpdb->query(
+                $wpdb->prepare(
+                    "UPDATE {$wpdb->posts} SET post_type = %s WHERE post_type = %s",
+                    'bb_procoach',
+                    $old_type
+                )
+            );
+        }
+
+        // Migrate meta field names for all bb_procoach posts
+        $coaches = get_posts(array(
+            'post_type' => 'bb_procoach',
+            'posts_per_page' => -1,
+            'post_status' => 'any',
+        ));
+
+        foreach ($coaches as $coach) {
+            // Map old field names to new field names
+            $field_map = array(
+                'coach_name' => 'bb_coach_name',
+                'company_name' => 'bb_coach_company',
+                'address' => 'bb_coach_address',
+                'latitude' => 'bb_coach_lat',
+                'longitude' => 'bb_coach_lng',
+                'phone' => 'bb_coach_phone',
+                'email' => 'bb_coach_email',
+                'website' => 'bb_coach_website',
+                'certification_date' => 'bb_coach_cert_date',
+                'specialties' => 'bb_coach_specialties',
+            );
+
+            foreach ($field_map as $old_field => $new_field) {
+                $value = get_post_meta($coach->ID, $old_field, true);
+                if ($value) {
+                    update_post_meta($coach->ID, $new_field, $value);
+                }
+            }
+        }
+
+        // Mark migration as complete with version
+        update_option('bb_coach_migration_done', true);
+        update_option('bb_coach_migration_version', '4.7.3');
     }
 
     /**
@@ -4376,6 +4441,189 @@ NEXT_PUBLIC_BASE_URL=<?php echo $this->nextjs_url ?: 'https://your-site.vercel.a
         $response->data['reseller_pricing'] = $reseller_pricing;
 
         return $response;
+    }
+
+    // ==========================================
+    // COACH FINDER FUNCTIONALITY (v4.7.0)
+    // ==========================================
+
+    /**
+     * Initialize Coach Finder
+     */
+    private function init_coach_finder() {
+        add_action('init', array($this, 'register_coach_post_type'));
+        add_action('add_meta_boxes', array($this, 'add_coach_meta_boxes'));
+        add_action('save_post_bb_procoach', array($this, 'save_coach_meta'), 10, 3);
+        add_action('rest_api_init', array($this, 'register_coach_rest_route'));
+    }
+
+    /**
+     * Register Coach Custom Post Type
+     */
+    public function register_coach_post_type() {
+        register_post_type('bb_procoach', array(
+            'labels' => array(
+                'name' => 'ProCoaches',
+                'singular_name' => 'ProCoach',
+                'add_new_item' => 'Add New ProCoach',
+                'edit_item' => 'Edit ProCoach',
+                'all_items' => 'All ProCoaches',
+            ),
+            'public' => true,
+            'show_in_menu' => true,
+            'menu_icon' => 'dashicons-location-alt',
+            'menu_position' => 21,
+            'supports' => array('title', 'thumbnail'),
+            'show_in_rest' => false,
+        ));
+    }
+
+    /**
+     * Add Meta Boxes for Coach
+     */
+    public function add_coach_meta_boxes() {
+        add_meta_box(
+            'coach_details',
+            'ProCoach Details',
+            array($this, 'render_coach_meta_box'),
+            'bb_procoach',
+            'normal',
+            'high'
+        );
+    }
+
+    /**
+     * Render Coach Meta Box
+     */
+    public function render_coach_meta_box($post) {
+        wp_nonce_field('coach_meta', 'coach_nonce');
+
+        $name = get_post_meta($post->ID, 'bb_coach_name', true);
+        $company = get_post_meta($post->ID, 'bb_coach_company', true);
+        $addr = get_post_meta($post->ID, 'bb_coach_address', true);
+        $lat = get_post_meta($post->ID, 'bb_coach_lat', true);
+        $lng = get_post_meta($post->ID, 'bb_coach_lng', true);
+        $phone = get_post_meta($post->ID, 'bb_coach_phone', true);
+        $mail = get_post_meta($post->ID, 'bb_coach_email', true);
+        $web = get_post_meta($post->ID, 'bb_coach_website', true);
+        $cert = get_post_meta($post->ID, 'bb_coach_cert_date', true);
+        $spec = get_post_meta($post->ID, 'bb_coach_specialties', true);
+        ?>
+        <table class="form-table">
+            <tr>
+                <th><label for="bb_coach_name">Coach Name *</label></th>
+                <td><input type="text" id="bb_coach_name" name="bb_coach_name" value="<?php echo esc_attr($name); ?>" class="regular-text" required></td>
+            </tr>
+            <tr>
+                <th><label for="bb_coach_company">Company/Studio</label></th>
+                <td><input type="text" id="bb_coach_company" name="bb_coach_company" value="<?php echo esc_attr($company); ?>" class="regular-text"></td>
+            </tr>
+            <tr>
+                <th><label for="bb_coach_address">Address *</label></th>
+                <td><textarea id="bb_coach_address" name="bb_coach_address" rows="3" class="large-text" required><?php echo esc_textarea($addr); ?></textarea></td>
+            </tr>
+            <tr>
+                <th><label for="bb_coach_lat">Latitude *</label></th>
+                <td><input type="text" id="bb_coach_lat" name="bb_coach_lat" value="<?php echo esc_attr($lat); ?>" class="regular-text" placeholder="48.2082" required></td>
+            </tr>
+            <tr>
+                <th><label for="bb_coach_lng">Longitude *</label></th>
+                <td><input type="text" id="bb_coach_lng" name="bb_coach_lng" value="<?php echo esc_attr($lng); ?>" class="regular-text" placeholder="16.3738" required></td>
+            </tr>
+            <tr>
+                <th><label for="bb_coach_phone">Phone</label></th>
+                <td><input type="tel" id="bb_coach_phone" name="bb_coach_phone" value="<?php echo esc_attr($phone); ?>" class="regular-text"></td>
+            </tr>
+            <tr>
+                <th><label for="bb_coach_email">Email *</label></th>
+                <td><input type="email" id="bb_coach_email" name="bb_coach_email" value="<?php echo esc_attr($mail); ?>" class="regular-text" required></td>
+            </tr>
+            <tr>
+                <th><label for="bb_coach_website">Website</label></th>
+                <td><input type="url" id="bb_coach_website" name="bb_coach_website" value="<?php echo esc_attr($web); ?>" class="regular-text"></td>
+            </tr>
+            <tr>
+                <th><label for="bb_coach_cert_date">Certification Date</label></th>
+                <td><input type="date" id="bb_coach_cert_date" name="bb_coach_cert_date" value="<?php echo esc_attr($cert); ?>" class="regular-text"></td>
+            </tr>
+            <tr>
+                <th><label for="bb_coach_specialties">Specialties</label></th>
+                <td><textarea id="bb_coach_specialties" name="bb_coach_specialties" rows="3" class="large-text"><?php echo esc_textarea($spec); ?></textarea></td>
+            </tr>
+        </table>
+        <?php
+    }
+
+    /**
+     * Save Coach Meta
+     */
+    public function save_coach_meta($post_id, $post, $update) {
+        if (!isset($_POST['coach_nonce']) || !wp_verify_nonce($_POST['coach_nonce'], 'coach_meta')) return;
+        if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) return;
+        if (!current_user_can('edit_post', $post_id)) return;
+
+        $fields = array('bb_coach_name', 'bb_coach_company', 'bb_coach_lat', 'bb_coach_lng', 'bb_coach_phone', 'bb_coach_email', 'bb_coach_website', 'bb_coach_cert_date');
+        foreach ($fields as $field) {
+            if (isset($_POST[$field])) {
+                update_post_meta($post_id, $field, sanitize_text_field($_POST[$field]));
+            }
+        }
+
+        if (isset($_POST['bb_coach_address'])) {
+            update_post_meta($post_id, 'bb_coach_address', sanitize_textarea_field($_POST['bb_coach_address']));
+        }
+        if (isset($_POST['bb_coach_specialties'])) {
+            update_post_meta($post_id, 'bb_coach_specialties', sanitize_textarea_field($_POST['bb_coach_specialties']));
+        }
+    }
+
+    /**
+     * Register Coach REST API Route
+     */
+    public function register_coach_rest_route() {
+        register_rest_route('blackboard/v1', '/procoaches', array(
+            'methods' => 'GET',
+            'callback' => array($this, 'get_coaches_api'),
+            'permission_callback' => '__return_true',
+        ));
+    }
+
+    /**
+     * Get All Coaches API
+     */
+    public function get_coaches_api() {
+        $coaches = get_posts(array(
+            'post_type' => 'bb_procoach',
+            'posts_per_page' => -1,
+            'post_status' => 'publish',
+        ));
+
+        $result = array();
+        foreach ($coaches as $coach) {
+            $thumb_id = get_post_thumbnail_id($coach->ID);
+            $img = $thumb_id ? wp_get_attachment_image_url($thumb_id, 'medium') : null;
+
+            $result[] = array(
+                'id' => $coach->ID,
+                'title' => $coach->post_title,
+                'slug' => $coach->post_name,
+                'coach_name' => get_post_meta($coach->ID, 'bb_coach_name', true),
+                'company_name' => get_post_meta($coach->ID, 'bb_coach_company', true),
+                'address' => get_post_meta($coach->ID, 'bb_coach_address', true),
+                'latitude' => floatval(get_post_meta($coach->ID, 'bb_coach_lat', true)),
+                'longitude' => floatval(get_post_meta($coach->ID, 'bb_coach_lng', true)),
+                'phone' => get_post_meta($coach->ID, 'bb_coach_phone', true),
+                'email' => get_post_meta($coach->ID, 'bb_coach_email', true),
+                'website' => get_post_meta($coach->ID, 'bb_coach_website', true),
+                'certification_date' => get_post_meta($coach->ID, 'bb_coach_cert_date', true),
+                'specialties' => get_post_meta($coach->ID, 'bb_coach_specialties', true),
+                'image_url' => $img,
+                'date' => $coach->post_date,
+                'modified' => $coach->post_modified,
+            );
+        }
+
+        return rest_ensure_response($result);
     }
 
 }
