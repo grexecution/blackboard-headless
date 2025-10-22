@@ -19,8 +19,8 @@ export default function CourseCardHorizontal({ course }: CourseCardHorizontalPro
 
   // Get custom field data from ACF
   const prerequisites = course.acf?.course_prerequisites || 'None'
-  const duration = course.acf?.course_duration || 'Self-paced'
-  const equipment = course.acf?.course_equipment || 'BlackBoard Training Equipment'
+  const equipment = course.acf?.course_equipment || 'Blackboard (not included)'
+  const duration = course.acf?.duration || ''
 
   // Use course_type field (on_demand or online_live)
   const courseType = course.acf?.course_type || 'on_demand'
@@ -149,7 +149,9 @@ export default function CourseCardHorizontal({ course }: CourseCardHorizontalPro
               </div>
               <div className="min-w-0">
                 <p className="text-xs font-semibold text-gray-500 mb-1">Duration</p>
-                <p className="text-sm font-bold text-gray-900 truncate">{duration}</p>
+                <p className="text-sm font-bold text-gray-900">
+                  {duration || 'Self-paced'}
+                </p>
               </div>
             </div>
 

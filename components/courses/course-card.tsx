@@ -1,6 +1,6 @@
 'use client'
 
-import { Course, isCourseLocked, getCoursePrice, getCourseVideoCount } from '@/lib/woocommerce/courses'
+import { Course, isCourseLocked, getCoursePrice, getCourseVideoCount, getCourseTotalDuration } from '@/lib/woocommerce/courses'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Clock, PlayCircle, Award, Users, Video, Calendar } from 'lucide-react'
@@ -24,18 +24,6 @@ export default function CourseCard({ course }: CourseCardProps) {
 
   // Use the access info from the course object which is updated dynamically
   const hasAccess = course.access?.has_access || false
-
-  // Format duration to short format (e.g., "1h 40m" instead of "1 hour and 40 minutes")
-  const formatDuration = (duration?: string) => {
-    if (!duration) return ''
-
-    // Replace common long forms with short forms
-    return duration
-      .replace(/(\d+)\s*hours?/gi, '$1h')
-      .replace(/(\d+)\s*minutes?/gi, '$1m')
-      .replace(/\s*and\s*/gi, ' ')
-      .trim()
-  }
 
   // Allow viewing course details even if not purchased
   const handleClick = (e: React.MouseEvent) => {
@@ -136,7 +124,7 @@ export default function CourseCard({ course }: CourseCardProps) {
               {course.acf?.duration && (
                 <div className="flex items-center gap-1.5">
                   <Clock className="h-4 w-4 flex-shrink-0" />
-                  <span className="whitespace-nowrap">{formatDuration(course.acf.duration)}</span>
+                  <span className="whitespace-nowrap">{course.acf.duration}</span>
                 </div>
               )}
               {videoCount > 0 && (

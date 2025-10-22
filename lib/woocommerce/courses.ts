@@ -130,6 +130,8 @@ export interface Course {
     }[]
     what_you_will_learn?: string
     equipment_requirements?: string
+    course_prerequisites?: string
+    course_equipment?: string
   }
   access: {
     has_access: boolean
@@ -236,15 +238,50 @@ export function getCourseVideoCount(course: Course): number {
   return course.acf?.course_videos?.length || 0
 }
 
-// Get total duration for a course (if we have individual video durations)
+// Get total duration for a course by summing video durations
 export function getCourseTotalDuration(course: Course): string {
-  if (!course.acf?.course_videos) {
-    return course.acf?.duration || ''
+  if (!course.acf?.course_videos || course.acf.course_videos.length === 0) {
+    return ''
   }
 
-  // If we have individual video durations, we could calculate total
-  // For now, just return the duration field
-  return course.acf?.duration || ''
+  let totalMinutes = 0
+
+  // Sum up all video durations (in minutes)
+  course.acf.course_videos.forEach(video => {
+    if (video.video_duration) {
+      // Parse duration string (e.g., "5m", "1h 30m", "45")
+      const duration = video.video_duration.toLowerCase()
+
+      // Extract hours if present
+      const hoursMatch = duration.match(/(\d+)\s*h/)
+      if (hoursMatch) {
+        totalMinutes += parseInt(hoursMatch[1]) * 60
+      }
+
+      // Extract minutes
+      const minutesMatch = duration.match(/(\d+)\s*m/)
+      if (minutesMatch) {
+        totalMinutes += parseInt(minutesMatch[1])
+      } else {
+        // If no 'h' or 'm' suffix, assume it's just minutes as a number
+        const numericMatch = duration.match(/^(\d+)$/)
+        if (numericMatch) {
+          totalMinutes += parseInt(numericMatch[1])
+        }
+      }
+    }
+  })
+
+  if (totalMinutes === 0) return ''
+
+  // Format output
+  if (totalMinutes < 60) {
+    return `${totalMinutes}m`
+  } else {
+    const hours = Math.floor(totalMinutes / 60)
+    const minutes = totalMinutes % 60
+    return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`
+  }
 }
 
 // Get course difficulty label

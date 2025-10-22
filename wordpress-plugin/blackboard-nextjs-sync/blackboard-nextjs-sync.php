@@ -2,7 +2,7 @@
 /**
  * Plugin Name: BlackBoard Headless Options
  * Description: Complete headless CMS solution for BlackBoard Training - WooCommerce sync, Course & Video CPTs, ProCoach Finder, REST API extensions, automatic rebuilds, course access management, reseller pricing, and import/export tools
- * Version: 4.8.0
+ * Version: 4.10.0
  * Author: BlackBoard Training
  * Author URI: https://blackboard-training.com
  * Text Domain: blackboard-headless-options
@@ -904,9 +904,9 @@ class BlackBoardHeadlessSync {
                     'label' => 'Duration',
                     'name' => 'duration',
                     'type' => 'text',
-                    'instructions' => 'e.g., "12 weeks" or "3 months" or "Self-paced"',
-                    'default_value' => 'Self-paced',
-                    'placeholder' => 'Self-paced',
+                    'instructions' => 'Total course duration calculated from videos (e.g., "45m" or "1h 30m"). This will be auto-calculated from video durations.',
+                    'default_value' => '',
+                    'placeholder' => 'e.g., 45m or 1h 30m',
                 ),
                 // Course Prerequisites
                 array(
@@ -924,9 +924,9 @@ class BlackBoardHeadlessSync {
                     'label' => 'Necessary Equipment',
                     'name' => 'course_equipment',
                     'type' => 'text',
-                    'instructions' => 'What equipment is needed? e.g., "BlackBoard Training Equipment"',
-                    'default_value' => 'BlackBoard Training Equipment',
-                    'placeholder' => 'BlackBoard Training Equipment',
+                    'instructions' => 'What equipment is needed?',
+                    'default_value' => 'Blackboard (not included)',
+                    'placeholder' => 'Blackboard (not included)',
                 ),
                 // Delivery Method
                 array(
