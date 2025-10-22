@@ -2,7 +2,7 @@
 /**
  * Plugin Name: BlackBoard Headless Options
  * Description: Complete headless CMS solution for BlackBoard Training - WooCommerce sync, Course & Video CPTs, ProCoach Finder, REST API extensions, automatic rebuilds, course access management, reseller pricing, and import/export tools
- * Version: 4.8.0
+ * Version: 4.6.1
  * Author: BlackBoard Training
  * Author URI: https://blackboard-training.com
  * Text Domain: blackboard-headless-options
@@ -62,9 +62,6 @@ class BlackBoardHeadlessSync {
         // Migrate old course post type to blackboard-course (one-time)
         $this->migrate_course_post_type();
 
-        // Migrate old coach post types to bb_procoach (one-time)
-        $this->migrate_coach_post_types();
-
         // Create course access table on activation
         register_activation_hook(__FILE__, array($this, 'create_course_access_table'));
         $this->create_course_access_table();
@@ -104,66 +101,6 @@ class BlackBoardHeadlessSync {
 
         // Mark migration as complete
         update_option('blackboard_course_migration_done', true);
-    }
-
-    /**
-     * Migrate old coach post types to bb_procoach (one-time migration)
-     */
-    private function migrate_coach_post_types() {
-        // Check if migration has already been done (v4.7.3 forces remigration for meta fields)
-        $migration_version = get_option('bb_coach_migration_version', '0');
-        if (version_compare($migration_version, '4.7.3', '>=')) {
-            return;
-        }
-
-        global $wpdb;
-
-        // Migrate all old coach post types to bb_procoach
-        $old_types = array('procoach', 'blackboard-procoach', 'bb_coach');
-
-        foreach ($old_types as $old_type) {
-            $wpdb->query(
-                $wpdb->prepare(
-                    "UPDATE {$wpdb->posts} SET post_type = %s WHERE post_type = %s",
-                    'bb_procoach',
-                    $old_type
-                )
-            );
-        }
-
-        // Migrate meta field names for all bb_procoach posts
-        $coaches = get_posts(array(
-            'post_type' => 'bb_procoach',
-            'posts_per_page' => -1,
-            'post_status' => 'any',
-        ));
-
-        foreach ($coaches as $coach) {
-            // Map old field names to new field names
-            $field_map = array(
-                'coach_name' => 'bb_coach_name',
-                'company_name' => 'bb_coach_company',
-                'address' => 'bb_coach_address',
-                'latitude' => 'bb_coach_lat',
-                'longitude' => 'bb_coach_lng',
-                'phone' => 'bb_coach_phone',
-                'email' => 'bb_coach_email',
-                'website' => 'bb_coach_website',
-                'certification_date' => 'bb_coach_cert_date',
-                'specialties' => 'bb_coach_specialties',
-            );
-
-            foreach ($field_map as $old_field => $new_field) {
-                $value = get_post_meta($coach->ID, $old_field, true);
-                if ($value) {
-                    update_post_meta($coach->ID, $new_field, $value);
-                }
-            }
-        }
-
-        // Mark migration as complete with version
-        update_option('bb_coach_migration_done', true);
-        update_option('bb_coach_migration_version', '4.7.3');
     }
 
     /**
@@ -904,54 +841,9 @@ class BlackBoardHeadlessSync {
                     'label' => 'Duration',
                     'name' => 'duration',
                     'type' => 'text',
-                    'instructions' => 'e.g., "12 weeks" or "3 months" or "Self-paced"',
-                    'default_value' => 'Self-paced',
-                    'placeholder' => 'Self-paced',
-                ),
-                // Course Prerequisites
-                array(
-                    'key' => 'field_course_prerequisites',
-                    'label' => 'Prerequisites',
-                    'name' => 'course_prerequisites',
-                    'type' => 'text',
-                    'instructions' => 'What is required before taking this course? e.g., "Level 1 Completion" or "None"',
-                    'default_value' => 'None',
-                    'placeholder' => 'None',
-                ),
-                // Course Equipment
-                array(
-                    'key' => 'field_course_equipment',
-                    'label' => 'Necessary Equipment',
-                    'name' => 'course_equipment',
-                    'type' => 'text',
-                    'instructions' => 'What equipment is needed? e.g., "BlackBoard Training Equipment"',
-                    'default_value' => 'BlackBoard Training Equipment',
-                    'placeholder' => 'BlackBoard Training Equipment',
-                ),
-                // Delivery Method
-                array(
-                    'key' => 'field_delivery_method',
-                    'label' => 'Delivery Method',
-                    'name' => 'delivery_method',
-                    'type' => 'select',
-                    'instructions' => 'How is this course delivered?',
-                    'choices' => array(
-                        'on-demand' => 'On-Demand (Video)',
-                        'live' => 'Live Training (Webinar)',
-                    ),
-                    'default_value' => 'on-demand',
-                    'required' => 1,
-                ),
-                // Certificate Offered
-                array(
-                    'key' => 'field_certificate_offered',
-                    'label' => 'Certificate Offered',
-                    'name' => 'certificate_offered',
-                    'type' => 'true_false',
-                    'instructions' => 'Does this course offer a certificate upon completion?',
-                    'default_value' => 1,
-                    'ui' => 1,
-                    'message' => 'Yes, certificate is offered',
+                    'instructions' => 'e.g., "12 weeks" or "3 months"',
+                    'default_value' => '',
+                    'placeholder' => '12 weeks',
                 ),
                 // Course Videos
                 array(
@@ -4488,187 +4380,462 @@ NEXT_PUBLIC_BASE_URL=<?php echo $this->nextjs_url ?: 'https://your-site.vercel.a
         return $response;
     }
 
+
     // ==========================================
-    // COACH FINDER FUNCTIONALITY (v4.7.0)
+    // PROCOACH CPT FUNCTIONALITY (v4.4.1)
     // ==========================================
 
     /**
-     * Initialize Coach Finder
+     * Initialize ProCoach CPT functionality
+     * Following same pattern as Course CPT
      */
-    private function init_coach_finder() {
-        add_action('init', array($this, 'register_coach_post_type'));
-        add_action('add_meta_boxes', array($this, 'add_coach_meta_boxes'));
-        add_action('save_post_bb_procoach', array($this, 'save_coach_meta'), 10, 3);
-        add_action('rest_api_init', array($this, 'register_coach_rest_route'));
+    private function init_procoach_cpt() {
+        // Register ProCoach CPT
+        add_action('init', array($this, 'register_procoach_post_type'));
+
+        // Add REST API support
+        add_action('rest_api_init', array($this, 'register_procoach_rest_fields'));
+        add_action('rest_api_init', array($this, 'register_procoach_rest_routes'));
+
+        // Hook into procoach post actions
+        add_action('save_post_blackboard-procoach', array($this, 'on_procoach_saved'), 10, 3);
+        add_action('delete_post', array($this, 'on_procoach_deleted'), 10, 1);
+
+        // Modify REST API responses
+        add_filter('rest_prepare_blackboard-procoach', array($this, 'modify_procoach_response'), 10, 3);
+
+        // Register meta boxes for ProCoach (native WordPress, no ACF dependency)
+        add_action('add_meta_boxes', array($this, 'add_procoach_meta_boxes'));
     }
 
     /**
-     * Register Coach Custom Post Type
+     * Register ProCoach Custom Post Type
      */
-    public function register_coach_post_type() {
-        register_post_type('bb_procoach', array(
-            'labels' => array(
-                'name' => 'ProCoaches',
-                'singular_name' => 'ProCoach',
-                'add_new_item' => 'Add New ProCoach',
-                'edit_item' => 'Edit ProCoach',
-                'all_items' => 'All ProCoaches',
-            ),
-            'public' => true,
-            'show_in_menu' => true,
-            'menu_icon' => 'dashicons-location-alt',
-            'menu_position' => 21,
-            'supports' => array('title', 'thumbnail'),
-            'show_in_rest' => false,
-        ));
+    public function register_procoach_post_type() {
+        $labels = array(
+            'name'                  => _x('ProCoaches', 'Post type general name', 'blackboard-nextjs-sync'),
+            'singular_name'         => _x('ProCoach', 'Post type singular name', 'blackboard-nextjs-sync'),
+            'menu_name'             => _x('ProCoaches', 'Admin Menu text', 'blackboard-nextjs-sync'),
+            'name_admin_bar'        => _x('ProCoach', 'Add New on Toolbar', 'blackboard-nextjs-sync'),
+            'add_new'               => __('Add New', 'blackboard-nextjs-sync'),
+            'add_new_item'          => __('Add New ProCoach', 'blackboard-nextjs-sync'),
+            'new_item'              => __('New ProCoach', 'blackboard-nextjs-sync'),
+            'edit_item'             => __('Edit ProCoach', 'blackboard-nextjs-sync'),
+            'view_item'             => __('View ProCoach', 'blackboard-nextjs-sync'),
+            'all_items'             => __('All ProCoaches', 'blackboard-nextjs-sync'),
+            'search_items'          => __('Search ProCoaches', 'blackboard-nextjs-sync'),
+            'parent_item_colon'     => __('Parent ProCoaches:', 'blackboard-nextjs-sync'),
+            'not_found'             => __('No procoaches found.', 'blackboard-nextjs-sync'),
+            'not_found_in_trash'    => __('No procoaches found in Trash.', 'blackboard-nextjs-sync'),
+            'featured_image'        => _x('ProCoach Photo', 'Overrides the "Featured Image" phrase', 'blackboard-nextjs-sync'),
+            'set_featured_image'    => _x('Set ProCoach photo', 'Overrides the "Set featured image" phrase', 'blackboard-nextjs-sync'),
+            'remove_featured_image' => _x('Remove ProCoach photo', 'Overrides the "Remove featured image" phrase', 'blackboard-nextjs-sync'),
+            'use_featured_image'    => _x('Use as ProCoach photo', 'Overrides the "Use as featured image" phrase', 'blackboard-nextjs-sync'),
+        );
+
+        $args = array(
+            'labels'             => $labels,
+            'public'             => true,
+            'publicly_queryable' => true,
+            'show_ui'            => true,
+            'show_in_menu'       => true,
+            'query_var'          => true,
+            'rewrite'            => array('slug' => 'procoach'),
+            'capability_type'    => 'post',
+            'has_archive'        => true,
+            'hierarchical'       => false,
+            'menu_position'      => 21,
+            'menu_icon'          => 'dashicons-location-alt',
+            'supports'           => array('title', 'thumbnail', 'custom-fields'),
+            'show_in_rest'       => true,
+            'rest_base'          => 'procoaches',
+            'rest_controller_class' => 'WP_REST_Posts_Controller',
+        );
+
+        register_post_type('blackboard-procoach', $args);
     }
 
     /**
-     * Add Meta Boxes for Coach
+     * Add Meta Boxes for ProCoach (Native WordPress, no ACF)
      */
-    public function add_coach_meta_boxes() {
+    public function add_procoach_meta_boxes() {
         add_meta_box(
-            'coach_details',
-            'ProCoach Details',
-            array($this, 'render_coach_meta_box'),
-            'bb_procoach',
+            'procoach_information',
+            'ProCoach Information',
+            array($this, 'render_procoach_meta_box'),
+            'blackboard-procoach',
             'normal',
             'high'
         );
     }
 
     /**
-     * Render Coach Meta Box
+     * Render ProCoach Meta Box
      */
-    public function render_coach_meta_box($post) {
-        wp_nonce_field('coach_meta', 'coach_nonce');
+    public function render_procoach_meta_box($post) {
+        // Add nonce for security
+        wp_nonce_field('procoach_meta_box', 'procoach_meta_box_nonce');
 
-        $name = get_post_meta($post->ID, 'bb_coach_name', true);
-        $company = get_post_meta($post->ID, 'bb_coach_company', true);
-        $addr = get_post_meta($post->ID, 'bb_coach_address', true);
-        $lat = get_post_meta($post->ID, 'bb_coach_lat', true);
-        $lng = get_post_meta($post->ID, 'bb_coach_lng', true);
-        $phone = get_post_meta($post->ID, 'bb_coach_phone', true);
-        $mail = get_post_meta($post->ID, 'bb_coach_email', true);
-        $web = get_post_meta($post->ID, 'bb_coach_website', true);
-        $cert = get_post_meta($post->ID, 'bb_coach_cert_date', true);
-        $spec = get_post_meta($post->ID, 'bb_coach_specialties', true);
+        // Get current values
+        $coach_name = get_post_meta($post->ID, 'coach_name', true);
+        $company_name = get_post_meta($post->ID, 'company_name', true);
+        $address = get_post_meta($post->ID, 'address', true);
+        $latitude = get_post_meta($post->ID, 'latitude', true);
+        $longitude = get_post_meta($post->ID, 'longitude', true);
+        $phone = get_post_meta($post->ID, 'phone', true);
+        $email = get_post_meta($post->ID, 'email', true);
+        $website = get_post_meta($post->ID, 'website', true);
+        $cert_date = get_post_meta($post->ID, 'certification_date', true);
+        $specialties = get_post_meta($post->ID, 'specialties', true);
         ?>
-        <table class="form-table">
-            <tr>
-                <th><label for="bb_coach_name">Coach Name *</label></th>
-                <td><input type="text" id="bb_coach_name" name="bb_coach_name" value="<?php echo esc_attr($name); ?>" class="regular-text" required></td>
-            </tr>
-            <tr>
-                <th><label for="bb_coach_company">Company/Studio</label></th>
-                <td><input type="text" id="bb_coach_company" name="bb_coach_company" value="<?php echo esc_attr($company); ?>" class="regular-text"></td>
-            </tr>
-            <tr>
-                <th><label for="bb_coach_address">Address *</label></th>
-                <td><textarea id="bb_coach_address" name="bb_coach_address" rows="3" class="large-text" required><?php echo esc_textarea($addr); ?></textarea></td>
-            </tr>
-            <tr>
-                <th><label for="bb_coach_lat">Latitude *</label></th>
-                <td><input type="text" id="bb_coach_lat" name="bb_coach_lat" value="<?php echo esc_attr($lat); ?>" class="regular-text" placeholder="48.2082" required></td>
-            </tr>
-            <tr>
-                <th><label for="bb_coach_lng">Longitude *</label></th>
-                <td><input type="text" id="bb_coach_lng" name="bb_coach_lng" value="<?php echo esc_attr($lng); ?>" class="regular-text" placeholder="16.3738" required></td>
-            </tr>
-            <tr>
-                <th><label for="bb_coach_phone">Phone</label></th>
-                <td><input type="tel" id="bb_coach_phone" name="bb_coach_phone" value="<?php echo esc_attr($phone); ?>" class="regular-text"></td>
-            </tr>
-            <tr>
-                <th><label for="bb_coach_email">Email *</label></th>
-                <td><input type="email" id="bb_coach_email" name="bb_coach_email" value="<?php echo esc_attr($mail); ?>" class="regular-text" required></td>
-            </tr>
-            <tr>
-                <th><label for="bb_coach_website">Website</label></th>
-                <td><input type="url" id="bb_coach_website" name="bb_coach_website" value="<?php echo esc_attr($web); ?>" class="regular-text"></td>
-            </tr>
-            <tr>
-                <th><label for="bb_coach_cert_date">Certification Date</label></th>
-                <td><input type="date" id="bb_coach_cert_date" name="bb_coach_cert_date" value="<?php echo esc_attr($cert); ?>" class="regular-text"></td>
-            </tr>
-            <tr>
-                <th><label for="bb_coach_specialties">Specialties</label></th>
-                <td><textarea id="bb_coach_specialties" name="bb_coach_specialties" rows="3" class="large-text"><?php echo esc_textarea($spec); ?></textarea></td>
-            </tr>
-        </table>
+        <div style="padding: 10px 0;">
+            <p><strong style="color: red;">* Required fields</strong></p>
+
+            <p>
+                <label for="coach_name"><strong>Coach Name *</strong></label><br>
+                <input type="text" id="coach_name" name="coach_name" value="<?php echo esc_attr($coach_name); ?>" style="width: 100%;" required>
+            </p>
+
+            <p>
+                <label for="company_name"><strong>Company/Studio Name</strong></label><br>
+                <input type="text" id="company_name" name="company_name" value="<?php echo esc_attr($company_name); ?>" style="width: 100%;">
+            </p>
+
+            <p>
+                <label for="address"><strong>Full Address *</strong></label><br>
+                <textarea id="address" name="address" rows="3" style="width: 100%;" required><?php echo esc_textarea($address); ?></textarea>
+            </p>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <p>
+                    <label for="latitude"><strong>Latitude *</strong></label><br>
+                    <input type="text" id="latitude" name="latitude" value="<?php echo esc_attr($latitude); ?>" style="width: 100%;" placeholder="e.g., 48.2082" required>
+                    <small>Get coordinates from <a href="https://www.latlong.net/" target="_blank">latlong.net</a></small>
+                </p>
+
+                <p>
+                    <label for="longitude"><strong>Longitude *</strong></label><br>
+                    <input type="text" id="longitude" name="longitude" value="<?php echo esc_attr($longitude); ?>" style="width: 100%;" placeholder="e.g., 16.3738" required>
+                </p>
+            </div>
+
+            <p>
+                <label for="phone"><strong>Phone Number</strong></label><br>
+                <input type="tel" id="phone" name="phone" value="<?php echo esc_attr($phone); ?>" style="width: 100%;">
+            </p>
+
+            <p>
+                <label for="email"><strong>Email Address *</strong></label><br>
+                <input type="email" id="email" name="email" value="<?php echo esc_attr($email); ?>" style="width: 100%;" required>
+            </p>
+
+            <p>
+                <label for="website"><strong>Website URL</strong></label><br>
+                <input type="url" id="website" name="website" value="<?php echo esc_attr($website); ?>" style="width: 100%;" placeholder="https://">
+            </p>
+
+            <p>
+                <label for="certification_date"><strong>Certification Date</strong></label><br>
+                <input type="date" id="certification_date" name="certification_date" value="<?php echo esc_attr($cert_date); ?>" style="width: 100%;">
+            </p>
+
+            <p>
+                <label for="specialties"><strong>Specialties</strong></label><br>
+                <textarea id="specialties" name="specialties" rows="3" style="width: 100%;"><?php echo esc_textarea($specialties); ?></textarea>
+            </p>
+        </div>
         <?php
     }
 
     /**
-     * Save Coach Meta
+     * Register REST API fields for ProCoach
      */
-    public function save_coach_meta($post_id, $post, $update) {
-        if (!isset($_POST['coach_nonce']) || !wp_verify_nonce($_POST['coach_nonce'], 'coach_meta')) return;
-        if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) return;
-        if (!current_user_can('edit_post', $post_id)) return;
+    public function register_procoach_rest_fields() {
+        register_rest_field('procoach', 'acf', array(
+            'get_callback' => array($this, 'get_procoach_acf_fields'),
+            'schema' => null,
+        ));
+    }
 
-        $fields = array('bb_coach_name', 'bb_coach_company', 'bb_coach_lat', 'bb_coach_lng', 'bb_coach_phone', 'bb_coach_email', 'bb_coach_website', 'bb_coach_cert_date');
-        foreach ($fields as $field) {
-            if (isset($_POST[$field])) {
-                update_post_meta($post_id, $field, sanitize_text_field($_POST[$field]));
+    /**
+     * Register REST API Routes for ProCoach
+     */
+    public function register_procoach_rest_routes() {
+        register_rest_route('blackboard/v1', '/procoaches', array(
+            'methods' => 'GET',
+            'callback' => array($this, 'get_all_procoaches'),
+            'permission_callback' => '__return_true',
+        ));
+
+        register_rest_route('blackboard/v1', '/procoaches/(?P<id>\d+)', array(
+            'methods' => 'GET',
+            'callback' => array($this, 'get_single_procoach'),
+            'permission_callback' => '__return_true',
+        ));
+
+        // Debug endpoint to check ProCoach system status
+        register_rest_route('blackboard/v1', '/procoaches/debug', array(
+            'methods' => 'GET',
+            'callback' => array($this, 'debug_procoach_system'),
+            'permission_callback' => '__return_true',
+        ));
+
+        // Flush/sync ACF fields
+        register_rest_route('blackboard/v1', '/procoaches/flush-acf', array(
+            'methods' => 'POST',
+            'callback' => array($this, 'flush_procoach_acf'),
+            'permission_callback' => function() {
+                return current_user_can('manage_options');
+            },
+        ));
+    }
+
+    /**
+     * Flush and re-register ProCoach ACF fields
+     */
+    public function flush_procoach_acf($request) {
+        // Force re-registration
+        $this->register_procoach_acf_fields();
+
+        // Clear ACF cache if function exists
+        if (function_exists('acf_get_store')) {
+            $store = acf_get_store('field-groups');
+            if ($store) {
+                $store->reset();
             }
         }
 
-        if (isset($_POST['bb_coach_address'])) {
-            update_post_meta($post_id, 'bb_coach_address', sanitize_textarea_field($_POST['bb_coach_address']));
-        }
-        if (isset($_POST['bb_coach_specialties'])) {
-            update_post_meta($post_id, 'bb_coach_specialties', sanitize_textarea_field($_POST['bb_coach_specialties']));
-        }
-    }
+        // Flush rewrite rules
+        flush_rewrite_rules();
 
-    /**
-     * Register Coach REST API Route
-     */
-    public function register_coach_rest_route() {
-        register_rest_route('blackboard/v1', '/procoaches', array(
-            'methods' => 'GET',
-            'callback' => array($this, 'get_coaches_api'),
-            'permission_callback' => '__return_true',
+        return rest_ensure_response(array(
+            'success' => true,
+            'message' => 'ACF fields flushed and re-registered',
+            'timestamp' => current_time('mysql'),
         ));
     }
 
     /**
-     * Get All Coaches API
+     * Debug ProCoach System
      */
-    public function get_coaches_api() {
-        $coaches = get_posts(array(
-            'post_type' => 'bb_procoach',
+    public function debug_procoach_system($request) {
+        global $wpdb;
+
+        $debug_info = array(
+            'plugin_version' => '4.6.1',
+            'acf_installed' => function_exists('acf_add_local_field_group'),
+            'acf_get_field_function' => function_exists('get_field'),
+            'post_type_registered' => post_type_exists('blackboard-procoach'),
+            'total_procoaches' => 0,
+            'sample_procoach' => null,
+            'database_prefix' => $wpdb->prefix,
+            'acf_field_keys' => array(),
+        );
+
+        // Check if post type is registered
+        if (post_type_exists('blackboard-procoach')) {
+            // Get total count
+            $count = wp_count_posts('blackboard-procoach');
+            $debug_info['total_procoaches'] = $count->publish;
+
+            // Get a sample procoach
+            $sample = get_posts(array(
+                'post_type' => 'blackboard-procoach',
+                'posts_per_page' => 1,
+                'post_status' => 'publish',
+            ));
+
+            if (!empty($sample)) {
+                $post = $sample[0];
+                $debug_info['sample_procoach'] = array(
+                    'id' => $post->ID,
+                    'title' => $post->post_title,
+                    'coach_name' => get_post_meta($post->ID, 'coach_name', true),
+                    'address' => get_post_meta($post->ID, 'address', true),
+                    'latitude' => get_post_meta($post->ID, 'latitude', true),
+                    'longitude' => get_post_meta($post->ID, 'longitude', true),
+                    'email' => get_post_meta($post->ID, 'email', true),
+                    'raw_meta' => get_post_meta($post->ID),
+                );
+            }
+        }
+
+        // Check if ACF field group is registered
+        if (function_exists('acf_get_field_groups')) {
+            $groups = acf_get_field_groups(array('post_type' => 'blackboard-procoach'));
+            $debug_info['acf_field_groups'] = $groups;
+
+            if (!empty($groups)) {
+                foreach ($groups as $group) {
+                    $fields = acf_get_fields($group['key']);
+                    if ($fields) {
+                        foreach ($fields as $field) {
+                            $debug_info['acf_field_keys'][] = array(
+                                'key' => $field['key'],
+                                'name' => $field['name'],
+                                'type' => $field['type'],
+                            );
+                        }
+                    }
+                }
+            }
+        }
+
+        return rest_ensure_response($debug_info);
+    }
+
+    /**
+     * Get ACF fields for ProCoach
+     */
+    public function get_procoach_acf_fields($post) {
+        $post_id = $post['id'];
+
+        if (function_exists('get_fields')) {
+            return get_fields($post_id);
+        }
+
+        return array();
+    }
+
+    /**
+     * Modify ProCoach REST response
+     */
+    public function modify_procoach_response($response, $post, $request) {
+        // Add any custom modifications here
+        return $response;
+    }
+
+    /**
+     * Get all ProCoaches
+     */
+    public function get_all_procoaches($request) {
+        $args = array(
+            'post_type' => 'blackboard-procoach',
             'posts_per_page' => -1,
             'post_status' => 'publish',
-        ));
+            'orderby' => 'title',
+            'order' => 'ASC',
+        );
 
+        $procoaches = get_posts($args);
         $result = array();
-        foreach ($coaches as $coach) {
-            $thumb_id = get_post_thumbnail_id($coach->ID);
-            $img = $thumb_id ? wp_get_attachment_image_url($thumb_id, 'medium') : null;
 
-            $result[] = array(
-                'id' => $coach->ID,
-                'title' => $coach->post_title,
-                'slug' => $coach->post_name,
-                'coach_name' => get_post_meta($coach->ID, 'bb_coach_name', true),
-                'company_name' => get_post_meta($coach->ID, 'bb_coach_company', true),
-                'address' => get_post_meta($coach->ID, 'bb_coach_address', true),
-                'latitude' => floatval(get_post_meta($coach->ID, 'bb_coach_lat', true)),
-                'longitude' => floatval(get_post_meta($coach->ID, 'bb_coach_lng', true)),
-                'phone' => get_post_meta($coach->ID, 'bb_coach_phone', true),
-                'email' => get_post_meta($coach->ID, 'bb_coach_email', true),
-                'website' => get_post_meta($coach->ID, 'bb_coach_website', true),
-                'certification_date' => get_post_meta($coach->ID, 'bb_coach_cert_date', true),
-                'specialties' => get_post_meta($coach->ID, 'bb_coach_specialties', true),
-                'image_url' => $img,
-                'date' => $coach->post_date,
-                'modified' => $coach->post_modified,
-            );
+        foreach ($procoaches as $procoach) {
+            $result[] = $this->format_procoach_data($procoach);
         }
 
         return rest_ensure_response($result);
+    }
+
+    /**
+     * Get single ProCoach
+     */
+    public function get_single_procoach($request) {
+        $id = $request['id'];
+        $procoach = get_post($id);
+
+        if (!$procoach || $procoach->post_type !== 'blackboard-procoach') {
+            return new WP_Error('not_found', 'ProCoach not found', array('status' => 404));
+        }
+
+        return rest_ensure_response($this->format_procoach_data($procoach));
+    }
+
+    /**
+     * Format ProCoach data for API response
+     */
+    private function format_procoach_data($post) {
+        $post_id = $post->ID;
+
+        // Get meta fields (native WordPress, no ACF)
+        $coach_name = get_post_meta($post_id, 'coach_name', true);
+        $company_name = get_post_meta($post_id, 'company_name', true);
+        $address = get_post_meta($post_id, 'address', true);
+        $latitude = get_post_meta($post_id, 'latitude', true);
+        $longitude = get_post_meta($post_id, 'longitude', true);
+        $phone = get_post_meta($post_id, 'phone', true);
+        $email = get_post_meta($post_id, 'email', true);
+        $website = get_post_meta($post_id, 'website', true);
+        $cert_date = get_post_meta($post_id, 'certification_date', true);
+        $specialties = get_post_meta($post_id, 'specialties', true);
+
+        // Get featured image
+        $thumbnail_id = get_post_thumbnail_id($post_id);
+        $image_url = $thumbnail_id ? wp_get_attachment_image_url($thumbnail_id, 'medium') : null;
+
+        return array(
+            'id' => $post_id,
+            'title' => $post->post_title,
+            'slug' => $post->post_name,
+            'coach_name' => $coach_name ?: $post->post_title,
+            'company_name' => $company_name,
+            'address' => $address,
+            'latitude' => $latitude ? floatval($latitude) : null,
+            'longitude' => $longitude ? floatval($longitude) : null,
+            'phone' => $phone,
+            'email' => $email,
+            'website' => $website,
+            'certification_date' => $cert_date,
+            'specialties' => $specialties,
+            'image_url' => $image_url,
+            'date' => $post->post_date,
+            'modified' => $post->post_modified,
+        );
+    }
+
+    /**
+     * Trigger rebuild when ProCoach is saved
+     */
+    public function on_procoach_saved($post_id, $post, $update) {
+        // Safety checks
+        if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
+            return;
+        }
+
+        if (!current_user_can('edit_post', $post_id)) {
+            return;
+        }
+
+        if (wp_is_post_revision($post_id)) {
+            return;
+        }
+
+        // Save meta fields if present in POST
+        if (isset($_POST['procoach_meta_box_nonce']) && wp_verify_nonce($_POST['procoach_meta_box_nonce'], 'procoach_meta_box')) {
+            // Save text fields
+            $text_fields = array('coach_name', 'company_name', 'latitude', 'longitude', 'phone', 'email', 'website', 'certification_date');
+            foreach ($text_fields as $field) {
+                if (isset($_POST[$field])) {
+                    update_post_meta($post_id, $field, sanitize_text_field($_POST[$field]));
+                }
+            }
+
+            // Save textarea fields
+            $textarea_fields = array('address', 'specialties');
+            foreach ($textarea_fields as $field) {
+                if (isset($_POST[$field])) {
+                    update_post_meta($post_id, $field, sanitize_textarea_field($_POST[$field]));
+                }
+            }
+        }
+
+        try {
+            $this->trigger_nextjs_rebuild('procoach_updated');
+            $this->add_diagnostic('info', "ProCoach '{$post->post_title}' was " . ($update ? 'updated' : 'created'));
+        } catch (Exception $e) {
+            error_log('ProCoach save error: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Trigger rebuild when ProCoach is deleted
+     */
+    public function on_procoach_deleted($post_id) {
+        $post = get_post($post_id);
+        if ($post && $post->post_type === 'blackboard-procoach') {
+            $this->trigger_nextjs_rebuild('procoach_deleted');
+            $this->add_diagnostic('info', "ProCoach '{$post->post_title}' was deleted");
+        }
     }
 
 }

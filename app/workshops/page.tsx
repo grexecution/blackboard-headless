@@ -1,6 +1,6 @@
 import { getAllCourses, getCoursesByCategory } from '@/lib/woocommerce/courses'
 import Link from 'next/link'
-import CoursesGridSimple from '@/components/courses/courses-grid-simple'
+import CoursesListHorizontal from '@/components/courses/courses-list-horizontal'
 import {
   Users, Calendar, MapPin, Clock, ChevronRight, Video, BookOpen, Quote
 } from 'lucide-react'
@@ -88,7 +88,7 @@ export default async function WorkshopsPage() {
           </p>
 
           {workshopCourses.length > 0 ? (
-            <CoursesGridSimple initialCourses={workshopCourses} />
+            <CoursesListHorizontal initialCourses={workshopCourses} />
           ) : (
             <div className="text-center py-12">
               <BookOpen className="h-16 w-16 text-gray-300 mx-auto mb-4" />

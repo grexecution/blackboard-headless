@@ -161,7 +161,7 @@ export default function CourseCard({ course }: CourseCardProps) {
                   /* Not purchased - show view details button */
                   <Link
                     href={`/courses/${course.slug}`}
-                    className="w-full bg-black text-white py-2.5 px-4 rounded-lg font-semibold hover:bg-gray-800 transition-colors flex items-center justify-center gap-2"
+                    className="w-full bg-black text-white py-3 px-4 rounded-full font-semibold hover:bg-gray-800 transition-all duration-200 hover:shadow-lg flex items-center justify-center gap-2"
                     onClick={(e) => e.stopPropagation()}
                   >
                     View Details & Purchase
@@ -176,7 +176,7 @@ export default function CourseCard({ course }: CourseCardProps) {
                   <>
                     <Link
                       href={`/courses/${course.slug}`}
-                      className="flex-1 bg-black text-white py-2.5 px-4 rounded-lg font-semibold hover:bg-gray-800 transition-colors flex items-center justify-center gap-2"
+                      className="flex-1 bg-black text-white py-3 px-4 rounded-full font-semibold hover:bg-gray-800 transition-all duration-200 hover:shadow-lg flex items-center justify-center gap-2"
                       onClick={(e) => e.stopPropagation()}
                     >
                       View Details
@@ -186,7 +186,7 @@ export default function CourseCard({ course }: CourseCardProps) {
                     </Link>
                     <Link
                       href={`/courses/${course.slug}/learn`}
-                      className="flex-1 bg-[#ffed00] text-black py-2.5 px-4 rounded-lg font-semibold hover:bg-yellow-400 transition-colors flex items-center justify-center gap-2"
+                      className="flex-1 bg-[#ffed00] text-black py-3 px-4 rounded-full font-semibold hover:bg-yellow-400 transition-all duration-200 hover:shadow-lg flex items-center justify-center gap-2"
                       onClick={(e) => e.stopPropagation()}
                     >
                       <PlayCircle className="h-5 w-5" />
