@@ -13,6 +13,7 @@ import { useSession } from 'next-auth/react'
 export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [educationDropdownOpen, setEducationDropdownOpen] = useState(false)
+  const [currencyDropdownOpen, setCurrencyDropdownOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   const { totalItems, openCart } = useCart()
   const { openLoginModal } = useAuth()
@@ -139,7 +140,7 @@ export default function Navbar() {
             </div>
 
             {/* Right Icons */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
               {/* Currency Toggle - Desktop */}
               <div className="hidden md:flex items-center bg-gray-100 rounded-full p-1">
                 <button
@@ -164,10 +165,71 @@ export default function Navbar() {
                 </button>
               </div>
 
-              {/* Cart - Desktop */}
+              {/* Currency Dropdown - Mobile */}
+              <div className="relative md:hidden">
+                <button
+                  onClick={() => setCurrencyDropdownOpen(!currencyDropdownOpen)}
+                  className="p-2 px-3 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors flex items-center gap-1"
+                >
+                  <span className="text-sm font-semibold text-gray-700">
+                    {currency === 'EUR' ? '€' : '$'}
+                  </span>
+                  <ChevronDown className="h-3 w-3 text-gray-600" />
+                </button>
+
+                <AnimatePresence>
+                  {currencyDropdownOpen && (
+                    <>
+                      {/* Backdrop */}
+                      <div
+                        className="fixed inset-0 z-40"
+                        onClick={() => setCurrencyDropdownOpen(false)}
+                      />
+
+                      {/* Dropdown */}
+                      <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        transition={{ duration: 0.15 }}
+                        className="absolute right-0 top-full mt-2 w-32 bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden z-50"
+                      >
+                        <button
+                          onClick={() => {
+                            setCurrency('EUR')
+                            setCurrencyDropdownOpen(false)
+                          }}
+                          className={`w-full px-4 py-2.5 text-left font-medium transition-all ${
+                            currency === 'EUR'
+                              ? 'bg-[#ffed00] text-black'
+                              : 'text-gray-700 hover:bg-gray-100'
+                          }`}
+                        >
+                          EUR €
+                        </button>
+                        <button
+                          onClick={() => {
+                            setCurrency('USD')
+                            setCurrencyDropdownOpen(false)
+                          }}
+                          className={`w-full px-4 py-2.5 text-left font-medium transition-all ${
+                            currency === 'USD'
+                              ? 'bg-[#ffed00] text-black'
+                              : 'text-gray-700 hover:bg-gray-100'
+                          }`}
+                        >
+                          USD $
+                        </button>
+                      </motion.div>
+                    </>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              {/* Cart - Desktop & Mobile */}
               <button
                 onClick={openCart}
-                className="hidden md:flex relative p-3 rounded-lg hover:bg-gray-100 transition-colors"
+                className="relative p-3 rounded-lg hover:bg-gray-100 transition-colors"
               >
                 <ShoppingCart className="h-6 w-6 text-gray-700" />
                 {totalItems > 0 && (
@@ -187,7 +249,7 @@ export default function Navbar() {
                   <User className="h-6 w-6 text-gray-700" />
                 </Link>
               ) : (
-                <button 
+                <button
                   onClick={() => openLoginModal()}
                   className="hidden md:flex p-3 rounded-lg hover:bg-gray-100 transition-colors"
                 >
@@ -210,150 +272,115 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* Mobile Menu - Full Screen Overlay */}
-        <AnimatePresence>
-          {mobileMenuOpen && (
-            <>
-              {/* Backdrop */}
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="fixed inset-0 bg-black/50 backdrop-blur-sm lg:hidden"
-                onClick={() => setMobileMenuOpen(false)}
-              />
-              
-              {/* Menu Panel */}
-              <motion.div
-                initial={{ x: '100%' }}
-                animate={{ x: 0 }}
-                exit={{ x: '100%' }}
-                transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                className="fixed top-0 right-0 bottom-0 w-full max-w-sm bg-white shadow-2xl lg:hidden overflow-y-auto"
-              >
-                <div className="p-6">
-                  {/* Close Button */}
-                  <div className="flex justify-end mb-8">
-                    <button
-                      onClick={() => setMobileMenuOpen(false)}
-                      className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
-                    >
-                      <X className="h-6 w-6" />
-                    </button>
-                  </div>
-                  
-                  {/* Mobile Links */}
-                  <div className="space-y-2">
-                    {navLinks.map((link) => {
-                      if (link.submenu) {
-                        return (
-                          <div key={link.label}>
-                            <div className="px-4 py-2 font-semibold text-gray-900">
-                              {link.label}
-                            </div>
-                            <div className="ml-4 space-y-1">
-                              {link.submenu.map((sublink) => {
-                                const isActive = pathname === sublink.href
-                                return (
-                                  <Link
-                                    key={sublink.href}
-                                    href={sublink.href}
-                                    onClick={() => setMobileMenuOpen(false)}
-                                    className={`block px-4 py-2 rounded-lg font-medium transition-all ${
-                                      isActive
-                                        ? 'bg-[#ffed00] text-black'
-                                        : 'text-gray-700 hover:bg-gray-100'
-                                    }`}
-                                  >
-                                    {sublink.label}
-                                  </Link>
-                                )
-                              })}
-                            </div>
-                          </div>
-                        )
-                      } else {
-                        const isActive = pathname === link.href
-                        return (
+        {/* Mobile Menu - Dropdown Below Navbar */}
+      </nav>
+
+      {/* Spacer for fixed navbar */}
+      <div className="h-20"></div>
+
+      {/* Mobile Menu Backdrop & Dropdown - Outside nav for proper positioning */}
+      <AnimatePresence>
+        {mobileMenuOpen && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/20 backdrop-blur-sm lg:hidden z-40"
+              onClick={() => setMobileMenuOpen(false)}
+            />
+
+            {/* Dropdown Menu */}
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.2, ease: 'easeOut' }}
+              className="fixed top-20 left-0 right-0 lg:hidden z-50 mt-2"
+            >
+                <div className="max-w-screen-xl mx-auto px-4 lg:px-6">
+                  <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden">
+                    <div className="p-4">
+                      {/* Mobile Links */}
+                      <div className="space-y-1">
+                        {navLinks.map((link) => {
+                          if (link.submenu) {
+                            return (
+                              <div key={link.label} className="space-y-1">
+                                <div className="px-3 py-2 text-xs font-bold text-gray-500 uppercase tracking-wider">
+                                  {link.label}
+                                </div>
+                                {link.submenu.map((sublink) => {
+                                  const isActive = pathname === sublink.href
+                                  return (
+                                    <Link
+                                      key={sublink.href}
+                                      href={sublink.href}
+                                      onClick={() => setMobileMenuOpen(false)}
+                                      className={`block px-4 py-2.5 rounded-full font-medium transition-all ${
+                                        isActive
+                                          ? 'bg-[#ffed00] text-black'
+                                          : 'text-gray-700 hover:bg-gray-100'
+                                      }`}
+                                    >
+                                      {sublink.label}
+                                    </Link>
+                                  )
+                                })}
+                              </div>
+                            )
+                          } else {
+                            const isActive = pathname === link.href
+                            return (
+                              <Link
+                                key={link.href}
+                                href={link.href}
+                                onClick={() => setMobileMenuOpen(false)}
+                                className={`block px-4 py-2.5 rounded-full font-medium transition-all ${
+                                  isActive
+                                    ? 'bg-[#ffed00] text-black'
+                                    : 'text-gray-700 hover:bg-gray-100'
+                                }`}
+                              >
+                                {link.label}
+                              </Link>
+                            )
+                          }
+                        })}
+                      </div>
+
+                      {/* Mobile Account Link */}
+                      <div className="mt-3 pt-3 border-t border-gray-200">
+                        {session ? (
                           <Link
-                            key={link.href}
-                            href={link.href}
+                            href="/account"
                             onClick={() => setMobileMenuOpen(false)}
-                            className={`block px-4 py-3 rounded-lg font-medium transition-all ${
-                              isActive
-                                ? 'bg-[#ffed00] text-black'
-                                : 'text-gray-700 hover:bg-gray-100'
-                            }`}
+                            className="flex items-center gap-3 px-4 py-2.5 rounded-full hover:bg-gray-100 transition-colors text-gray-700 font-medium"
                           >
-                            {link.label}
+                            <User className="h-5 w-5" />
+                            <span>My Account</span>
                           </Link>
-                        )
-                      }
-                    })}
-                  </div>
-                  
-                  {/* Mobile Currency Toggle */}
-                  <div className="mt-8 pt-8 border-t border-gray-200">
-                    <div className="px-4 mb-4">
-                      <p className="text-sm font-semibold text-gray-700 mb-3">Currency</p>
-                      <div className="flex items-center bg-gray-100 rounded-full p-1">
-                        <button
-                          onClick={() => setCurrency('EUR')}
-                          className={`flex-1 px-4 py-2 rounded-full text-sm font-semibold transition-all duration-300 ${
-                            currency === 'EUR'
-                              ? 'bg-[#ffed00] text-black shadow-md'
-                              : 'text-gray-600'
-                          }`}
-                        >
-                          EUR €
-                        </button>
-                        <button
-                          onClick={() => setCurrency('USD')}
-                          className={`flex-1 px-4 py-2 rounded-full text-sm font-semibold transition-all duration-300 ${
-                            currency === 'USD'
-                              ? 'bg-[#ffed00] text-black shadow-md'
-                              : 'text-gray-600'
-                          }`}
-                        >
-                          USD $
-                        </button>
+                        ) : (
+                          <button
+                            onClick={() => {
+                              setMobileMenuOpen(false)
+                              openLoginModal()
+                            }}
+                            className="w-full flex items-center gap-3 px-4 py-2.5 rounded-full hover:bg-gray-100 transition-colors text-left text-gray-700 font-medium"
+                          >
+                            <User className="h-5 w-5" />
+                            <span>Sign In</span>
+                          </button>
+                        )}
                       </div>
                     </div>
-                  </div>
-
-                  {/* Mobile Account Links */}
-                  <div className="pt-4 border-t border-gray-200">
-                    {session ? (
-                      <Link
-                        href="/account"
-                        onClick={() => setMobileMenuOpen(false)}
-                        className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-100 transition-colors"
-                      >
-                        <User className="h-5 w-5" />
-                        <span className="font-medium">My Account</span>
-                      </Link>
-                    ) : (
-                      <button
-                        onClick={() => {
-                          setMobileMenuOpen(false)
-                          openLoginModal()
-                        }}
-                        className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-100 transition-colors text-left"
-                      >
-                        <User className="h-5 w-5" />
-                        <span className="font-medium">Sign In</span>
-                      </button>
-                    )}
                   </div>
                 </div>
               </motion.div>
             </>
           )}
         </AnimatePresence>
-      </nav>
-      
-      {/* Spacer for fixed navbar */}
-      <div className="h-20"></div>
     </>
   )
 }

@@ -5,7 +5,6 @@ import { Providers } from '@/components/providers'
 import Navbar from '@/components/navbar'
 import Footer from '@/components/footer'
 import { SideCart } from '@/components/cart/side-cart'
-import { MobileBottomNav } from '@/components/layout/mobile-nav'
 import { ScrollToTop } from '@/components/layout/scroll-to-top'
 import { getAllTaxRates } from '@/lib/woocommerce/countries-taxes'
 import { getAllShippingZones } from '@/lib/woocommerce/shipping'
@@ -30,7 +29,7 @@ export default async function RootLayout({
 
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.className} pb-16 md:pb-0`} suppressHydrationWarning>
+      <body className={inter.className} suppressHydrationWarning>
         <Providers>
           <Navbar />
           <main className="min-h-screen">
@@ -38,7 +37,6 @@ export default async function RootLayout({
           </main>
           <Footer />
           <SideCart taxRates={taxRates} shippingZones={shippingZones} />
-          <MobileBottomNav />
           <ScrollToTop />
         </Providers>
       </body>

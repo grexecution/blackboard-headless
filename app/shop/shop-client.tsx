@@ -147,41 +147,6 @@ export default function ShopClient({
                         </p>
                       </div>
 
-                      {/* Key Features */}
-                      <div className="mb-6 space-y-2">
-                        {isProfessional ? (
-                          <>
-                            <div className="flex items-start gap-2">
-                              <Check className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                              <span className="text-sm text-gray-700">Professional size (60x40cm)</span>
-                            </div>
-                            <div className="flex items-start gap-2">
-                              <Check className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                              <span className="text-sm text-gray-700">Perfect for clinics & gyms</span>
-                            </div>
-                            <div className="flex items-start gap-2">
-                              <Check className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                              <span className="text-sm text-gray-700">Includes professional markers</span>
-                            </div>
-                          </>
-                        ) : (
-                          <>
-                            <div className="flex items-start gap-2">
-                              <Check className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                              <span className="text-sm text-gray-700">Compact size (45x30cm)</span>
-                            </div>
-                            <div className="flex items-start gap-2">
-                              <Check className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                              <span className="text-sm text-gray-700">Perfect for home & travel</span>
-                            </div>
-                            <div className="flex items-start gap-2">
-                              <Check className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                              <span className="text-sm text-gray-700">Includes starter markers</span>
-                            </div>
-                          </>
-                        )}
-                      </div>
-
                       {/* Stock Status */}
                       <div className="flex items-center gap-2 mb-6">
                         <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>

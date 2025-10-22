@@ -276,7 +276,7 @@ export default function HomeContent({ blackboardProducts, blackboardWithVariatio
                 </div>
               </div>
 
-              <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold mb-4 sm:mb-6 leading-tight">
+              <h1 className="text-5xl sm:text-5xl md:text-7xl font-bold mb-4 sm:mb-6 leading-tight">
                 Transform Your
                 <span className="block text-[#ffed00] mt-1 sm:mt-2">Foundation</span>
               </h1>
@@ -301,7 +301,7 @@ export default function HomeContent({ blackboardProducts, blackboardWithVariatio
             </div>
 
             {/* Right Column - Floating Product Card from Alternative Hero */}
-            <div className="relative max-w-sm sm:max-w-md mx-auto lg:mx-0 order-1 lg:order-2">
+            <div className="hidden lg:block relative max-w-sm sm:max-w-md mx-auto lg:mx-0 order-1 lg:order-2">
               <div className="relative group">
                 {/* Glowing Background */}
                 <div className="absolute -inset-4 bg-gradient-to-r from-[#ffed00] to-yellow-300 rounded-3xl opacity-25 blur-2xl group-hover:opacity-50 transition-opacity"></div>
@@ -595,41 +595,6 @@ export default function HomeContent({ blackboardProducts, blackboardWithVariatio
                         <p className="text-xs text-gray-500 mt-1">
                           Includes 19% VAT • Free shipping over {currencySymbol}100
                         </p>
-                      </div>
-
-                      {/* Key Features */}
-                      <div className="mb-6 space-y-2">
-                        {isProfessional ? (
-                          <>
-                            <div className="flex items-start gap-2">
-                              <Check className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                              <span className="text-sm text-gray-700">Professional size (60x40cm)</span>
-                            </div>
-                            <div className="flex items-start gap-2">
-                              <Check className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                              <span className="text-sm text-gray-700">Perfect for clinics & gyms</span>
-                            </div>
-                            <div className="flex items-start gap-2">
-                              <Check className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                              <span className="text-sm text-gray-700">Includes professional markers</span>
-                            </div>
-                          </>
-                        ) : (
-                          <>
-                            <div className="flex items-start gap-2">
-                              <Check className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                              <span className="text-sm text-gray-700">Compact size (45x30cm)</span>
-                            </div>
-                            <div className="flex items-start gap-2">
-                              <Check className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                              <span className="text-sm text-gray-700">Perfect for home & travel</span>
-                            </div>
-                            <div className="flex items-start gap-2">
-                              <Check className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                              <span className="text-sm text-gray-700">Includes starter markers</span>
-                            </div>
-                          </>
-                        )}
                       </div>
 
                       {/* Stock Status */}
