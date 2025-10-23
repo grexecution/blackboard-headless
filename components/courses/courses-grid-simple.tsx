@@ -20,6 +20,7 @@ export default function CoursesGridSimple({ initialCourses }: CoursesGridSimpleP
 
   // Update courses with access based on session's enrolled course IDs
   const courses = useMemo(() => {
+    if (!initialCourses || !Array.isArray(initialCourses)) return []
     return initialCourses.map(course => ({
       ...course,
       access: {

@@ -9,6 +9,7 @@ import { useAuth } from '@/lib/auth-context'
 import { useCurrency } from '@/lib/currency-context'
 import { usePathname } from 'next/navigation'
 import { useSession } from 'next-auth/react'
+import { Avatar } from '@/components/ui/avatar'
 
 export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -245,8 +246,8 @@ export default function Navbar() {
 
               {/* Profile/Login - Desktop */}
               {session ? (
-                <Link href="/account" className="hidden md:flex p-3 rounded-lg hover:bg-gray-100 transition-colors">
-                  <User className="h-6 w-6 text-gray-700" />
+                <Link href="/account" className="hidden md:flex items-center justify-center w-10 h-10 rounded-full hover:bg-[#ffed00]/10 transition-all duration-300 hover:scale-110">
+                  <Avatar name={session.user?.firstName || session.user?.name} size="sm" />
                 </Link>
               ) : (
                 <button
@@ -358,8 +359,8 @@ export default function Navbar() {
                             onClick={() => setMobileMenuOpen(false)}
                             className="flex items-center gap-3 px-4 py-2.5 rounded-full hover:bg-gray-100 transition-colors text-gray-700 font-medium"
                           >
-                            <User className="h-5 w-5" />
-                            <span>My Account</span>
+                            <Avatar name={session.user?.firstName || session.user?.name} size="sm" />
+                            <span>{session.user?.firstName || session.user?.name || 'My Account'}</span>
                           </Link>
                         ) : (
                           <button

@@ -71,13 +71,13 @@ export default function AccountClient({ initialCourses, initialOrders }: Account
     }
   }, [session])
 
-  // Lazy load orders only when orders tab is opened (with pagination for speed)
+  // Fetch orders on dashboard or orders tab (needed for recent orders display)
   useEffect(() => {
-    if (activeTab === 'orders' && orders.length === 0 && !ordersLoading && session) {
+    if ((activeTab === 'dashboard' || activeTab === 'orders') && orders.length === 0 && !ordersLoading && session) {
       fetchOrders()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab])
+  }, [activeTab, session])
 
   // Courses are pre-loaded from server - no fetching needed!
 
@@ -126,15 +126,6 @@ export default function AccountClient({ initialCourses, initialOrders }: Account
     }
   }
 
-  const baseMenuItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: User },
-    { id: 'orders', label: 'Orders', icon: Package },
-    { id: 'courses', label: 'My Courses', icon: BookOpen },
-    { id: 'certificates', label: 'Certificates', icon: Award },
-    { id: 'downloads', label: 'Downloads', icon: Settings },
-    { id: 'account-details', label: 'Account Details', icon: User },
-  ]
-
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -152,6 +143,15 @@ export default function AccountClient({ initialCourses, initialOrders }: Account
 
   // Check reseller role (from WooCommerce user role)
   const isReseller = session?.user?.role === 'reseller'
+
+  const baseMenuItems = [
+    { id: 'dashboard', label: 'Dashboard', icon: User },
+    { id: 'courses', label: 'My Courses', icon: BookOpen },
+    { id: 'orders', label: 'Orders', icon: Package },
+    { id: 'certificates', label: 'Certificates', icon: Award },
+    ...(isReseller ? [{ id: 'reseller', label: 'Reseller', icon: DollarSign }] : []),
+    { id: 'account-details', label: 'Account Details', icon: Settings },
+  ]
 
   // Add affiliate dashboard if user is an affiliate (NOT related to reseller role)
   const menuItems = isAffiliate ? [
@@ -247,43 +247,98 @@ export default function AccountClient({ initialCourses, initialOrders }: Account
               {/* Quick Stats */}
               <div className="bb-dashboard-section">
                 <div className="bb-section-header">
-                  <h2>Quick Stats</h2>
+                  <h2>Quick Overview</h2>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-6 text-center">
-                    <Package className="w-12 h-12 mx-auto mb-4 text-bb-dark" />
-                    <div className="text-2xl font-bold text-bb-dark mb-1">{orders.length}</div>
-                    <div className="text-sm text-gray-600">Total Orders</div>
-                  </div>
-                  <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-6 text-center">
-                    <BookOpen className="w-12 h-12 mx-auto mb-4 text-bb-dark" />
-                    <div className="text-2xl font-bold text-bb-dark mb-1">{courses.length}</div>
-                    <div className="text-sm text-gray-600">Enrolled Courses</div>
-                  </div>
-                  <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-6 text-center">
-                    <Award className="w-12 h-12 mx-auto mb-4 text-bb-dark" />
-                    <div className="text-2xl font-bold text-bb-dark mb-1">{certificates.length}</div>
-                    <div className="text-sm text-gray-600">Certificates</div>
-                  </div>
+                  <button
+                    onClick={() => setActiveTab('courses')}
+                    className="bg-gradient-to-br from-[#ffed00]/10 to-yellow-100/50 rounded-xl p-6 text-center hover:shadow-lg transition-all duration-200 border-2 border-transparent hover:border-[#ffed00] group"
+                  >
+                    <BookOpen className="w-12 h-12 mx-auto mb-4 text-gray-900 group-hover:scale-110 transition-transform" />
+                    <div className="text-3xl font-bold text-gray-900 mb-1">{courses.length}</div>
+                    <div className="text-sm text-gray-600 font-medium">Enrolled Courses</div>
+                    <div className="mt-3 text-xs text-gray-500 flex items-center justify-center gap-1">
+                      View Courses <ChevronRight className="w-3 h-3" />
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setActiveTab('orders')
+                      if (orders.length === 0 && !ordersLoading) {
+                        fetchOrders()
+                      }
+                    }}
+                    className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-6 text-center hover:shadow-lg transition-all duration-200 border-2 border-transparent hover:border-gray-300 group"
+                  >
+                    <Package className="w-12 h-12 mx-auto mb-4 text-gray-900 group-hover:scale-110 transition-transform" />
+                    <div className="text-3xl font-bold text-gray-900 mb-1">
+                      {ordersLoading ? (
+                        <Loader2 className="w-8 h-8 animate-spin mx-auto" />
+                      ) : (
+                        orders.length
+                      )}
+                    </div>
+                    <div className="text-sm text-gray-600 font-medium">Total Orders</div>
+                    <div className="mt-3 text-xs text-gray-500 flex items-center justify-center gap-1">
+                      View Orders <ChevronRight className="w-3 h-3" />
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('certificates')}
+                    className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-6 text-center hover:shadow-lg transition-all duration-200 border-2 border-transparent hover:border-gray-300 group"
+                  >
+                    <Award className="w-12 h-12 mx-auto mb-4 text-gray-900 group-hover:scale-110 transition-transform" />
+                    <div className="text-3xl font-bold text-gray-900 mb-1">{certificates.length}</div>
+                    <div className="text-sm text-gray-600 font-medium">Certificates</div>
+                    <div className="mt-3 text-xs text-gray-500 flex items-center justify-center gap-1">
+                      View Certificates <ChevronRight className="w-3 h-3" />
+                    </div>
+                  </button>
                 </div>
               </div>
 
-              {/* Reseller Benefits - Show for resellers only */}
-              {isReseller && (
-                <div className="bb-dashboard-section">
-                  <ResellerBenefitsTable />
+              {/* My Courses */}
+              <div className="bb-dashboard-section">
+                <div className="bb-section-header">
+                  <h2>My Courses</h2>
+                  <button onClick={() => setActiveTab('courses')} className="bb-view-all">
+                    View All <ChevronRight className="w-4 h-4" />
+                  </button>
                 </div>
-              )}
+                {courses.length > 0 ? (
+                  <CoursesGridSimple initialCourses={courses.slice(0, 3)} />
+                ) : (
+                  <div className="bb-empty-state">
+                    <BookOpen className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+                    <p className="text-gray-600 mb-4">No courses enrolled yet</p>
+                    <Link href="/courses" className="bb-btn-primary inline-block">
+                      Browse Courses
+                    </Link>
+                  </div>
+                )}
+              </div>
 
               {/* Recent Orders */}
               <div className="bb-dashboard-section">
                 <div className="bb-section-header">
                   <h2>Recent Orders</h2>
-                  <button onClick={() => setActiveTab('orders')} className="bb-view-all">
+                  <button
+                    onClick={() => {
+                      setActiveTab('orders')
+                      if (orders.length === 0 && !ordersLoading) {
+                        fetchOrders()
+                      }
+                    }}
+                    className="bb-view-all"
+                  >
                     View All <ChevronRight className="w-4 h-4" />
                   </button>
                 </div>
-                {orders.length > 0 ? (
+                {ordersLoading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
+                  </div>
+                ) : orders.length > 0 ? (
                   <div className="bb-orders-list">
                     {orders.slice(0, 3).map((order: any) => (
                       <div key={order.id} className="bb-order-item">
@@ -300,7 +355,15 @@ export default function AccountClient({ initialCourses, initialOrders }: Account
                         </div>
                         <div className="bb-order-footer">
                           <div className="bb-order-total">{order.total} {order.currency}</div>
-                          <button onClick={() => setActiveTab('orders')} className="bb-order-link">
+                          <button
+                            onClick={() => {
+                              setActiveTab('orders')
+                              if (orders.length === 0 && !ordersLoading) {
+                                fetchOrders()
+                              }
+                            }}
+                            className="bb-order-link"
+                          >
                             View Details <ChevronRight className="w-4 h-4" />
                           </button>
                         </div>
@@ -309,11 +372,11 @@ export default function AccountClient({ initialCourses, initialOrders }: Account
                   </div>
                 ) : (
                   <div className="bb-empty-state">
-                    <Package className="w-16 h-16 mx-auto mb-4" />
-                    <p>No orders found</p>
-                    <a href="#" className="bb-btn-primary">
+                    <Package className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+                    <p className="text-gray-600 mb-4">No orders yet</p>
+                    <Link href="/shop" className="bb-btn-primary inline-block">
                       Start Shopping
-                    </a>
+                    </Link>
                   </div>
                 )}
               </div>
@@ -1113,20 +1176,18 @@ export default function AccountClient({ initialCourses, initialOrders }: Account
             </motion.div>
           )}
 
-          {/* Other tabs - Downloads */}
-          {(activeTab === 'downloads') && (
+          {/* Reseller Tab */}
+          {(activeTab === 'reseller' && isReseller) && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               className="bb-dashboard-section"
             >
               <div className="bb-section-header">
-                <h2>Downloads</h2>
+                <h2>Reseller Benefits</h2>
+                <p className="text-sm text-gray-600 mt-2">Your exclusive wholesale pricing and benefits</p>
               </div>
-              <div className="bb-empty-state">
-                <Settings className="w-16 h-16 mx-auto mb-4" />
-                <p>No downloadable products found</p>
-              </div>
+              <ResellerBenefitsTable />
             </motion.div>
           )}
         </div>

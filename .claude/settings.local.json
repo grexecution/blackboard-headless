@@ -48,7 +48,8 @@
       "Bash(zip:*)",
       "Bash(awk:*)",
       "Bash(xargs kill:*)",
-      "Bash(echo:*)"
+      "Bash(echo:*)",
+      "Bash(npx tsc:*)"
     ],
     "deny": [],
     "ask": []
