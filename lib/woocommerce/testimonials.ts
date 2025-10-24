@@ -12,6 +12,7 @@ export interface Testimonial {
   acf?: {
     rating?: number
     reviewer_name?: string
+    job_position?: string
     language?: string
   }
   _embedded?: {
@@ -92,6 +93,13 @@ export function getTestimonialReviewerName(testimonial: Testimonial): string {
  */
 export function getTestimonialRating(testimonial: Testimonial): number {
   return testimonial.acf?.rating || 5
+}
+
+/**
+ * Get testimonial job position
+ */
+export function getTestimonialJobPosition(testimonial: Testimonial): string {
+  return testimonial.acf?.job_position || 'Verified Customer'
 }
 
 /**

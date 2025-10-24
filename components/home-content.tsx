@@ -8,7 +8,7 @@ import InstructorModal from '@/components/instructor-modal'
 import { useCurrency } from '@/lib/currency-context'
 import { ProductPriceDisplay } from '@/components/products/ProductPriceDisplay'
 import { Video, getVideoThumbnail } from '@/lib/woocommerce/videos'
-import { Testimonial, getTestimonialImage, getTestimonialReviewerName, getTestimonialRating, getTestimonialText } from '@/lib/woocommerce/testimonials'
+import { Testimonial, getTestimonialImage, getTestimonialReviewerName, getTestimonialRating, getTestimonialText, getTestimonialJobPosition } from '@/lib/woocommerce/testimonials'
 
 interface HomeContentProps {
   blackboardProducts: any[]
@@ -836,18 +836,19 @@ export default function HomeContent({ blackboardProducts, blackboardWithVariatio
             </div>
 
             {/* Reviews Grid - Real Customer Reviews */}
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="flex flex-wrap justify-center gap-6 max-w-5xl mx-auto">
               {reviews.length > 0 ? (
                 reviews.map((review) => {
                   const rating = getTestimonialRating(review)
                   const reviewerName = getTestimonialReviewerName(review)
+                  const jobPosition = getTestimonialJobPosition(review)
                   const reviewText = getTestimonialText(review)
                   const imageUrl = getTestimonialImage(review)
 
                   return (
-                    <div key={review.id} className="bg-gray-50 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-shadow">
+                    <div key={review.id} className="w-full md:w-[calc(50%-12px)] lg:w-[calc(33.333%-16px)] bg-white rounded-2xl p-6 border-2 border-gray-100 hover:border-[#ffed00] transition-all shadow-sm hover:shadow-lg">
                       {/* Star Rating */}
-                      <div className="flex items-center gap-1 mb-3">
+                      <div className="flex items-center gap-1 mb-4">
                         {[...Array(5)].map((_, i) => (
                           <Star
                             key={i}
@@ -856,43 +857,35 @@ export default function HomeContent({ blackboardProducts, blackboardWithVariatio
                         ))}
                       </div>
 
-                      {/* Review Image */}
-                      <div className="aspect-[4/3] bg-gray-200 rounded-lg mb-4 overflow-hidden relative">
-                        <Image
-                          src={imageUrl}
-                          alt={`Review by ${reviewerName}`}
-                          fill
-                          className="object-cover"
-                          sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                        />
-                      </div>
-
                       {/* Review Text */}
                       {reviewText && (
-                        <p className="text-sm text-gray-700 mb-3 line-clamp-3">
-                          {reviewText}
+                        <p className="text-sm text-gray-700 mb-5 line-clamp-4 leading-relaxed">
+                          &ldquo;{reviewText}&rdquo;
                         </p>
                       )}
 
-                      {/* Reviewer Name */}
-                      <p className="text-sm font-semibold text-gray-900">{reviewerName}</p>
-                      <p className="text-xs text-gray-500">Verified Customer</p>
+                      {/* Reviewer Info */}
+                      <div className="mt-auto pt-4 border-t border-gray-100">
+                        <p className="text-sm font-bold text-gray-900">{reviewerName}</p>
+                        <p className="text-xs text-gray-600 mt-1">{jobPosition}</p>
+                      </div>
                     </div>
                   )
                 })
               ) : (
                 // Fallback placeholder if no reviews
-                [...Array(6)].map((_, index) => (
-                  <div key={`placeholder-${index}`} className="bg-gray-50 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-shadow">
-                    <div className="flex items-center gap-1 mb-3">
+                [...Array(5)].map((_, index) => (
+                  <div key={`placeholder-${index}`} className="w-full md:w-[calc(50%-12px)] lg:w-[calc(33.333%-16px)] bg-white rounded-2xl p-6 border-2 border-gray-100 shadow-sm">
+                    <div className="flex items-center gap-1 mb-4">
                       {[...Array(5)].map((_, i) => (
                         <Star key={i} className="h-4 w-4 fill-[#ffed00] text-[#ffed00]" />
                       ))}
                     </div>
-                    <div className="aspect-[4/3] bg-gray-200 rounded-lg mb-4 flex items-center justify-center">
-                      <span className="text-gray-400 text-sm">Review Screenshot {index + 1}</span>
+                    <p className="text-sm text-gray-400 mb-5">Loading testimonial...</p>
+                    <div className="mt-auto pt-4 border-t border-gray-100">
+                      <p className="text-sm font-bold text-gray-400">Customer Name</p>
+                      <p className="text-xs text-gray-400 mt-1">Verified Customer</p>
                     </div>
-                    <p className="text-sm text-gray-500">Verified Customer</p>
                   </div>
                 ))
               )}
