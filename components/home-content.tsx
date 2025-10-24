@@ -49,6 +49,7 @@ export default function HomeContent({ blackboardProducts, blackboardWithVariatio
     {
       name: "Lars Grandjot",
       title: "Physiotherapeut",
+      image: "/images/team/lars.jpg",
       shortBio: "Nach meiner Ausbildung zur Physiotherapeut im Jahr 2005 und meinem Einstieg nach Köln habe ich mit meinem Geschäftspartner Gregor das BlackBoard zur Kräftigung der Füße entwickelt.",
       fullContent: `
         <h3><strong>Werdegang & Expertise</strong></h3>
@@ -72,6 +73,7 @@ export default function HomeContent({ blackboardProducts, blackboardWithVariatio
     {
       name: "Gregor Stumpf",
       title: "Dipl. Sportwissenschaftler",
+      image: "/images/team/gregor.jpg",
       shortBio: "Nach Abschluss meines Studiums der Sportrehabilitation im Jahr 2006 arbeitet ich u.a. mit Profisportlern und unterrichtete bereits an der Kölner Sporthochschule.",
       fullContent: `
         <h3><strong>Akademischer Hintergrund</strong></h3>
@@ -106,6 +108,30 @@ export default function HomeContent({ blackboardProducts, blackboardWithVariatio
 
         <h3><strong>Vision</strong></h3>
         <p>Mein Ziel ist es, das Bewusstsein für die Bedeutung der Fußgesundheit weltweit zu erhöhen und mit dem BlackBoard jedem Menschen ein effektives Trainingstool zur Verfügung zu stellen.</p>
+      `
+    },
+    {
+      name: "Armin Harasser",
+      title: "Physiotherapeut & Sportphysiotherapeut",
+      image: "/images/team/armin_harasser.jpg",
+      shortBio: "Als Physiotherapeut und Sportphysiotherapeut mit über 15 Jahren Erfahrung in der Betreuung von Profisportlern und Patienten mit komplexen Beschwerdebildern.",
+      fullContent: `
+        <h3><strong>Beruflicher Werdegang</strong></h3>
+        <p>Als Physiotherapeut und Sportphysiotherapeut habe ich über 15 Jahre Erfahrung in der Betreuung von Profisportlern und Patienten mit komplexen Beschwerdebildern gesammelt. Die Arbeit mit dem BlackBoard ist für mich ein essentieller Bestandteil moderner Therapie.</p>
+
+        <h3><strong>Spezialisierungen</strong></h3>
+        <ul>
+          <li>Sportphysiotherapie</li>
+          <li>Funktionelle Bewegungsanalyse</li>
+          <li>Rehabilitationstraining</li>
+          <li>Präventive Therapiekonzepte</li>
+        </ul>
+
+        <h3><strong>Ansatz</strong></h3>
+        <p>In meiner Praxis kombiniere ich traditionelle physiotherapeutische Methoden mit innovativen Trainingsansätzen. Das BlackBoard hat sich dabei als unverzichtbares Tool erwiesen, um nachhaltige Erfolge in der Behandlung und Prävention zu erzielen.</p>
+
+        <h3><strong>Philosophie</strong></h3>
+        <p>Jeder Patient ist einzigartig und benötigt einen individuell angepassten Behandlungsplan. Die Kombination aus manueller Therapie und gezieltem Fußtraining bildet dabei die Grundlage für langfristige Gesundheit und Leistungsfähigkeit.</p>
       `
     }
   ]
@@ -864,10 +890,23 @@ export default function HomeContent({ blackboardProducts, blackboardWithVariatio
                         </p>
                       )}
 
-                      {/* Reviewer Info */}
+                      {/* Reviewer Info with Avatar */}
                       <div className="mt-auto pt-4 border-t border-gray-100">
-                        <p className="text-sm font-bold text-gray-900">{reviewerName}</p>
-                        <p className="text-xs text-gray-600 mt-1">{jobPosition}</p>
+                        <div className="flex items-center gap-3">
+                          <div className="relative w-12 h-12 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
+                            <Image
+                              src={imageUrl}
+                              alt={reviewerName}
+                              fill
+                              className="object-cover"
+                              sizes="48px"
+                            />
+                          </div>
+                          <div>
+                            <p className="text-sm font-bold text-gray-900">{reviewerName}</p>
+                            <p className="text-xs text-gray-600 mt-0.5">{jobPosition}</p>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   )
@@ -883,8 +922,13 @@ export default function HomeContent({ blackboardProducts, blackboardWithVariatio
                     </div>
                     <p className="text-sm text-gray-400 mb-5">Loading testimonial...</p>
                     <div className="mt-auto pt-4 border-t border-gray-100">
-                      <p className="text-sm font-bold text-gray-400">Customer Name</p>
-                      <p className="text-xs text-gray-400 mt-1">Verified Customer</p>
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 rounded-full bg-gray-200 flex-shrink-0" />
+                        <div>
+                          <p className="text-sm font-bold text-gray-400">Customer Name</p>
+                          <p className="text-xs text-gray-400 mt-0.5">Verified Customer</p>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 ))
@@ -926,9 +970,18 @@ export default function HomeContent({ blackboardProducts, blackboardWithVariatio
 
             <div className="grid md:grid-cols-3 gap-8">
               {instructors.map((instructor, index) => (
-                <div key={index} className="bg-gray-900 rounded-2xl overflow-hidden">
-                  <div className="aspect-[4/5] bg-gray-800 relative">
-                    <div className="absolute inset-0 bg-gradient-to-b from-transparent to-gray-900"></div>
+                <div key={index} className="bg-gray-900 rounded-2xl overflow-hidden group hover:transform hover:scale-105 transition-all duration-300">
+                  <div className="aspect-[4/5] bg-gray-800 relative overflow-hidden">
+                    {instructor.image && (
+                      <Image
+                        src={instructor.image}
+                        alt={instructor.name}
+                        fill
+                        className="object-cover group-hover:scale-110 transition-transform duration-500"
+                        sizes="(max-width: 768px) 100vw, 33vw"
+                      />
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-gray-900"></div>
                   </div>
                   <div className="p-6">
                     <h3 className="text-2xl font-bold mb-2">{instructor.name}</h3>
@@ -938,7 +991,7 @@ export default function HomeContent({ blackboardProducts, blackboardWithVariatio
                     </p>
                     <button
                       onClick={() => setSelectedInstructor(instructor)}
-                      className="bg-white text-black px-4 py-2 rounded-full text-sm font-semibold hover:bg-gray-200 transition-colors"
+                      className="bg-white text-black px-4 py-2 rounded-full text-sm font-semibold hover:bg-[#ffed00] transition-colors"
                     >
                       Mehr Infos
                     </button>
