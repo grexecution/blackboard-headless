@@ -195,7 +195,7 @@ export function CertificateCompletionCard({ courseId, courseName, lessons }: Cer
                 🎉 Congratulations!
               </h4>
               <p className="text-sm text-gray-700">
-                You've completed all lessons. Generate your certificate now!
+                You&apos;ve completed all lessons. Generate your certificate now!
               </p>
               <p>It&apos;s a great achievement!</p>
             </div>

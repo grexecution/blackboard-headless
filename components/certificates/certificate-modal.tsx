@@ -212,7 +212,7 @@ export function CertificateModal({
                         🎉 Congratulations!
                       </h4>
                       <p className="text-sm text-gray-700 mb-6">
-                        You've completed all lessons. Generate your certificate now!
+                        You&apos;ve completed all lessons. Generate your certificate now!
                       </p>
                       <button
                         onClick={handleGenerate}
