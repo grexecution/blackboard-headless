@@ -119,6 +119,11 @@ export function ProductDetail({ product, variations, workshopProduct }: ProductD
   const isBlackBoard = product.name.toLowerCase().includes('blackboard')
   const isProfessional = product.name.toLowerCase().includes('professional')
 
+  // Debug product description
+  console.log('[ProductDetail] Product:', product.name)
+  console.log('[ProductDetail] Short description:', product.short_description)
+  console.log('[ProductDetail] Description:', product.description?.substring(0, 100))
+
   return (
     <div className="min-h-screen bg-white">
       {/* Mobile-First Hero Section */}
@@ -342,7 +347,7 @@ export function ProductDetail({ product, variations, workshopProduct }: ProductD
                     </li>
                     <li className="flex items-start gap-2.5">
                       <Check className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
-                      <span className="text-sm sm:text-base text-gray-700">Used by 20,000+ professional athletes worldwide</span>
+                      <span className="text-sm sm:text-base text-gray-700">Trusted by 20,000+ customers worldwide</span>
                     </li>
                     <li className="flex items-start gap-2.5">
                       <Check className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
@@ -383,24 +388,16 @@ export function ProductDetail({ product, variations, workshopProduct }: ProductD
                 </div>
               )}
 
-              {/* Trust Signals - Mobile Optimized */}
-              <div className="grid grid-cols-3 gap-2 mb-6 text-center">
-                <div className="bg-gray-50 rounded-lg p-3">
-                  <Globe className="h-5 w-5 mx-auto mb-1 text-blue-500" />
-                  <p className="text-[10px] sm:text-xs font-semibold">Worldwide</p>
-                  <p className="text-[9px] sm:text-[10px] text-gray-600">2-12 Days</p>
-                </div>
-                <div className="bg-gray-50 rounded-lg p-3">
-                  <Shield className="h-5 w-5 mx-auto mb-1 text-green-500" />
-                  <p className="text-[10px] sm:text-xs font-semibold">Lifetime</p>
-                  <p className="text-[9px] sm:text-[10px] text-gray-600">Warranty</p>
-                </div>
-                <div className="bg-gray-50 rounded-lg p-3">
-                  <RefreshCw className="h-5 w-5 mx-auto mb-1 text-purple-500" />
-                  <p className="text-[10px] sm:text-xs font-semibold">30 Days</p>
-                  <p className="text-[9px] sm:text-[10px] text-gray-600">Return</p>
-                </div>
-              </div>
+              {/* Product Excerpt - Show short_description or first part of description */}
+              {(product.short_description && product.short_description.trim() !== '') ? (
+                <div className="mb-6 text-gray-700 prose prose-sm max-w-none"
+                  dangerouslySetInnerHTML={{ __html: product.short_description }}
+                />
+              ) : product.description && product.description.trim() !== '' ? (
+                <div className="mb-6 text-gray-700 prose prose-sm max-w-none"
+                  dangerouslySetInnerHTML={{ __html: product.description.substring(0, 500) + '...' }}
+                />
+              ) : null}
 
               {/* Variations - Mobile Optimized */}
               {product.type === 'variable' && product.attributes.length > 0 && (
@@ -475,22 +472,26 @@ export function ProductDetail({ product, variations, workshopProduct }: ProductD
                 <div className="flex items-center justify-center gap-3">
                   <div className="flex -space-x-2">
                     {[
-                      { bg: 'from-blue-400 to-blue-600', initials: 'MS' },
-                      { bg: 'from-green-400 to-green-600', initials: 'JD' },
-                      { bg: 'from-purple-400 to-purple-600', initials: 'AK' },
-                      { bg: 'from-pink-400 to-pink-600', initials: 'LM' },
-                      { bg: 'from-yellow-400 to-yellow-600', initials: 'PT' }
+                      { img: 'https://randomuser.me/api/portraits/men/32.jpg' },
+                      { img: 'https://randomuser.me/api/portraits/women/44.jpg' },
+                      { img: 'https://randomuser.me/api/portraits/men/52.jpg' },
+                      { img: 'https://randomuser.me/api/portraits/women/68.jpg' },
+                      { img: 'https://randomuser.me/api/portraits/men/75.jpg' }
                     ].map((avatar, i) => (
-                      <div 
-                        key={i} 
-                        className={`w-8 h-8 rounded-full border-2 border-white flex items-center justify-center bg-gradient-to-br ${avatar.bg} shadow-sm`}
+                      <div
+                        key={i}
+                        className="w-8 h-8 rounded-full border-2 border-white shadow-sm overflow-hidden bg-gray-200"
                       >
-                        <span className="text-[10px] font-bold text-white">{avatar.initials}</span>
+                        <img
+                          src={avatar.img}
+                          alt={`Customer ${i + 1}`}
+                          className="w-full h-full object-cover"
+                        />
                       </div>
                     ))}
                   </div>
                   <p className="text-sm text-gray-600">
-                    <span className="font-semibold text-gray-800">3000+</span> satisfied customers
+                    <span className="font-semibold text-gray-800">20,000+</span> satisfied customers
                   </p>
                 </div>
               </div>
@@ -692,7 +693,7 @@ export function ProductDetail({ product, variations, workshopProduct }: ProductD
                 <div className="bg-[#ffed00] text-black w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
                   <Users className="h-8 w-8" />
                 </div>
-                <h3 className="font-bold text-lg mb-2">20,000+ Users</h3>
+                <h3 className="font-bold text-lg mb-2">20,000+ Customers</h3>
                 <p className="text-sm text-gray-300">Trusted by athletes and therapists worldwide</p>
               </motion.div>
 

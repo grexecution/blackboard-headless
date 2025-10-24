@@ -1,5 +1,6 @@
 import { getAllProducts, getProductVariations } from '@/lib/woocommerce/products'
 import { getAllVideos } from '@/lib/woocommerce/videos'
+import { getAllTestimonials, getEnglishTestimonials } from '@/lib/woocommerce/testimonials'
 import HomeContent from '@/components/home-content'
 
 // Static generation - rebuilds only on webhook
@@ -9,6 +10,7 @@ export const dynamic = 'force-static'
 export default async function Home() {
   let products: any[] = []
   let videos: any[] = []
+  let reviews: any[] = []
 
   try {
     products = await getAllProducts()
@@ -23,6 +25,15 @@ export default async function Home() {
   } catch (error) {
     console.error('Failed to fetch videos for homepage:', error)
     videos = []
+  }
+
+  try {
+    const allTestimonials = await getAllTestimonials()
+    reviews = getEnglishTestimonials(allTestimonials)
+    console.log('[Home] Fetched', reviews.length, 'English testimonials')
+  } catch (error) {
+    console.error('Failed to fetch testimonials for homepage:', error)
+    reviews = []
   }
 
   // Get BlackBoard products and sort them
@@ -64,6 +75,7 @@ export default async function Home() {
       blackboardWithVariations={blackboardWithVariations}
       videos={videos.slice(0, 4)}
       totalVideoCount={videos.length}
+      reviews={reviews}
     />
   )
 }

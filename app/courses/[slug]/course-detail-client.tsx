@@ -9,6 +9,7 @@ import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useCart } from '@/lib/cart-context'
 import { useCurrency } from '@/lib/currency-context'
+import { PaymentIcons } from '@/components/ui/payment-icons'
 
 interface CourseDetailClientProps {
   course: Course
@@ -366,6 +367,42 @@ export function CourseDetailClient({ course: initialCourse }: CourseDetailClient
                     Open Course
                   </Link>
                 )}
+              </div>
+
+              {/* Payment Methods - Hide for ProCoach Live courses, show for all other courses */}
+              {rawCourseType !== 'online_live' && (
+                <div className="mt-6 pt-6 border-t border-gray-200">
+                  <PaymentIcons className="w-full" />
+                </div>
+              )}
+
+              {/* Satisfied Customers - Show for all courses */}
+              <div className="mt-6">
+                <div className="flex items-center justify-center gap-3">
+                  <div className="flex -space-x-2">
+                    {[
+                      { img: 'https://randomuser.me/api/portraits/men/32.jpg' },
+                      { img: 'https://randomuser.me/api/portraits/women/44.jpg' },
+                      { img: 'https://randomuser.me/api/portraits/men/52.jpg' },
+                      { img: 'https://randomuser.me/api/portraits/women/68.jpg' },
+                      { img: 'https://randomuser.me/api/portraits/men/75.jpg' }
+                    ].map((avatar, i) => (
+                      <div
+                        key={i}
+                        className="w-8 h-8 rounded-full border-2 border-white shadow-sm overflow-hidden bg-gray-200"
+                      >
+                        <img
+                          src={avatar.img}
+                          alt={`Customer ${i + 1}`}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-sm text-gray-600">
+                    <span className="font-semibold text-gray-800">20,000+</span> satisfied customers
+                  </p>
+                </div>
               </div>
             </div>
           </div>

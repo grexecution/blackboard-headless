@@ -123,8 +123,11 @@ export default async function ProCoachPage() {
                   <p className="text-gray-300 text-sm mb-3">
                     On-demand online course with concentrated materials covering fundamental concepts and techniques
                   </p>
-                  <div className="inline-block px-3 py-1 bg-[#ffed00] rounded-full text-xs text-black font-semibold">
-                    Self-Paced
+                  <div className="inline-block px-3 py-1 bg-[#ffed00] rounded-full text-xs text-black font-semibold mr-2">
+                    On Demand
+                  </div>
+                  <div className="inline-block px-3 py-1 bg-white text-black rounded-full text-xs font-semibold">
+                    Live Training
                   </div>
                 </div>
 
@@ -143,7 +146,7 @@ export default async function ProCoachPage() {
                     <Shield className="h-3 w-3" />
                     <span>Requires Level 1 completion</span>
                   </div>
-                  <div className="inline-block px-3 py-1 bg-white text-black rounded-full text-xs font-semibold">
+                  <div className="inline-block px-3 py-1 bg-white text-black rounded-full text-xs font-semibold mr-2">
                     Live Training
                   </div>
                 </div>

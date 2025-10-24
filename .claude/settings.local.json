@@ -49,7 +49,9 @@
       "Bash(awk:*)",
       "Bash(xargs kill:*)",
       "Bash(echo:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(find:*)",
+      "Read(//Users/gregorwallner/PhpstormProjects/**)"
     ],
     "deny": [],
     "ask": []

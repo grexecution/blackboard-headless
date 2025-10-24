@@ -8,15 +8,17 @@ import InstructorModal from '@/components/instructor-modal'
 import { useCurrency } from '@/lib/currency-context'
 import { ProductPriceDisplay } from '@/components/products/ProductPriceDisplay'
 import { Video, getVideoThumbnail } from '@/lib/woocommerce/videos'
+import { Testimonial, getTestimonialImage, getTestimonialReviewerName, getTestimonialRating, getTestimonialText } from '@/lib/woocommerce/testimonials'
 
 interface HomeContentProps {
   blackboardProducts: any[]
   blackboardWithVariations: any[]
   videos: Video[]
   totalVideoCount?: number
+  reviews: Testimonial[]
 }
 
-export default function HomeContent({ blackboardProducts, blackboardWithVariations, videos = [], totalVideoCount = 0 }: HomeContentProps) {
+export default function HomeContent({ blackboardProducts, blackboardWithVariations, videos = [], totalVideoCount = 0, reviews = [] }: HomeContentProps) {
   const { getCurrencySymbol } = useCurrency()
   const currencySymbol = getCurrencySymbol()
 
@@ -833,85 +835,67 @@ export default function HomeContent({ blackboardProducts, blackboardWithVariatio
               </p>
             </div>
 
-            {/* Reviews Grid - Placeholder for screenshots */}
+            {/* Reviews Grid - Real Customer Reviews */}
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {/* Review Card 1 - Placeholder */}
-              <div className="bg-gray-50 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-shadow">
-                <div className="flex items-center gap-1 mb-3">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="h-4 w-4 fill-[#ffed00] text-[#ffed00]" />
-                  ))}
-                </div>
-                <div className="aspect-[4/3] bg-gray-200 rounded-lg mb-4 flex items-center justify-center">
-                  <span className="text-gray-400 text-sm">Review Screenshot 1</span>
-                </div>
-                <p className="text-sm text-gray-500">Verified Customer</p>
-              </div>
+              {reviews.length > 0 ? (
+                reviews.map((review) => {
+                  const rating = getTestimonialRating(review)
+                  const reviewerName = getTestimonialReviewerName(review)
+                  const reviewText = getTestimonialText(review)
+                  const imageUrl = getTestimonialImage(review)
 
-              {/* Review Card 2 - Placeholder */}
-              <div className="bg-gray-50 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-shadow">
-                <div className="flex items-center gap-1 mb-3">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="h-4 w-4 fill-[#ffed00] text-[#ffed00]" />
-                  ))}
-                </div>
-                <div className="aspect-[4/3] bg-gray-200 rounded-lg mb-4 flex items-center justify-center">
-                  <span className="text-gray-400 text-sm">Review Screenshot 2</span>
-                </div>
-                <p className="text-sm text-gray-500">Verified Customer</p>
-              </div>
+                  return (
+                    <div key={review.id} className="bg-gray-50 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-shadow">
+                      {/* Star Rating */}
+                      <div className="flex items-center gap-1 mb-3">
+                        {[...Array(5)].map((_, i) => (
+                          <Star
+                            key={i}
+                            className={`h-4 w-4 ${i < rating ? 'fill-[#ffed00] text-[#ffed00]' : 'fill-gray-300 text-gray-300'}`}
+                          />
+                        ))}
+                      </div>
 
-              {/* Review Card 3 - Placeholder */}
-              <div className="bg-gray-50 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-shadow">
-                <div className="flex items-center gap-1 mb-3">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="h-4 w-4 fill-[#ffed00] text-[#ffed00]" />
-                  ))}
-                </div>
-                <div className="aspect-[4/3] bg-gray-200 rounded-lg mb-4 flex items-center justify-center">
-                  <span className="text-gray-400 text-sm">Review Screenshot 3</span>
-                </div>
-                <p className="text-sm text-gray-500">Verified Customer</p>
-              </div>
+                      {/* Review Image */}
+                      <div className="aspect-[4/3] bg-gray-200 rounded-lg mb-4 overflow-hidden relative">
+                        <Image
+                          src={imageUrl}
+                          alt={`Review by ${reviewerName}`}
+                          fill
+                          className="object-cover"
+                          sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                        />
+                      </div>
 
-              {/* Review Card 4 - Placeholder */}
-              <div className="bg-gray-50 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-shadow">
-                <div className="flex items-center gap-1 mb-3">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="h-4 w-4 fill-[#ffed00] text-[#ffed00]" />
-                  ))}
-                </div>
-                <div className="aspect-[4/3] bg-gray-200 rounded-lg mb-4 flex items-center justify-center">
-                  <span className="text-gray-400 text-sm">Review Screenshot 4</span>
-                </div>
-                <p className="text-sm text-gray-500">Verified Customer</p>
-              </div>
+                      {/* Review Text */}
+                      {reviewText && (
+                        <p className="text-sm text-gray-700 mb-3 line-clamp-3">
+                          {reviewText}
+                        </p>
+                      )}
 
-              {/* Review Card 5 - Placeholder */}
-              <div className="bg-gray-50 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-shadow">
-                <div className="flex items-center gap-1 mb-3">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="h-4 w-4 fill-[#ffed00] text-[#ffed00]" />
-                  ))}
-                </div>
-                <div className="aspect-[4/3] bg-gray-200 rounded-lg mb-4 flex items-center justify-center">
-                  <span className="text-gray-400 text-sm">Review Screenshot 5</span>
-                </div>
-                <p className="text-sm text-gray-500">Verified Customer</p>
-              </div>
-
-              {/* Review Card 6 - Placeholder */}
-              <div className="bg-gray-50 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-shadow">
-                <div className="flex items-center gap-1 mb-3">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="h-4 w-4 fill-[#ffed00] text-[#ffed00]" />
-                  ))}
-                </div>
-                <div className="aspect-[4/3] bg-gray-200 rounded-lg mb-4 flex items-center justify-center">
-                  <span className="text-gray-400 text-sm">Review Screenshot 6</span>
-                </div>
-                <p className="text-sm text-gray-500">Verified Customer</p>
-              </div>
+                      {/* Reviewer Name */}
+                      <p className="text-sm font-semibold text-gray-900">{reviewerName}</p>
+                      <p className="text-xs text-gray-500">Verified Customer</p>
+                    </div>
+                  )
+                })
+              ) : (
+                // Fallback placeholder if no reviews
+                [...Array(6)].map((_, index) => (
+                  <div key={`placeholder-${index}`} className="bg-gray-50 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-shadow">
+                    <div className="flex items-center gap-1 mb-3">
+                      {[...Array(5)].map((_, i) => (
+                        <Star key={i} className="h-4 w-4 fill-[#ffed00] text-[#ffed00]" />
+                      ))}
+                    </div>
+                    <div className="aspect-[4/3] bg-gray-200 rounded-lg mb-4 flex items-center justify-center">
+                      <span className="text-gray-400 text-sm">Review Screenshot {index + 1}</span>
+                    </div>
+                    <p className="text-sm text-gray-500">Verified Customer</p>
+                  </div>
+                ))
+              )}
             </div>
 
             {/* Trust Indicators */}
