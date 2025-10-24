@@ -141,7 +141,7 @@ export default function Navbar() {
             </div>
 
             {/* Right Icons */}
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-2">
               {/* Currency Toggle - Desktop */}
               <div className="hidden md:flex items-center bg-gray-100 rounded-full p-1">
                 <button
@@ -228,21 +228,23 @@ export default function Navbar() {
               </div>
 
               {/* Cart - Desktop & Mobile */}
-              <button
+              <motion.button
                 onClick={openCart}
-                className="relative p-3 rounded-lg hover:bg-gray-100 transition-colors"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="relative p-3 rounded-full hover:bg-[#ffed00]/10 hover:shadow-lg hover:shadow-[#ffed00]/20 transition-all duration-300"
               >
                 <ShoppingCart className="h-6 w-6 text-gray-700" />
                 {totalItems > 0 && (
                   <motion.span
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
-                    className="absolute top-1 right-1 bg-[#ffed00] text-black text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center"
+                    className="absolute top-1 right-1 bg-[#ffed00] text-black text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center shadow-md"
                   >
                     {totalItems}
                   </motion.span>
                 )}
-              </button>
+              </motion.button>
 
               {/* Profile/Login - Desktop */}
               {session ? (

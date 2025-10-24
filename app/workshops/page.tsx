@@ -1,9 +1,11 @@
 import { getAllCourses, getCoursesByCategory } from '@/lib/woocommerce/courses'
 import Link from 'next/link'
 import CoursesListHorizontal from '@/components/courses/courses-list-horizontal'
+import ConsultationBookingButton from '@/components/workshops/consultation-booking-button'
 import {
   Users, Calendar, Clock, Video, BookOpen, Quote, Target, Shield, Award, User, Trophy, ChevronRight
 } from 'lucide-react'
+import Image from "next/image";
 
 export const revalidate = false
 export const dynamic = 'force-static'
@@ -143,6 +145,13 @@ export default async function WorkshopsPage() {
                   {/* Placeholder for Armin's image */}
                   <div className="absolute inset-0 flex items-center justify-center">
                     <div className="w-32 h-32 rounded-full bg-gradient-to-br from-[#ffed00] to-yellow-500 flex items-center justify-center">
+                      <Image
+                          src="/images/armin_har.png"
+                          alt="BlackBoard Coach Armin Harrasser"
+                          fill
+                          className="object-cover"
+                          priority
+                      />
                       <User className="h-16 w-16 text-black" />
                     </div>
                   </div>
@@ -225,13 +234,7 @@ export default async function WorkshopsPage() {
 
                   {/* Action Button */}
                   <div className="mt-auto">
-                    <a
-                      href="/contact"
-                      className="w-full bg-[#ffed00] text-black py-3.5 px-6 rounded-full font-semibold hover:bg-yellow-400 transition-all duration-200 hover:shadow-lg flex items-center justify-center gap-2"
-                    >
-                      <Calendar className="h-5 w-5" />
-                      Book an Online Consultation
-                    </a>
+                    <ConsultationBookingButton />
                   </div>
                 </div>
               </div>

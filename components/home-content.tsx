@@ -231,7 +231,7 @@ export default function HomeContent({ blackboardProducts, blackboardWithVariatio
       </section>
 
       {/* Hero Section - Best of Both Worlds */}
-      <section className="relative min-h-[100vh] md:min-h-[90vh] flex items-center overflow-hidden">
+      <section className="relative min-h-[90vh] md:min-h-[90vh] flex items-center overflow-hidden">
         {/* Video Background */}
         <div className="absolute inset-0 w-full h-full">
           <video
@@ -424,7 +424,7 @@ export default function HomeContent({ blackboardProducts, blackboardWithVariatio
                 </p>
               </div>
 
-              <div className="grid md:grid-cols-2 gap-8 mb-16">
+              <div className="grid md:grid-cols-2 gap-8 mb-2 md:mb-6">
                 {/* Problem with Icons */}
                 <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-2xl p-8 border-2 border-red-200">
                   <div className="flex items-center gap-3 mb-6">
@@ -510,7 +510,7 @@ export default function HomeContent({ blackboardProducts, blackboardWithVariatio
       {blackboardWithVariations.length > 0 && (
         <section className="py-20 bg-gray-50">
           <div className="max-w-screen-xl mx-auto px-4 lg:px-6">
-              <div className="text-center mb-16">
+              <div className="text-center mb-10 md:mb-16">
               <div className="inline-flex items-center gap-2 bg-[#ffed00]/10 text-[#ffed00] px-4 py-2 rounded-full mb-4">
                 <Award className="h-4 w-4" />
                 <span className="text-sm font-semibold uppercase tracking-wider">Choose Your Equipment</span>

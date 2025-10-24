@@ -1,6 +1,6 @@
 import Image from 'next/image'
 import Link from 'next/link'
-import { ArrowRight, Users, Target, Award, CheckCircle, Calendar, TrendingUp, Heart, Lightbulb } from 'lucide-react'
+import { ArrowRight, Target, Calendar, TrendingUp, Heart, Lightbulb } from 'lucide-react'
 
 export const metadata = {
   title: 'About BlackBoard | Our Story & Mission',
@@ -20,63 +20,167 @@ export default function AboutPage() {
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
-      <section className="relative py-20 bg-gradient-to-br from-black via-gray-900 to-black overflow-hidden">
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute inset-0" style={{
-            backgroundImage: `radial-gradient(circle at 2px 2px, #ffed00 1px, transparent 1px)`,
-            backgroundSize: '40px 40px'
-          }}/>
-        </div>
-
-        <div className="max-w-screen-xl mx-auto px-4 lg:px-6 relative z-10">
-          <div className="max-w-4xl mx-auto text-center text-white">
-            <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold mb-6">
-              Our <span className="text-[#ffed00]">Story</span>
+      <section className="bg-black text-white py-16">
+        <div className="max-w-screen-xl mx-auto px-4 lg:px-6">
+          <div className="max-w-3xl">
+            <div className="inline-flex items-center gap-2 bg-[#ffed00]/20 text-[#ffed00] px-4 py-2 rounded-full mb-6">
+              <Heart className="h-4 w-4" />
+              <span className="text-sm font-semibold uppercase tracking-wider">Our Story</span>
+            </div>
+            <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-3">
+              Born from Pain, Built with Passion
             </h1>
-            <p className="text-xl md:text-2xl text-gray-300 mb-8">
-              How a simple ankle sprain led to a revolutionary foot training system
+            <p className="text-lg md:text-xl text-gray-300 mb-4">
+              How a single ankle sprain sparked a revolution in foot training that has helped over 20,000 people worldwide
             </p>
+            <div className="flex flex-wrap gap-4">
+              <div className="flex items-center gap-2">
+                <Calendar className="h-4 w-4 text-[#ffed00]" />
+                <span className="text-xs">Founded in 2015</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Target className="h-4 w-4 text-[#ffed00]" />
+                <span className="text-xs">Made in Cologne, Germany</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <TrendingUp className="h-4 w-4 text-[#ffed00]" />
+                <span className="text-xs">20,000+ Happy Customers</span>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* The Idea Section */}
-      <section className="py-20 bg-white">
+      {/* The Idea Section - Two Column Layout */}
+      <section className="py-20 bg-gradient-to-b from-gray-50 to-white">
         <div className="max-w-screen-xl mx-auto px-4 lg:px-6">
           <div className="max-w-6xl mx-auto">
-            <div className="bg-gradient-to-r from-[#ffed00]/10 to-yellow-50 rounded-3xl p-8 md:p-12 mb-12">
-              <h2 className="text-3xl md:text-4xl font-bold mb-6">
-                How the idea of BlackBoard came about
+            {/* Section Title */}
+            <div className="text-center mb-16">
+              <h2 className="text-4xl md:text-5xl font-bold mb-4">
+                How the idea of <span className="text-[#ffed00]">BlackBoard</span> came about
               </h2>
-
-              <div className="space-y-6 text-lg text-gray-700 leading-relaxed">
-                <p>
-                  Gregor Stumpf, a sports scientist, and Lars Grandjot, a physiotherapist, worked together in a physiotherapy practice in Cologne. While treating patients and athletes, they quickly realized the crucial role a healthy foot plays.
-                </p>
-
-                <p>
-                  Lars knew this all too well from personal experience: years of issues following a single ankle sprain called for a new treatment method. That&apos;s how the idea for the BlackBoard was born. After two years of development, the BlackBoard prototype was ready for extensive testing. In both therapy and prevention, this tool offered a completely new approach to help people with long-term issues.
-                </p>
-
-                <p>
-                  Patients, therapists, and doctors embraced the use of the BlackBoard and confirmed the effectiveness of the concept. To this day, the BlackBoard is proudly and meticulously produced in its hometown of Cologne.
-                </p>
-              </div>
+              <div className="w-24 h-1 bg-[#ffed00] mx-auto rounded-full"></div>
             </div>
 
-            {/* Founders Image Section */}
-            <div className="relative rounded-2xl overflow-hidden shadow-2xl mb-12">
-              <div className="aspect-video bg-gradient-to-br from-gray-100 to-gray-200 relative">
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="text-center">
-                    <Users className="h-20 w-20 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-500">Gregor Stumpf & Lars Grandjot</p>
+            {/* Two Column Grid */}
+            <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-start">
+              {/* Left Column - Story */}
+              <div className="space-y-8">
+                {/* Chapter 1 */}
+                <div className="relative">
+                  <div className="absolute -left-4 top-0 w-1 h-full bg-gradient-to-b from-[#ffed00] to-transparent rounded-full"></div>
+                  <div className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-shadow">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-10 h-10 bg-[#ffed00] rounded-full flex items-center justify-center font-bold text-black">
+                        1
+                      </div>
+                      <h3 className="text-xl font-bold">The Meeting</h3>
+                    </div>
+                    <p className="text-gray-700 leading-relaxed">
+                      Gregor Stumpf, a sports scientist, and Lars Grandjot, a physiotherapist, worked together in a physiotherapy practice in Cologne, Germany. While treating patients and athletes, they quickly realized the crucial role a healthy foot plays.
+                    </p>
                   </div>
                 </div>
 
-                {/* Yellow banner overlay */}
-                <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 bg-[#ffed00] text-black px-6 py-3 rounded-full font-bold shadow-lg">
-                  The founders of BlackBoard: Gregor Stumpf & Lars Grandjot
+                {/* Chapter 2 */}
+                <div className="relative">
+                  <div className="absolute -left-4 top-0 w-1 h-full bg-gradient-to-b from-[#ffed00] via-[#ffed00] to-transparent rounded-full"></div>
+                  <div className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-shadow">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-10 h-10 bg-[#ffed00] rounded-full flex items-center justify-center font-bold text-black">
+                        2
+                      </div>
+                      <h3 className="text-xl font-bold">The Problem</h3>
+                    </div>
+                    <p className="text-gray-700 leading-relaxed">
+                      Lars knew this all too well from personal experience: years of issues following a single ankle sprain called for a new treatment method. That&apos;s how the idea for the BlackBoard was born.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Chapter 3 */}
+                <div className="relative">
+                  <div className="absolute -left-4 top-0 w-1 h-full bg-gradient-to-b from-[#ffed00] to-transparent rounded-full"></div>
+                  <div className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-shadow">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-10 h-10 bg-[#ffed00] rounded-full flex items-center justify-center font-bold text-black">
+                        3
+                      </div>
+                      <h3 className="text-xl font-bold">The Solution</h3>
+                    </div>
+                    <p className="text-gray-700 leading-relaxed">
+                      After two years of development, the BlackBoard prototype was ready for extensive testing. In both therapy and prevention, this tool offered a completely new approach to help people with long-term issues.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Chapter 4 */}
+                <div className="relative">
+                  <div className="absolute -left-4 top-0 w-1 h-full bg-[#ffed00] rounded-full"></div>
+                  <div className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-shadow">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-10 h-10 bg-[#ffed00] rounded-full flex items-center justify-center font-bold text-black">
+                        4
+                      </div>
+                      <h3 className="text-xl font-bold">The Success</h3>
+                    </div>
+                    <p className="text-gray-700 leading-relaxed">
+                      Patients, therapists, and doctors embraced the use of the BlackBoard and confirmed the effectiveness of the concept. To this day, the BlackBoard is proudly and meticulously produced in its hometown of Cologne, Germany.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Made in Cologne Badge */}
+                <div className="flex items-center gap-3 bg-gradient-to-r from-[#ffed00] to-yellow-400 text-black px-6 py-4 rounded-2xl font-bold shadow-lg">
+                  <Heart className="h-6 w-6 fill-current" />
+                  <span>Made with love in Germany since 2015</span>
+                </div>
+              </div>
+
+              {/* Right Column - Founders Image (Sticky) */}
+              <div className="lg:sticky lg:top-24">
+                <div className="relative rounded-2xl overflow-hidden shadow-2xl">
+                  <div className="aspect-[3/4] relative">
+                    <Image
+                      src="/images/founders.png"
+                      alt="BlackBoard founders Gregor Stumpf and Lars Grandjot"
+                      fill
+                      className="object-cover"
+                      priority
+                    />
+
+                    {/* Gradient overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
+
+                    {/* Founders Info Overlay */}
+                    <div className="absolute bottom-0 left-0 right-0 p-6">
+                      <div className="space-y-3">
+                        <div className="inline-block bg-[#ffed00] text-black px-4 py-1.5 rounded-full text-sm font-bold uppercase tracking-wider">
+                          The Founders
+                        </div>
+                        <h3 className="text-2xl md:text-3xl font-bold text-white">
+                          Gregor Stumpf<br/>
+                          & Lars Grandjot
+                        </h3>
+                        <p className="text-white/90 text-sm">
+                          Sports Scientist & Physiotherapist
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Stats Cards Below Image */}
+                <div className="grid grid-cols-2 gap-4 mt-6">
+                  <div className="bg-white rounded-xl p-4 shadow-md text-center">
+                    <div className="text-3xl font-bold text-[#ffed00]">2015</div>
+                    <div className="text-sm text-gray-600 font-medium">Founded</div>
+                  </div>
+                  <div className="bg-white rounded-xl p-4 shadow-md text-center">
+                    <div className="text-3xl font-bold text-[#ffed00]">20k+</div>
+                    <div className="text-sm text-gray-600 font-medium">Customers</div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -183,55 +287,6 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* Why Choose BlackBoard */}
-      <section className="py-20 bg-white">
-        <div className="max-w-screen-xl mx-auto px-4 lg:px-6">
-          <div className="max-w-6xl mx-auto">
-            <div className="text-center mb-12">
-              <h2 className="text-4xl md:text-5xl font-bold mb-4">
-                Why Choose <span className="text-[#ffed00]">BlackBoard</span>?
-              </h2>
-              <p className="text-xl text-gray-600">
-                What makes us different from other training systems
-              </p>
-            </div>
-
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <div className="text-center">
-                <div className="w-20 h-20 bg-gradient-to-br from-[#ffed00] to-yellow-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <CheckCircle className="h-10 w-10 text-black" />
-                </div>
-                <h3 className="font-bold text-lg mb-2">Scientific Foundation</h3>
-                <p className="text-sm text-gray-600">Developed by experts in sports science and physiotherapy</p>
-              </div>
-
-              <div className="text-center">
-                <div className="w-20 h-20 bg-gradient-to-br from-[#ffed00] to-yellow-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Award className="h-10 w-10 text-black" />
-                </div>
-                <h3 className="font-bold text-lg mb-2">Proven Results</h3>
-                <p className="text-sm text-gray-600">Trusted by 20,000+ athletes and therapists worldwide</p>
-              </div>
-
-              <div className="text-center">
-                <div className="w-20 h-20 bg-gradient-to-br from-[#ffed00] to-yellow-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Users className="h-10 w-10 text-black" />
-                </div>
-                <h3 className="font-bold text-lg mb-2">Expert Support</h3>
-                <p className="text-sm text-gray-600">Access to professional training programs and guidance</p>
-              </div>
-
-              <div className="text-center">
-                <div className="w-20 h-20 bg-gradient-to-br from-[#ffed00] to-yellow-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Heart className="h-10 w-10 text-black" />
-                </div>
-                <h3 className="font-bold text-lg mb-2">Made with Love</h3>
-                <p className="text-sm text-gray-600">Handcrafted in Cologne with attention to every detail</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
 
       {/* CTA Section */}
       <section className="py-20 bg-gradient-to-br from-[#ffed00] to-yellow-500">
@@ -252,10 +307,10 @@ export default function AboutPage() {
                 <ArrowRight className="h-5 w-5" />
               </Link>
               <Link
-                href="/contact"
+                href="/courses"
                 className="inline-flex items-center justify-center gap-2 bg-white text-black px-8 py-4 rounded-full font-bold text-lg hover:bg-gray-100 transition-all shadow-xl"
               >
-                Contact Us
+                View Courses
               </Link>
             </div>
           </div>

@@ -60,7 +60,21 @@ export default function CheckoutClient({ countries, taxRates, shippingZones }: C
   const [passwordStrength, setPasswordStrength] = useState<'weak' | 'medium' | 'strong' | null>(null)
   const [passwordMatch, setPasswordMatch] = useState<boolean | null>(null)
   const [showLoginModal, setShowLoginModal] = useState(false)
-  
+
+  // B2B / Company fields
+  const [isCompany, setIsCompany] = useState(false)
+  const [companyName, setCompanyName] = useState('')
+  const [vatNumber, setVatNumber] = useState('')
+  const [vatValidationStatus, setVatValidationStatus] = useState<'idle' | 'validating' | 'valid' | 'invalid' | 'error'>('idle')
+  const [vatValidationMessage, setVatValidationMessage] = useState('')
+  const [vatExemptionApplied, setVatExemptionApplied] = useState(false)
+  const [validatedVatData, setValidatedVatData] = useState<{
+    countryCode: string
+    vatNumber: string
+    name?: string
+    address?: string
+  } | null>(null)
+
   const [billingData, setBillingData] = useState({
     firstName: '',
     lastName: '',
@@ -207,6 +221,91 @@ export default function CheckoutClient({ countries, taxRates, shippingZones }: C
     const debounceTimer = setTimeout(checkEmail, 500)
     return () => clearTimeout(debounceTimer)
   }, [billingData.email, session])
+
+  // VAT Validation Effect
+  useEffect(() => {
+    const validateVAT = async () => {
+      // Only validate if:
+      // 1. User is a company
+      // 2. VAT number is entered
+      // 3. Country is selected and is in EU (but not Germany)
+      if (!isCompany || !vatNumber || !billingData.country) {
+        setVatValidationStatus('idle')
+        setVatExemptionApplied(false)
+        setValidatedVatData(null)
+        return
+      }
+
+      // Germany always has VAT
+      if (billingData.country === 'DE') {
+        setVatValidationStatus('idle')
+        setVatExemptionApplied(false)
+        setValidatedVatData(null)
+        setVatValidationMessage('')
+        return
+      }
+
+      // EU countries for VAT validation
+      const EU_COUNTRIES = [
+        'AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR',
+        'GR', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'PL',
+        'PT', 'RO', 'SK', 'SI', 'ES', 'SE'
+      ]
+
+      // Non-EU countries don't need validation (always VAT exempt for exports)
+      if (!EU_COUNTRIES.includes(billingData.country)) {
+        setVatValidationStatus('idle')
+        setVatExemptionApplied(true) // Export = no VAT
+        setValidatedVatData(null)
+        setVatValidationMessage('Export delivery - VAT exempt')
+        return
+      }
+
+      // Validate EU VAT number
+      setVatValidationStatus('validating')
+      setVatValidationMessage('Validating VAT number...')
+
+      try {
+        const response = await fetch('/api/vat/validate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            vatNumber,
+            countryCode: billingData.country
+          })
+        })
+
+        const data = await response.json()
+
+        if (data.valid) {
+          setVatValidationStatus('valid')
+          setVatExemptionApplied(true)
+          setValidatedVatData(data)
+
+          // Show different message for fallback validation
+          if (data.fallbackValidation) {
+            setVatValidationMessage(`✓ VAT format valid - Tax exemption applied (VIES service unavailable)`)
+          } else {
+            setVatValidationMessage(`✓ Valid VAT ID - Tax exemption applied${data.name ? ` (${data.name})` : ''}`)
+          }
+        } else {
+          setVatValidationStatus('invalid')
+          setVatExemptionApplied(false)
+          setValidatedVatData(null)
+          setVatValidationMessage(data.error || 'Invalid VAT number - VAT will be charged')
+        }
+      } catch (error) {
+        console.error('VAT validation error:', error)
+        setVatValidationStatus('error')
+        setVatExemptionApplied(false)
+        setValidatedVatData(null)
+        setVatValidationMessage('Could not validate VAT number - VAT will be charged')
+      }
+    }
+
+    const debounceTimer = setTimeout(validateVAT, 800)
+    return () => clearTimeout(debounceTimer)
+  }, [vatNumber, billingData.country, isCompany])
 
   const handleBillingChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
@@ -372,6 +471,12 @@ export default function CheckoutClient({ countries, taxRates, shippingZones }: C
           shippingCost,
           shippingMethodTitle,
           customerId: customerId,
+          // B2B / VAT data
+          isCompany,
+          companyName,
+          vatNumber,
+          vatExemptionApplied,
+          validatedVatData,
           cartItems: items.map(item => ({
             productId: item.productId,
             variationId: item.variationId,
@@ -459,8 +564,12 @@ export default function CheckoutClient({ countries, taxRates, shippingZones }: C
   // 3. Keep finalTotal the same (it's the gross/final price including tax)
 
   const { taxAmount, taxRate } = useMemo(() => {
+    // If VAT exemption is applied (valid EU VAT or export), return 0% tax
+    if (vatExemptionApplied) {
+      return { taxAmount: 0, taxRate: 0 }
+    }
     return calculateTax(totalPrice, billingData.country, billingData.state, taxRates)
-  }, [totalPrice, billingData.country, billingData.state, taxRates])
+  }, [totalPrice, billingData.country, billingData.state, taxRates, vatExemptionApplied])
 
   // Net price (excluding tax) - this is what changes when country changes
   const netPrice = useMemo(() => {
@@ -820,102 +929,201 @@ export default function CheckoutClient({ countries, taxRates, shippingZones }: C
                     </>
                   )}
                   
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Street Address *
+                  {/* Row 1: Street, Apartment, City */}
+                  <div className="md:col-span-2 grid md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Street Address *
+                      </label>
+                      <input
+                        type="text"
+                        name="address1"
+                        required
+                        value={billingData.address1}
+                        onChange={handleBillingChange}
+                        placeholder="Street & number"
+                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#ffed00] ${
+                          validationErrors.address1 ? 'border-red-500' : 'border-gray-300'
+                        }`}
+                      />
+                      {validationErrors.address1 && (
+                        <p className="text-red-500 text-xs mt-1">{validationErrors.address1}</p>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Apartment, suite (optional)
+                      </label>
+                      <input
+                        type="text"
+                        name="address2"
+                        value={billingData.address2}
+                        onChange={handleBillingChange}
+                        placeholder="Apt, suite, etc."
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ffed00]"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        City *
+                      </label>
+                      <input
+                        type="text"
+                        name="city"
+                        required
+                        value={billingData.city}
+                        onChange={handleBillingChange}
+                        placeholder="City"
+                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#ffed00] ${
+                          validationErrors.city ? 'border-red-500' : 'border-gray-300'
+                        }`}
+                      />
+                      {validationErrors.city && (
+                        <p className="text-red-500 text-xs mt-1">{validationErrors.city}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Row 2: State, Postal Code, Country */}
+                  <div className="md:col-span-2 grid md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        State/Province
+                      </label>
+                      <input
+                        type="text"
+                        name="state"
+                        value={billingData.state}
+                        onChange={handleBillingChange}
+                        placeholder="State"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ffed00]"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Postal Code *
+                      </label>
+                      <input
+                        type="text"
+                        name="postcode"
+                        required
+                        value={billingData.postcode}
+                        onChange={handleBillingChange}
+                        placeholder="Postal code"
+                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#ffed00] ${
+                          validationErrors.postcode ? 'border-red-500' : 'border-gray-300'
+                        }`}
+                      />
+                      {validationErrors.postcode && (
+                        <p className="text-red-500 text-xs mt-1">{validationErrors.postcode}</p>
+                      )}
+                    </div>
+
+                    <div>
+                      <CountrySelect
+                        countries={countries}
+                        value={billingData.country}
+                        onChange={(countryCode) => {
+                          setBillingData(prev => ({ ...prev, country: countryCode }))
+                          setValidationErrors(prev => ({ ...prev, country: '' }))
+                        }}
+                        label="Country *"
+                        error={validationErrors.country}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Company / B2B Checkbox */}
+                  <div className="md:col-span-2 pt-4 border-t border-gray-200">
+                    <label className="flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={isCompany}
+                        onChange={(e) => {
+                          setIsCompany(e.target.checked)
+                          if (!e.target.checked) {
+                            setCompanyName('')
+                            setVatNumber('')
+                            setVatValidationStatus('idle')
+                            setVatExemptionApplied(false)
+                          }
+                        }}
+                        className="h-4 w-4 text-[#ffed00] focus:ring-[#ffed00] border-gray-300 rounded"
+                      />
+                      <span className="ml-2 text-sm font-medium text-gray-700">
+                        I am ordering as a company
+                      </span>
                     </label>
-                    <input
-                      type="text"
-                      name="address1"
-                      required
-                      value={billingData.address1}
-                      onChange={handleBillingChange}
-                      placeholder="House number and street name"
-                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#ffed00] ${
-                        validationErrors.address1 ? 'border-red-500' : 'border-gray-300'
-                      }`}
-                    />
-                    {validationErrors.address1 && (
-                      <p className="text-red-500 text-xs mt-1">{validationErrors.address1}</p>
-                    )}
                   </div>
-                  
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Apartment, suite, etc. (optional)
-                    </label>
-                    <input
-                      type="text"
-                      name="address2"
-                      value={billingData.address2}
-                      onChange={handleBillingChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ffed00]"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      City *
-                    </label>
-                    <input
-                      type="text"
-                      name="city"
-                      required
-                      value={billingData.city}
-                      onChange={handleBillingChange}
-                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#ffed00] ${
-                        validationErrors.city ? 'border-red-500' : 'border-gray-300'
-                      }`}
-                    />
-                    {validationErrors.city && (
-                      <p className="text-red-500 text-xs mt-1">{validationErrors.city}</p>
-                    )}
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      State/Province
-                    </label>
-                    <input
-                      type="text"
-                      name="state"
-                      value={billingData.state}
-                      onChange={handleBillingChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ffed00]"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Postal Code *
-                    </label>
-                    <input
-                      type="text"
-                      name="postcode"
-                      required
-                      value={billingData.postcode}
-                      onChange={handleBillingChange}
-                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#ffed00] ${
-                        validationErrors.postcode ? 'border-red-500' : 'border-gray-300'
-                      }`}
-                    />
-                    {validationErrors.postcode && (
-                      <p className="text-red-500 text-xs mt-1">{validationErrors.postcode}</p>
-                    )}
-                  </div>
-                  
-                  <div>
-                    <CountrySelect
-                      countries={countries}
-                      value={billingData.country}
-                      onChange={(countryCode) => {
-                        setBillingData(prev => ({ ...prev, country: countryCode }))
-                        setValidationErrors(prev => ({ ...prev, country: '' }))
-                      }}
-                      label="Country *"
-                      error={validationErrors.country}
-                    />
-                  </div>
+
+                  {/* Company Fields - Only show when checkbox is checked */}
+                  {isCompany && (
+                    <>
+                      {/* Company Name and VAT Number in one row */}
+                      <div className="md:col-span-2 grid md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Company Name
+                          </label>
+                          <input
+                            type="text"
+                            value={companyName}
+                            onChange={(e) => setCompanyName(e.target.value)}
+                            placeholder="Your Company Ltd."
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ffed00]"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            VAT / Tax ID Number
+                          </label>
+                          <input
+                            type="text"
+                            value={vatNumber}
+                            onChange={(e) => setVatNumber(e.target.value.toUpperCase())}
+                            placeholder="ATU12345678"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ffed00]"
+                          />
+                        </div>
+                      </div>
+
+                      {/* VAT Validation Status and Info */}
+                      <div className="md:col-span-2">
+                        {/* VAT Validation Status */}
+                        {vatValidationStatus !== 'idle' && vatValidationMessage && (
+                          <div className={`mb-2 p-2 rounded-md text-xs flex items-start gap-2 ${
+                            vatValidationStatus === 'valid' ? 'bg-green-50 text-green-800' :
+                            vatValidationStatus === 'validating' ? 'bg-blue-50 text-blue-800' :
+                            'bg-red-50 text-red-800'
+                          }`}>
+                            {vatValidationStatus === 'validating' ? (
+                              <div className="animate-spin h-3 w-3 border-2 border-blue-600 border-t-transparent rounded-full mt-0.5"></div>
+                            ) : vatValidationStatus === 'valid' ? (
+                              <CheckCircle className="h-4 w-4 flex-shrink-0" />
+                            ) : (
+                              <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                            )}
+                            <span>{vatValidationMessage}</span>
+                          </div>
+                        )}
+
+                        {/* Info Notice */}
+                        <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
+                          <div className="flex items-start gap-2">
+                            <Info className="h-4 w-4 text-blue-600 flex-shrink-0 mt-0.5" />
+                            <p className="text-xs text-blue-800">
+                              <strong>Business customers from other EU countries</strong> can get VAT exemption if they enter a valid EU VAT ID.
+                              For Germany and non-EU countries, VAT still applies.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
 
@@ -958,7 +1166,7 @@ export default function CheckoutClient({ countries, taxRates, shippingZones }: C
                         <p className="text-red-500 text-xs mt-1">{validationErrors.shipping_firstName}</p>
                       )}
                     </div>
-                    
+
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Last Name *
@@ -977,102 +1185,112 @@ export default function CheckoutClient({ countries, taxRates, shippingZones }: C
                         <p className="text-red-500 text-xs mt-1">{validationErrors.shipping_lastName}</p>
                       )}
                     </div>
-                    
-                    <div className="md:col-span-2">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Street Address *
-                      </label>
-                      <input
-                        type="text"
-                        name="address1"
-                        required
-                        value={shippingData.address1}
-                        onChange={handleShippingChange}
-                        placeholder="House number and street name"
-                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#ffed00] ${
-                          validationErrors.shipping_address1 ? 'border-red-500' : 'border-gray-300'
-                        }`}
-                      />
-                      {validationErrors.shipping_address1 && (
-                        <p className="text-red-500 text-xs mt-1">{validationErrors.shipping_address1}</p>
-                      )}
+
+                    {/* Row 1: Street, Apartment, City */}
+                    <div className="md:col-span-2 grid md:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Street Address *
+                        </label>
+                        <input
+                          type="text"
+                          name="address1"
+                          required
+                          value={shippingData.address1}
+                          onChange={handleShippingChange}
+                          placeholder="Street & number"
+                          className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#ffed00] ${
+                            validationErrors.shipping_address1 ? 'border-red-500' : 'border-gray-300'
+                          }`}
+                        />
+                        {validationErrors.shipping_address1 && (
+                          <p className="text-red-500 text-xs mt-1">{validationErrors.shipping_address1}</p>
+                        )}
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Apartment, suite (optional)
+                        </label>
+                        <input
+                          type="text"
+                          name="address2"
+                          value={shippingData.address2}
+                          onChange={handleShippingChange}
+                          placeholder="Apt, suite, etc."
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ffed00]"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          City *
+                        </label>
+                        <input
+                          type="text"
+                          name="city"
+                          required
+                          value={shippingData.city}
+                          onChange={handleShippingChange}
+                          placeholder="City"
+                          className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#ffed00] ${
+                            validationErrors.shipping_city ? 'border-red-500' : 'border-gray-300'
+                          }`}
+                        />
+                        {validationErrors.shipping_city && (
+                          <p className="text-red-500 text-xs mt-1">{validationErrors.shipping_city}</p>
+                        )}
+                      </div>
                     </div>
-                    
-                    <div className="md:col-span-2">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Apartment, suite, etc. (optional)
-                      </label>
-                      <input
-                        type="text"
-                        name="address2"
-                        value={shippingData.address2}
-                        onChange={handleShippingChange}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ffed00]"
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        City *
-                      </label>
-                      <input
-                        type="text"
-                        name="city"
-                        required
-                        value={shippingData.city}
-                        onChange={handleShippingChange}
-                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#ffed00] ${
-                          validationErrors.shipping_city ? 'border-red-500' : 'border-gray-300'
-                        }`}
-                      />
-                      {validationErrors.shipping_city && (
-                        <p className="text-red-500 text-xs mt-1">{validationErrors.shipping_city}</p>
-                      )}
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        State/Province
-                      </label>
-                      <input
-                        type="text"
-                        name="state"
-                        value={shippingData.state}
-                        onChange={handleShippingChange}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ffed00]"
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Postal Code *
-                      </label>
-                      <input
-                        type="text"
-                        name="postcode"
-                        required
-                        value={shippingData.postcode}
-                        onChange={handleShippingChange}
-                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#ffed00] ${
-                          validationErrors.shipping_postcode ? 'border-red-500' : 'border-gray-300'
-                        }`}
-                      />
-                      {validationErrors.shipping_postcode && (
-                        <p className="text-red-500 text-xs mt-1">{validationErrors.shipping_postcode}</p>
-                      )}
-                    </div>
-                    
-                    <div>
-                      <CountrySelect
-                        countries={countries}
-                        value={shippingData.country}
-                        onChange={(countryCode) => {
-                          setShippingData(prev => ({ ...prev, country: countryCode }))
-                          setValidationErrors(prev => ({ ...prev, shipping_country: '' }))
-                        }}
-                        label="Country *"
-                        error={validationErrors.shipping_country}
-                      />
+
+                    {/* Row 2: State, Postal Code, Country */}
+                    <div className="md:col-span-2 grid md:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          State/Province
+                        </label>
+                        <input
+                          type="text"
+                          name="state"
+                          value={shippingData.state}
+                          onChange={handleShippingChange}
+                          placeholder="State"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ffed00]"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Postal Code *
+                        </label>
+                        <input
+                          type="text"
+                          name="postcode"
+                          required
+                          value={shippingData.postcode}
+                          onChange={handleShippingChange}
+                          placeholder="Postal code"
+                          className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#ffed00] ${
+                            validationErrors.shipping_postcode ? 'border-red-500' : 'border-gray-300'
+                          }`}
+                        />
+                        {validationErrors.shipping_postcode && (
+                          <p className="text-red-500 text-xs mt-1">{validationErrors.shipping_postcode}</p>
+                        )}
+                      </div>
+
+                      <div>
+                        <CountrySelect
+                          countries={countries}
+                          value={shippingData.country}
+                          onChange={(countryCode) => {
+                            setShippingData(prev => ({ ...prev, country: countryCode }))
+                            setValidationErrors(prev => ({ ...prev, shipping_country: '' }))
+                          }}
+                          label="Country *"
+                          error={validationErrors.shipping_country}
+                        />
+                      </div>
                     </div>
                   </div>
                 )}
@@ -1229,12 +1447,17 @@ export default function CheckoutClient({ countries, taxRates, shippingZones }: C
                   )}
 
                   {/* Tax */}
-                  {taxRate > 0 && (
+                  {taxRate > 0 ? (
                     <div className="flex justify-between text-sm">
                       <span>Tax ({taxRate.toFixed(0)}% based on {countries.find(c => c.code === billingData.country)?.name || billingData.country})</span>
                       <span>{currencySymbol}{taxAmount.toFixed(2)}</span>
                     </div>
-                  )}
+                  ) : vatExemptionApplied ? (
+                    <div className="flex justify-between text-sm text-green-600">
+                      <span>VAT (0% - {validatedVatData ? 'EU Reverse Charge' : 'Export'})</span>
+                      <span>{currencySymbol}0.00</span>
+                    </div>
+                  ) : null}
 
                   {/* Shipping - only show if cart has physical products */}
                   {hasPhysicalProducts && (

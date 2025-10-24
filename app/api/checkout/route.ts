@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
     // Prepare order data for WooCommerce REST API v3
     const orderData = {
       payment_method: body.paymentMethod || 'bacs',
-      payment_method_title: body.paymentMethod === 'stripe' ? 'Credit Card (Stripe)' : 
+      payment_method_title: body.paymentMethod === 'stripe' ? 'Credit Card (Stripe)' :
                            body.paymentMethod === 'paypal' ? 'PayPal' : 'Direct Bank Transfer',
       set_paid: false,
       billing: {
@@ -32,6 +32,7 @@ export async function POST(request: NextRequest) {
         country: body.billing.country,
         email: body.billing.email,
         phone: body.billing.phone || '',
+        company: body.isCompany ? body.companyName || '' : '',
       },
       shipping: body.useShippingAsBilling ? {
         first_name: body.billing.firstName,
@@ -68,7 +69,13 @@ export async function POST(request: NextRequest) {
       ],
       customer_note: [
         body.customerNote || '',
-        body.resellerDiscount > 0 ? `\n---\n📊 Reseller Discount Applied: ${body.resellerDiscount.toFixed(2)} ${body.billing?.country === 'US' ? 'USD' : 'EUR'}\nThis is a reseller bulk order with discounted pricing.` : ''
+        body.resellerDiscount > 0 ? `\n---\n📊 Reseller Discount Applied: ${body.resellerDiscount.toFixed(2)} ${body.billing?.country === 'US' ? 'USD' : 'EUR'}\nThis is a reseller bulk order with discounted pricing.` : '',
+        // Add VAT exemption notes
+        body.vatExemptionApplied && body.validatedVatData
+          ? `\n---\n✓ VAT ID Verified: ${body.validatedVatData.vatNumber}\nSteuerfreie innergemeinschaftliche Lieferung gemäß § 4 Nr. 1b i. V. m. § 6a UStG`
+          : body.vatExemptionApplied && !body.validatedVatData && body.billing?.country !== 'DE'
+          ? `\n---\n✓ Export Delivery\nExportlieferung – steuerfrei gemäß § 4 Nr. 1a UStG`
+          : ''
       ].filter(Boolean).join(''),
       customer_id: body.customerId || 0, // Link to WooCommerce customer if logged in
       status: orderStatus,
@@ -102,6 +109,32 @@ export async function POST(request: NextRequest) {
           key: '_is_reseller_order',
           value: 'yes',
         }] : []),
+        // Store B2B / VAT data
+        ...(body.isCompany ? [{
+          key: '_billing_company_name',
+          value: body.companyName || '',
+        }, {
+          key: '_vat_number',
+          value: body.vatNumber || '',
+        }, {
+          key: '_vat_exemption_applied',
+          value: body.vatExemptionApplied ? 'yes' : 'no',
+        }, ...(body.validatedVatData ? [{
+          key: '_vat_validated',
+          value: 'yes',
+        }, {
+          key: '_vat_validation_data',
+          value: JSON.stringify(body.validatedVatData),
+        }, {
+          key: '_vat_company_name',
+          value: body.validatedVatData.name || '',
+        }] : body.vatExemptionApplied && !body.validatedVatData ? [{
+          key: '_vat_export_delivery',
+          value: 'yes',
+        }] : [{
+          key: '_vat_validation_failed',
+          value: 'yes',
+        }])] : []),
       ],
     }
 

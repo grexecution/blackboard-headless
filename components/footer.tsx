@@ -15,16 +15,16 @@ export default function Footer() {
       { label: 'Accessories', href: '/shop#accessories' },
     ],
     learn: [
+      { label: 'All Courses', href: '/courses' },
       { label: 'ProCoach Certification', href: '/procoach' },
       { label: 'Workshops', href: '/workshops' },
       { label: 'Training Videos', href: '/training-videos' },
-      { label: 'Blog', href: '/blog' },
     ],
     support: [
-      { label: 'Contact Us', href: '/contact' },
-      { label: 'Shipping & Returns', href: '/shipping' },
-      { label: 'Size Guide', href: '/size-guide' },
-      { label: 'FAQ', href: '/faq' },
+      { label: 'My Account', href: '/account' },
+      { label: 'Shipping & Delivery', href: '/legal/shipping' },
+      { label: 'Refund Policy', href: '/legal/refund-policy' },
+      { label: 'Imprint', href: '/legal/imprint' },
     ],
     company: [
       { label: 'About Us', href: '/about' },
@@ -87,24 +87,7 @@ export default function Footer() {
               Professional foot training equipment designed by experts, 
               proven by science, trusted by 20,000+ athletes worldwide.
             </p>
-            
-            {/* Newsletter Signup - Mobile Friendly */}
-            <div className="mb-6">
-              <h4 className="text-sm font-semibold mb-3">Get 10% off your first order</h4>
-              <form className="flex flex-col sm:flex-row gap-2">
-                <input
-                  type="email"
-                  placeholder="Enter your email"
-                  className="flex-1 px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm placeholder-gray-500 focus:outline-none focus:border-[#ffed00] transition-colors"
-                />
-                <button
-                  type="submit"
-                  className="px-6 py-2 bg-[#ffed00] text-black rounded-lg font-semibold text-sm hover:bg-[#ffed00]/90 transition-colors whitespace-nowrap"
-                >
-                  Subscribe
-                </button>
-              </form>
-            </div>
+
 
             {/* Social Links */}
             <div className="flex gap-4">
@@ -201,8 +184,8 @@ export default function Footer() {
                 <p className="text-sm font-semibold mb-1">Headquarters</p>
                 <p className="text-xs text-gray-400">
                   BlackBoard Training GmbH<br />
-                  Musterstraße 123<br />
-                  12345 Berlin, Germany
+                  Heerweg 30<br />
+                  D- 40789 Monheim am Rhein, Germany
                 </p>
               </div>
             </div>
@@ -211,7 +194,7 @@ export default function Footer() {
               <div>
                 <p className="text-sm font-semibold mb-1">Phone</p>
                 <div className="text-xs text-gray-400">
-                  <span suppressHydrationWarning>+49 (0) 30 123456</span>
+                  <span suppressHydrationWarning>+49 2173 2651120</span>
                   <br />
                   <span>Mon-Fri: 9:00-18:00 CET</span>
                 </div>
@@ -221,9 +204,7 @@ export default function Footer() {
               <Mail className="h-5 w-5 text-[#ffed00] flex-shrink-0 mt-0.5" />
               <div>
                 <p className="text-sm font-semibold mb-1">Email</p>
-                <div className="text-xs text-gray-400">
-                  <span suppressHydrationWarning>support@blackboard-training.com</span>
-                  <br />
+                <div className="text-xs text-gray-400">s
                   <span suppressHydrationWarning>info@blackboard-training.com</span>
                 </div>
               </div>
@@ -242,20 +223,20 @@ export default function Footer() {
             
             {/* Legal Links - Mobile Friendly */}
             <div className="flex flex-wrap justify-center gap-4 text-xs">
-              <Link href="/privacy" className="text-gray-400 hover:text-white transition-colors">
+              <Link href="/legal/privacy" className="text-gray-400 hover:text-white transition-colors">
                 Privacy Policy
               </Link>
               <span className="text-gray-600">•</span>
-              <Link href="/terms" className="text-gray-400 hover:text-white transition-colors">
-                Terms & Conditions
-              </Link>
-              <span className="text-gray-600">•</span>
-              <Link href="/cookies" className="text-gray-400 hover:text-white transition-colors">
-                Cookie Policy
-              </Link>
-              <span className="text-gray-600">•</span>
-              <Link href="/imprint" className="text-gray-400 hover:text-white transition-colors">
+              <Link href="/legal/imprint" className="text-gray-400 hover:text-white transition-colors">
                 Imprint
+              </Link>
+              <span className="text-gray-600">•</span>
+              <Link href="/legal/shipping" className="text-gray-400 hover:text-white transition-colors">
+                Shipping
+              </Link>
+              <span className="text-gray-600">•</span>
+              <Link href="/legal/refund-policy" className="text-gray-400 hover:text-white transition-colors">
+                Refunds
               </Link>
             </div>
 
