@@ -197,6 +197,7 @@ export function CertificateCompletionCard({ courseId, courseName, lessons }: Cer
               <p className="text-sm text-gray-700">
                 You've completed all lessons. Generate your certificate now!
               </p>
+              <p>It&apos;s a great achievement!</p>
             </div>
             <button
               onClick={generateCertificate}
@@ -252,3 +253,4 @@ export function CertificateCompletionCard({ courseId, courseName, lessons }: Cer
     </div>
   )
 }
+

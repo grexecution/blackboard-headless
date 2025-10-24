@@ -391,9 +391,11 @@ export function CourseDetailClient({ course: initialCourse }: CourseDetailClient
                         key={i}
                         className="w-8 h-8 rounded-full border-2 border-white shadow-sm overflow-hidden bg-gray-200"
                       >
-                        <img
+                        <Image
                           src={avatar.img}
                           alt={`Customer ${i + 1}`}
+                          width={32}
+                          height={32}
                           className="w-full h-full object-cover"
                         />
                       </div>
@@ -705,3 +707,4 @@ export function CourseDetailClient({ course: initialCourse }: CourseDetailClient
     </div>
   )
 }
+

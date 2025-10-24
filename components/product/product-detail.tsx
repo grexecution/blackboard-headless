@@ -482,7 +482,7 @@ export function ProductDetail({ product, variations, workshopProduct }: ProductD
                         key={i}
                         className="w-8 h-8 rounded-full border-2 border-white shadow-sm overflow-hidden bg-gray-200"
                       >
-                        <img
+                        <Image
                           src={avatar.img}
                           alt={`Customer ${i + 1}`}
                           className="w-full h-full object-cover"

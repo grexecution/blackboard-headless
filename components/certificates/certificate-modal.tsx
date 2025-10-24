@@ -201,6 +201,7 @@ export function CertificateModal({
                         <Download className="h-5 w-5" />
                         Download Certificate PDF
                       </button>
+                      <p>Don&apos;t forget to share your certificate!</p>
                     </div>
                   ) : (
                     <div className="text-center">
@@ -241,3 +242,4 @@ export function CertificateModal({
     </Transition.Root>
   )
 }
+
