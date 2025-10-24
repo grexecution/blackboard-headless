@@ -1,4 +1,5 @@
 import { getAllProducts, getProductVariations } from '@/lib/woocommerce/products'
+import { getAllCourses, getCoursesByCategory } from '@/lib/woocommerce/courses'
 import ShopClient from './shop-client'
 
 // Force static generation at build time
@@ -23,12 +24,22 @@ export default async function ShopPage() {
     // Return empty state instead of crashing
     products = []
   }
-  
+
+  // Fetch courses
+  let allCourses: any[] = []
+  try {
+    allCourses = await getAllCourses()
+    console.log(`[Shop] Loaded ${allCourses.length} courses`)
+  } catch (error) {
+    console.error('[Shop] Failed to fetch courses:', error)
+    allCourses = []
+  }
+
   // Categorize products
-  const blackboardProducts = products.filter(p => 
-    p.name.toLowerCase().includes('blackboard') && 
-    (p.name.toLowerCase().includes('basic') || 
-     p.name.toLowerCase().includes('normal') || 
+  const blackboardProducts = products.filter(p =>
+    p.name.toLowerCase().includes('blackboard') &&
+    (p.name.toLowerCase().includes('basic') ||
+     p.name.toLowerCase().includes('normal') ||
      p.name.toLowerCase().includes('professional'))
   ).sort((a, b) => {
     // Ensure Basic/Normal comes before Professional
@@ -38,7 +49,7 @@ export default async function ShopPage() {
     if (!aIsBasic && bIsBasic) return 1
     return 0
   })
-  
+
   const accessories = products.filter(p =>
     p.categories.some((cat: any) =>
       cat.slug === 'zubehor' ||
@@ -47,20 +58,9 @@ export default async function ShopPage() {
     )
   )
 
-  const procoachProducts = products.filter(p =>
-    p.categories.some((cat: any) =>
-      cat.slug === 'procoach' ||
-      cat.slug === 'certifications' ||
-      cat.name.toLowerCase().includes('certification')
-    )
-  )
-
-  const workshopProducts = products.filter(p =>
-    p.categories.some((cat: any) =>
-      cat.slug === 'workshops' ||
-      cat.name.toLowerCase().includes('workshop')
-    )
-  )
+  // Get courses by category
+  const procoachCourses = getCoursesByCategory(allCourses, 'procoach')
+  const workshopCourses = getCoursesByCategory(allCourses, 'workshop')
 
   // Get variations for price ranges
   const getProductWithVariations = async (product: any) => {
@@ -79,8 +79,8 @@ export default async function ShopPage() {
     <ShopClient
       blackboardWithVariations={blackboardWithVariations}
       accessories={accessories}
-      workshopProducts={workshopProducts}
-      procoachProducts={procoachProducts}
+      workshopCourses={workshopCourses}
+      procoachCourses={procoachCourses}
     />
   )
 }

@@ -1,8 +1,10 @@
 'use client'
 
 import { Product, ProductVariation } from '@/lib/woocommerce/products'
+import { Course } from '@/lib/woocommerce/courses'
 import { ProductPriceDisplay } from '@/components/products/ProductPriceDisplay'
 import { useCurrency } from '@/lib/currency-context'
+import CoursesGridSimple from '@/components/courses/courses-grid-simple'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Package, Truck, Award, ChevronRight, Star, Shield, Globe, RefreshCw, Gift, Check } from 'lucide-react'
@@ -10,15 +12,15 @@ import { Package, Truck, Award, ChevronRight, Star, Shield, Globe, RefreshCw, Gi
 interface ShopClientProps {
   blackboardWithVariations: (Product & { variationData?: ProductVariation[] })[]
   accessories: Product[]
-  workshopProducts: Product[]
-  procoachProducts: Product[]
+  workshopCourses: Course[]
+  procoachCourses: Course[]
 }
 
 export default function ShopClient({
   blackboardWithVariations,
   accessories,
-  workshopProducts,
-  procoachProducts
+  workshopCourses,
+  procoachCourses
 }: ShopClientProps) {
   const { getCurrencySymbol } = useCurrency()
   const currencySymbol = getCurrencySymbol()
@@ -178,57 +180,115 @@ export default function ShopClient({
         </section>
       )}
 
-      {/* Accessories Section - Modern Grid */}
+      {/* Accessories Section - Premium Design */}
       {accessories.length > 0 && (
-        <section className="py-16 lg:py-24 bg-gray-50">
+        <section className="py-16 lg:py-24 bg-gradient-to-br from-gray-50 via-white to-gray-50">
           <div className="max-w-screen-xl mx-auto px-4 lg:px-6">
             <div className="text-center mb-12">
-              <h2 className="text-3xl md:text-4xl font-bold mb-4">Accessories & Replacement Parts</h2>
-              <p className="text-lg text-gray-600">Keep your BlackBoard in perfect condition</p>
+              <div className="inline-flex items-center gap-2 bg-[#ffed00]/10 px-4 py-2 rounded-full mb-4">
+                <Package className="h-4 w-4 text-[#ffed00]" />
+                <span className="text-sm font-semibold text-gray-700">Premium Add-Ons</span>
+              </div>
+              <h2 className="text-3xl md:text-4xl font-bold mb-4">Essential Accessories</h2>
+              <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+                Enhance your training experience with our carefully selected accessories
+              </p>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-              {accessories.map((product) => (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 lg:gap-6">
+              {accessories.map((product, index) => (
                 <Link
                   key={product.id}
                   href={`/product/${product.slug}`}
-                  className="group bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-all"
+                  className="group relative bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-2xl transition-all duration-300 hover:-translate-y-1"
                 >
-                  <div className="relative aspect-square bg-gray-100">
+                  {/* Gradient Border Effect */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-[#ffed00]/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl"></div>
+
+                  {/* Sale Badge */}
+                  {product.on_sale && (
+                    <div className="absolute top-3 left-3 z-10">
+                      <span className="bg-gradient-to-r from-red-500 to-red-600 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-lg animate-pulse">
+                        SALE
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Product Image */}
+                  <div className="relative aspect-square bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden">
                     {product.images[0] && (
                       <Image
                         src={product.images[0].src}
                         alt={product.images[0].alt || getDisplayName(product.name)}
                         fill
-                        className="object-cover group-hover:scale-105 transition-transform duration-300"
+                        className="object-cover transition-transform duration-500 group-hover:scale-110"
                       />
                     )}
-                    {product.on_sale && (
-                      <span className="absolute top-2 left-2 bg-red-500 text-white px-2 py-1 rounded text-xs font-semibold">
-                        SALE
-                      </span>
-                    )}
+
+                    {/* Hover Overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/0 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                      <div className="absolute bottom-3 left-3 right-3">
+                        <div className="flex items-center justify-center gap-2 text-white">
+                          <span className="text-sm font-semibold">View Details</span>
+                          <ChevronRight className="h-4 w-4" />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Index Badge - Top Right */}
+                    <div className="absolute top-3 right-3">
+                      <div className="w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg">
+                        <span className="text-xs font-bold text-gray-700">{index + 1}</span>
+                      </div>
+                    </div>
                   </div>
 
-                  <div className="p-4">
-                    <h3 className="font-semibold text-sm mb-2 line-clamp-2 group-hover:text-[#ffed00] transition-colors">
+                  {/* Product Info */}
+                  <div className="p-4 relative">
+                    <h3 className="font-bold text-sm mb-3 line-clamp-2 min-h-[2.5rem] group-hover:text-[#ffed00] transition-colors">
                       {getDisplayName(product.name)}
                     </h3>
 
                     <div className="flex items-center justify-between">
-                      <ProductPriceDisplay product={product} size="sm" />
-                      <ChevronRight className="h-4 w-4 text-gray-400 group-hover:text-[#ffed00] transition-colors" />
+                      <div className="flex-1">
+                        <ProductPriceDisplay product={product} size="sm" />
+                      </div>
+                      <div className="w-8 h-8 rounded-full bg-gray-100 group-hover:bg-[#ffed00] flex items-center justify-center transition-colors duration-300">
+                        <ChevronRight className="h-4 w-4 text-gray-600 group-hover:text-black transition-colors" />
+                      </div>
+                    </div>
+
+                    {/* Stock Indicator */}
+                    <div className="mt-3 flex items-center gap-1.5">
+                      <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
+                      <span className="text-xs text-gray-500">In Stock</span>
                     </div>
                   </div>
                 </Link>
               ))}
+            </div>
+
+            {/* Trust Badge Below */}
+            <div className="mt-12 flex flex-wrap items-center justify-center gap-6 text-sm text-gray-600">
+              <div className="flex items-center gap-2">
+                <Check className="h-4 w-4 text-green-500" />
+                <span>Fast Shipping</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Check className="h-4 w-4 text-green-500" />
+                <span>Premium Quality</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Check className="h-4 w-4 text-green-500" />
+                <span>Secure Payment</span>
+              </div>
             </div>
           </div>
         </section>
       )}
 
       {/* Workshops Section */}
-      {workshopProducts.length > 0 && (
+      {workshopCourses.length > 0 && (
         <section className="py-16 lg:py-24">
           <div className="max-w-screen-xl mx-auto px-4 lg:px-6">
             <div className="text-center mb-12">
@@ -236,54 +296,23 @@ export default function ShopClient({
               <p className="text-lg text-gray-600">Learn from experts and enhance your skills</p>
             </div>
 
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {workshopProducts.slice(0, 3).map((product) => (
-                <div key={product.id} className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all">
-                  <div className="relative h-48 bg-gradient-to-br from-blue-500 to-purple-600">
-                    {product.images[0] && (
-                      <Image
-                        src={product.images[0].src}
-                        alt={product.images[0].alt || getDisplayName(product.name)}
-                        fill
-                        className="object-cover"
-                      />
-                    )}
-                    <div className="absolute inset-0 bg-black/40"></div>
-                    <div className="absolute bottom-4 left-4 right-4">
-                      <h3 className="font-bold text-xl text-white">
-                        {getDisplayName(product.name)}
-                      </h3>
-                    </div>
-                  </div>
+            <CoursesGridSimple initialCourses={workshopCourses} />
 
-                  <div className="p-6">
-                    <div className="mb-4">
-                      <ProductPriceDisplay product={product} size="lg" />
-                    </div>
-
-                    {product.short_description && (
-                      <div
-                        className="text-sm text-gray-600 mb-4 line-clamp-3"
-                        dangerouslySetInnerHTML={{ __html: product.short_description }}
-                      />
-                    )}
-
-                    <Link
-                      href={`/product/${product.slug}`}
-                      className="block w-full text-center bg-black text-white px-4 py-3 rounded-xl font-semibold hover:bg-gray-800 transition-colors"
-                    >
-                      Learn More
-                    </Link>
-                  </div>
-                </div>
-              ))}
+            <div className="text-center mt-8">
+              <Link
+                href="/workshops"
+                className="inline-flex items-center gap-2 text-[#ffed00] hover:text-[#ffed00]/80 font-semibold"
+              >
+                View All Workshops
+                <ChevronRight className="h-5 w-5" />
+              </Link>
             </div>
           </div>
         </section>
       )}
 
       {/* ProCoach Section */}
-      {procoachProducts.length > 0 && (
+      {procoachCourses.length > 0 && (
         <section className="py-16 lg:py-24 bg-gray-50">
           <div className="max-w-screen-xl mx-auto px-4 lg:px-6">
             <div className="flex items-center justify-between mb-12">
@@ -300,40 +329,7 @@ export default function ShopClient({
               </Link>
             </div>
 
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {procoachProducts.slice(0, 3).map((product) => (
-                <div key={product.id} className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all">
-                  <div className="relative h-56 bg-gradient-to-br from-[#ffed00] to-yellow-600">
-                    {product.images[0] && (
-                      <Image
-                        src={product.images[0].src}
-                        alt={product.images[0].alt || getDisplayName(product.name)}
-                        fill
-                        className="object-cover"
-                      />
-                    )}
-                    <div className="absolute top-4 left-4">
-                      <span className="bg-black text-white px-3 py-1 rounded-full text-sm font-semibold">
-                        CERTIFICATION
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="p-6">
-                    <h3 className="font-bold text-xl mb-3">{getDisplayName(product.name)}</h3>
-                    <div className="text-3xl font-bold text-[#ffed00] mb-4">
-                      <ProductPriceDisplay product={product} />
-                    </div>
-                    <Link
-                      href={`/product/${product.slug}`}
-                      className="block w-full text-center bg-black text-white px-4 py-3 rounded-xl font-semibold hover:bg-gray-800 transition-colors"
-                    >
-                      Enroll Now
-                    </Link>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <CoursesGridSimple initialCourses={procoachCourses} />
 
             <div className="text-center mt-8 md:hidden">
               <Link

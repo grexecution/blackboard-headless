@@ -15,9 +15,6 @@ export default function CoursesGridSimple({ initialCourses }: CoursesGridSimpleP
   // Get enrolled course IDs from session (cached at login) - wrapped in useMemo
   const enrolledCourseIds = useMemo(() => session?.enrolledCourseIds || [], [session?.enrolledCourseIds])
 
-  console.log('[CoursesGridSimple] Session status:', status)
-  console.log('[CoursesGridSimple] Enrolled course IDs from session:', enrolledCourseIds)
-
   // Update courses with access based on session's enrolled course IDs
   const courses = useMemo(() => {
     if (!initialCourses || !Array.isArray(initialCourses)) return []

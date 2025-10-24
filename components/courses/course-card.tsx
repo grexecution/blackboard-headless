@@ -144,7 +144,7 @@ export default function CourseCard({ course }: CourseCardProps) {
             {/* Price & CTA */}
             <div className="mt-4 pt-4 border-t">
               {/* Action Buttons */}
-              <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row gap-2">
                 {isLocked && !hasAccess ? (
                   /* Not purchased - show view details button */
                   <Link

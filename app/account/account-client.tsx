@@ -15,6 +15,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { getAllCourses, getUserProgress, checkCourseAccess } from '@/lib/lms/api'
 import CoursesGridSimple from '@/components/courses/courses-grid-simple'
+import CoursesGridWithTrainingCenter from '@/components/courses/courses-grid-with-training-center'
 import { ResellerBenefitsTable } from '@/components/reseller/reseller-benefits-table'
 
 interface AccountClientProps {
@@ -306,7 +307,7 @@ export default function AccountClient({ initialCourses, initialOrders }: Account
                   </button>
                 </div>
                 {courses.length > 0 ? (
-                  <CoursesGridSimple initialCourses={courses.slice(0, 3)} />
+                  <CoursesGridWithTrainingCenter initialCourses={courses.slice(0, 3)} />
                 ) : (
                   <div className="bb-empty-state">
                     <BookOpen className="w-16 h-16 mx-auto mb-4 text-gray-300" />
@@ -346,27 +347,209 @@ export default function AccountClient({ initialCourses, initialOrders }: Account
                           <div className="bb-order-info">
                             <div className="bb-order-number">#{order.number}</div>
                             <div className="bb-order-date">
-                              {new Date(order.date_created).toLocaleDateString()}
+                              {new Date(order.date_created).toLocaleDateString('en-GB', {
+                                day: 'numeric',
+                                month: 'long',
+                                year: 'numeric'
+                              })}
                             </div>
                           </div>
                           <div className={`bb-order-status bb-status-${order.status}`}>
                             {order.status}
                           </div>
                         </div>
-                        <div className="bb-order-footer">
+
+                        {/* Order Summary Info */}
+                        <div className="mt-3 text-sm text-gray-600 space-y-1">
+                          {order.shipping && (order.shipping.address_1 || order.shipping.first_name) ? (
+                            <div className="flex items-start gap-2">
+                              <MapPin className="w-4 h-4 mt-0.5 text-gray-400" />
+                              <div>
+                                <span className="text-gray-500">Shipped to:</span>{' '}
+                                {order.shipping.first_name && order.shipping.last_name && (
+                                  <span>{order.shipping.first_name} {order.shipping.last_name}, </span>
+                                )}
+                                {order.shipping.address_1 && (
+                                  <>
+                                    {order.shipping.address_1}
+                                    {order.shipping.city && `, ${order.shipping.city}`}
+                                    {order.shipping.state && `, ${order.shipping.state}`}
+                                    {order.shipping.postcode && ` ${order.shipping.postcode}`}
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          ) : order.billing && (order.billing.address_1 || order.billing.first_name) ? (
+                            <div className="flex items-start gap-2">
+                              <MapPin className="w-4 h-4 mt-0.5 text-gray-400" />
+                              <div>
+                                <span className="text-gray-500">Billed to:</span>{' '}
+                                {order.billing.first_name && order.billing.last_name && (
+                                  <span>{order.billing.first_name} {order.billing.last_name}, </span>
+                                )}
+                                {order.billing.address_1 && (
+                                  <>
+                                    {order.billing.address_1}
+                                    {order.billing.city && `, ${order.billing.city}`}
+                                    {order.billing.state && `, ${order.billing.state}`}
+                                    {order.billing.postcode && ` ${order.billing.postcode}`}
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          ) : null}
+
+                          {order.line_items && order.line_items.length > 0 && (
+                            <div className="flex items-center gap-2">
+                              <Package className="w-4 h-4 text-gray-400" />
+                              <span className="text-gray-500">
+                                {order.line_items.length} item{order.line_items.length !== 1 ? 's' : ''}
+                                {order.line_items.length <= 2 && (
+                                  <>: {order.line_items.map((item: any) => item.name).join(', ')}</>
+                                )}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="bb-order-footer mt-4">
                           <div className="bb-order-total">{order.total} {order.currency}</div>
                           <button
-                            onClick={() => {
-                              setActiveTab('orders')
-                              if (orders.length === 0 && !ordersLoading) {
-                                fetchOrders()
-                              }
-                            }}
-                            className="bb-order-link"
+                            onClick={() => setExpandedOrder(expandedOrder === order.id ? null : order.id)}
+                            className="bb-details-button"
                           >
-                            View Details <ChevronRight className="w-4 h-4" />
+                            {expandedOrder === order.id ? 'Hide Details' : 'View Details'}
+                            <ChevronRight className={`w-4 h-4 transition-transform ${expandedOrder === order.id ? 'rotate-90' : ''}`} />
                           </button>
                         </div>
+
+                        {/* Expanded Order Details */}
+                        {expandedOrder === order.id && (
+                          <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            className="mt-4 pt-4 border-t border-gray-200 space-y-4"
+                          >
+                            {/* Order Items */}
+                            {order.line_items && order.line_items.length > 0 && (
+                              <div>
+                                <h4 className="font-semibold text-bb-dark mb-3 flex items-center gap-2">
+                                  <Package className="w-4 h-4" />
+                                  Order Items ({order.line_items.length})
+                                </h4>
+                                <div className="space-y-2">
+                                  {order.line_items.map((item: any) => (
+                                    <div key={item.id} className="bg-gray-50 rounded-lg p-3">
+                                      <div className="flex items-center justify-between mb-2">
+                                        <div className="flex items-center gap-3">
+                                          <div className="w-8 h-8 bg-bb-primary/10 rounded flex items-center justify-center text-xs font-bold">
+                                            {item.quantity}x
+                                          </div>
+                                          <div>
+                                            <div className="font-medium text-bb-dark">{item.name}</div>
+                                            {item.sku && (
+                                              <div className="text-xs text-gray-500">SKU: {item.sku}</div>
+                                            )}
+                                          </div>
+                                        </div>
+                                        <div className="text-right">
+                                          <div className="font-semibold text-bb-dark">{item.total} {order.currency}</div>
+                                          {item.quantity > 1 && (
+                                            <div className="text-xs text-gray-500">
+                                              {(parseFloat(item.total) / item.quantity).toFixed(2)} each
+                                            </div>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Payment Method */}
+                            {order.payment_method_title && (
+                              <div className="bg-blue-50 rounded-lg p-3">
+                                <div className="flex items-center gap-2 text-sm">
+                                  <CreditCard className="w-4 h-4 text-blue-600" />
+                                  <span className="font-medium text-bb-dark">Payment Method:</span>
+                                  <span className="text-gray-600">{order.payment_method_title}</span>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Addresses */}
+                            <div className="grid md:grid-cols-2 gap-4">
+                              {/* Billing Address */}
+                              {order.billing && (order.billing.address_1 || order.billing.first_name) && (
+                                <div className="bg-gray-50 rounded-lg p-4">
+                                  <h5 className="font-semibold text-bb-dark mb-2 flex items-center gap-2">
+                                    <MapPin className="w-4 h-4" />
+                                    Billing Address
+                                  </h5>
+                                  <div className="text-sm text-gray-600 space-y-1">
+                                    {order.billing.first_name && order.billing.last_name && (
+                                      <div>{order.billing.first_name} {order.billing.last_name}</div>
+                                    )}
+                                    {order.billing.company && <div>{order.billing.company}</div>}
+                                    {order.billing.address_1 && <div>{order.billing.address_1}</div>}
+                                    {order.billing.address_2 && <div>{order.billing.address_2}</div>}
+                                    <div>
+                                      {order.billing.postcode && <span>{order.billing.postcode} </span>}
+                                      {order.billing.city && <span>{order.billing.city}</span>}
+                                    </div>
+                                    {order.billing.state && <div>{order.billing.state}</div>}
+                                    {order.billing.country && <div>{order.billing.country}</div>}
+                                    {order.billing.email && (
+                                      <div className="flex items-center gap-1 pt-2 border-t border-gray-200 mt-2">
+                                        <Mail className="w-3 h-3" />
+                                        <span>{order.billing.email}</span>
+                                      </div>
+                                    )}
+                                    {order.billing.phone && (
+                                      <div className="flex items-center gap-1">
+                                        <Phone className="w-3 h-3" />
+                                        <span>{order.billing.phone}</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Shipping Address */}
+                              {order.shipping && (order.shipping.address_1 || order.shipping.first_name) && (
+                                <div className="bg-gray-50 rounded-lg p-4">
+                                  <h5 className="font-semibold text-bb-dark mb-2 flex items-center gap-2">
+                                    <Package className="w-4 h-4" />
+                                    Shipping Address
+                                  </h5>
+                                  <div className="text-sm text-gray-600 space-y-1">
+                                    {order.shipping.first_name && order.shipping.last_name && (
+                                      <div>{order.shipping.first_name} {order.shipping.last_name}</div>
+                                    )}
+                                    {order.shipping.company && <div>{order.shipping.company}</div>}
+                                    {order.shipping.address_1 && <div>{order.shipping.address_1}</div>}
+                                    {order.shipping.address_2 && <div>{order.shipping.address_2}</div>}
+                                    <div>
+                                      {order.shipping.postcode && <span>{order.shipping.postcode} </span>}
+                                      {order.shipping.city && <span>{order.shipping.city}</span>}
+                                    </div>
+                                    {order.shipping.state && <div>{order.shipping.state}</div>}
+                                    {order.shipping.country && <div>{order.shipping.country}</div>}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Customer Note */}
+                            {order.customer_note && (
+                              <div className="bg-yellow-50 border-l-4 border-yellow-400 rounded-lg p-4">
+                                <h5 className="font-semibold text-bb-dark mb-2">Customer Note</h5>
+                                <p className="text-sm text-gray-600">{order.customer_note}</p>
+                              </div>
+                            )}
+                          </motion.div>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -640,52 +823,6 @@ export default function AccountClient({ initialCourses, initialOrders }: Account
               animate={{ opacity: 1 }}
               className="space-y-6"
             >
-              {/* Debug Info */}
-              <details className="bg-yellow-50 border-2 border-yellow-400 rounded-xl p-4">
-                <summary className="font-bold cursor-pointer flex items-center gap-2">
-                  🔍 Debug: Course Access Information
-                  <span className="text-sm font-normal text-gray-600 ml-2">
-                    (User: {session.user.email})
-                  </span>
-                </summary>
-                <div className="mt-4 space-y-4">
-                  <div className="grid md:grid-cols-3 gap-4">
-                    <div className="bg-white rounded-lg p-4 border border-gray-200">
-                      <div className="text-2xl font-bold text-gray-900">{courses.length}</div>
-                      <div className="text-sm text-gray-600">Courses with Access</div>
-                    </div>
-                  </div>
-
-                  {courses.length > 0 && (
-                    <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                      <h4 className="font-bold mb-3 text-green-800">Your Purchased Courses:</h4>
-                      <ul className="space-y-2">
-                        {courses.map((course: any) => (
-                          <li key={course.id} className="flex items-start gap-2 text-sm">
-                            <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
-                            <div className="flex-1">
-                              <div className="font-semibold">{course.title}</div>
-                              <div className="text-xs text-gray-600 space-y-0.5">
-                                <div>Access Reason: <span className="font-medium">{course.access?.reason || 'N/A'}</span></div>
-                                {course.access?.product_id && (
-                                  <div>Billing Product: <span className="font-medium">{course.access.product_id}</span></div>
-                                )}
-                                {course.access?.access_product_ids && course.access.access_product_ids.length > 0 && (
-                                  <div>Access Products: <span className="font-medium">{course.access.access_product_ids.join(', ')}</span></div>
-                                )}
-                                {course.access?.purchased_product_id && (
-                                  <div className="text-green-700">✓ Purchased: <span className="font-medium">{course.access.purchased_product_id}</span></div>
-                                )}
-                              </div>
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </div>
-              </details>
-
               {/* Courses Section */}
               <div className="bb-dashboard-section">
                 <div className="bb-section-header">
@@ -699,7 +836,7 @@ export default function AccountClient({ initialCourses, initialOrders }: Account
                   </Link>
                 </div>
                 {courses.length > 0 ? (
-                  <CoursesGridSimple initialCourses={courses} />
+                  <CoursesGridWithTrainingCenter initialCourses={courses} />
                 ) : (
                   <div className="bb-empty-state">
                     <BookOpen className="w-16 h-16 mx-auto mb-4" />

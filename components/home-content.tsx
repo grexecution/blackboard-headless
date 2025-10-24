@@ -231,7 +231,7 @@ export default function HomeContent({ blackboardProducts, blackboardWithVariatio
       </section>
 
       {/* Hero Section - Best of Both Worlds */}
-      <section className="relative min-h-[90vh] md:min-h-[90vh] flex items-center overflow-hidden">
+      <section className="relative min-h-[80vh] md:min-h-[90vh] flex items-center overflow-hidden">
         {/* Video Background */}
         <div className="absolute inset-0 w-full h-full">
           <video
