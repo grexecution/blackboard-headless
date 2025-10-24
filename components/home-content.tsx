@@ -90,48 +90,28 @@ export default function HomeContent({ blackboardProducts, blackboardWithVariatio
       `
     },
     {
-      name: "Armin Harrasser",
+      name: "Armin Harasser",
       title: "Sportwissenschaftler (M.Sc.)",
-      shortBio: "Seit 7 Jahren unterrichte ich weltweit Therapiemethoden, speziell mit dem Fußtrainingsgerät Dr. Kai Olms zusammen und behandle Olympiaathleten.",
+      image: "/images/team/armin_harasser.jpg",
+      shortBio: "Seit 7 Jahren unterrichte ich weltweit Therapiemethoden, arbeite mit dem Fußchirurgen Dr. Kai Olms zusammen und behandle Olympiaathleten wie Galen Rupp und Dimitry Ovtcharov. Als nächstes werde ich in Japan und Südkorea unterrichten.",
       fullContent: `
         <h3><strong>Internationale Expertise</strong></h3>
-        <p>Seit 7 Jahren unterrichte ich weltweit Therapiemethoden, speziell mit dem Fußtrainingsgerät. Meine Zusammenarbeit mit Dr. Kai Olms hat zu innovativen Behandlungsansätzen geführt, die heute international anerkannt sind.</p>
+        <p>Seit 7 Jahren unterrichte ich weltweit Therapiemethoden, speziell mit dem Fußtrainingsgerät. Meine Zusammenarbeit mit dem Fußchirurgen Dr. Kai Olms hat zu innovativen Behandlungsansätzen geführt, die heute international anerkannt sind.</p>
 
         <h3><strong>Arbeit mit Spitzensportlern</strong></h3>
-        <p>Zu meinen Klienten zählen Olympiaathleten wie Glenn Rupp (USA, Marathon) und Dimitrij Ovtcharov (Deutschland, Tischtennis). Die Arbeit mit diesen Ausnahmesportlern hat mir gezeigt, wie wichtig die Fußgesundheit für Höchstleistungen ist.</p>
+        <p>Zu meinen Klienten zählen Olympiaathleten wie Galen Rupp (USA, Marathon) und Dimitry Ovtcharov (Deutschland, Tischtennis). Die Arbeit mit diesen Ausnahmesportlern hat mir gezeigt, wie wichtig die Fußgesundheit für Höchstleistungen ist.</p>
 
         <h3><strong>Internationale Lehrtätigkeit</strong></h3>
         <p>Als nächstes werde ich in Japan und Südkorea unterrichten. Die große Nachfrage aus Asien zeigt, dass das BlackBoard-Konzept weltweit auf Interesse stößt. Besonders im asiatischen Raum wird der präventive Aspekt des Fußtrainings sehr geschätzt.</p>
+
+        <h3><strong>Zusammenarbeit mit Dr. Kai Olms</strong></h3>
+        <p>Die enge Kooperation mit dem renommierten Fußchirurgen Dr. Kai Olms ermöglicht es mir, modernste medizinische Erkenntnisse direkt in praktische Trainingskonzepte zu übersetzen. Diese Verbindung von Wissenschaft und Praxis macht unsere Arbeit so effektiv.</p>
 
         <h3><strong>Forschung & Entwicklung</strong></h3>
         <p>Neben meiner praktischen Arbeit bin ich auch in der Forschung tätig. Aktuelle Studien zur Wirksamkeit des BlackBoard-Trainings zeigen signifikante Verbesserungen in Balance, Kraft und Verletzungsprävention.</p>
 
         <h3><strong>Vision</strong></h3>
         <p>Mein Ziel ist es, das Bewusstsein für die Bedeutung der Fußgesundheit weltweit zu erhöhen und mit dem BlackBoard jedem Menschen ein effektives Trainingstool zur Verfügung zu stellen.</p>
-      `
-    },
-    {
-      name: "Armin Harasser",
-      title: "Physiotherapeut & Sportphysiotherapeut",
-      image: "/images/team/armin_harasser.jpg",
-      shortBio: "Als Physiotherapeut und Sportphysiotherapeut mit über 15 Jahren Erfahrung in der Betreuung von Profisportlern und Patienten mit komplexen Beschwerdebildern.",
-      fullContent: `
-        <h3><strong>Beruflicher Werdegang</strong></h3>
-        <p>Als Physiotherapeut und Sportphysiotherapeut habe ich über 15 Jahre Erfahrung in der Betreuung von Profisportlern und Patienten mit komplexen Beschwerdebildern gesammelt. Die Arbeit mit dem BlackBoard ist für mich ein essentieller Bestandteil moderner Therapie.</p>
-
-        <h3><strong>Spezialisierungen</strong></h3>
-        <ul>
-          <li>Sportphysiotherapie</li>
-          <li>Funktionelle Bewegungsanalyse</li>
-          <li>Rehabilitationstraining</li>
-          <li>Präventive Therapiekonzepte</li>
-        </ul>
-
-        <h3><strong>Ansatz</strong></h3>
-        <p>In meiner Praxis kombiniere ich traditionelle physiotherapeutische Methoden mit innovativen Trainingsansätzen. Das BlackBoard hat sich dabei als unverzichtbares Tool erwiesen, um nachhaltige Erfolge in der Behandlung und Prävention zu erzielen.</p>
-
-        <h3><strong>Philosophie</strong></h3>
-        <p>Jeder Patient ist einzigartig und benötigt einen individuell angepassten Behandlungsplan. Die Kombination aus manueller Therapie und gezieltem Fußtraining bildet dabei die Grundlage für langfristige Gesundheit und Leistungsfähigkeit.</p>
       `
     }
   ]
