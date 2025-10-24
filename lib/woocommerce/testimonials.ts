@@ -9,6 +9,10 @@ export interface Testimonial {
     rendered: string
   }
   featured_media: number
+  featured_image?: {
+    url: string
+    alt: string
+  }
   acf?: {
     rating?: number
     reviewer_name?: string
@@ -72,7 +76,12 @@ export function getEnglishTestimonials(testimonials: Testimonial[]): Testimonial
  * Get testimonial image URL
  */
 export function getTestimonialImage(testimonial: Testimonial): string {
-  // Try _embedded first
+  // Try featured_image field first (added by plugin)
+  if (testimonial.featured_image?.url) {
+    return testimonial.featured_image.url
+  }
+
+  // Try _embedded as fallback
   if (testimonial._embedded?.['wp:featuredmedia']?.[0]?.source_url) {
     return testimonial._embedded['wp:featuredmedia'][0].source_url
   }

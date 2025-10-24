@@ -394,19 +394,7 @@ export default function HomeContent({ blackboardProducts, blackboardWithVariatio
           </div>
         </div>
 
-        {/* Scroll Indicator - Clickable - Mobile optimized */}
-        <button
-          onClick={() => {
-            const problemSection = document.querySelector('section:nth-of-type(2)')
-            problemSection?.scrollIntoView({ behavior: 'smooth' })
-          }}
-          className="absolute bottom-6 sm:bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce cursor-pointer hover:scale-110 transition-transform hidden md:block"
-          aria-label="Scroll to next section"
-        >
-          <div className="w-6 h-10 border-2 border-white rounded-full flex justify-center">
-            <div className="w-1 h-3 bg-white rounded-full mt-2 animate-pulse"></div>
-          </div>
-        </button>
+
       </section>
 
       {/* Problem/Solution Section - Design A */}
@@ -950,14 +938,14 @@ export default function HomeContent({ blackboardProducts, blackboardWithVariatio
 
             <div className="grid md:grid-cols-3 gap-8">
               {instructors.map((instructor, index) => (
-                <div key={index} className="bg-gray-900 rounded-2xl overflow-hidden group hover:transform hover:scale-105 transition-all duration-300">
+                <div key={index} className="bg-gray-900 rounded-2xl overflow-hidden group hover:transform hover:scale-[1.02] transition-all duration-300">
                   <div className="aspect-[4/5] bg-gray-800 relative overflow-hidden">
                     {instructor.image && (
                       <Image
                         src={instructor.image}
                         alt={instructor.name}
                         fill
-                        className="object-cover group-hover:scale-110 transition-transform duration-500"
+                        className="object-cover"
                         sizes="(max-width: 768px) 100vw, 33vw"
                       />
                     )}
@@ -1219,35 +1207,6 @@ export default function HomeContent({ blackboardProducts, blackboardWithVariatio
       </section>
 */}
 
-      {/* Final CTA Section */}
-      <section className="py-20 bg-black text-white">
-        <div className="max-w-screen-xl mx-auto px-4 lg:px-6">
-          <div className="text-center">
-            <h2 className="text-4xl md:text-5xl font-bold mb-6">
-              Ready to Transform Your <span className="text-[#ffed00]">Foundation</span>?
-            </h2>
-            <p className="text-xl text-gray-400 mb-8">
-              Join thousands of athletes and professionals who have discovered
-              the power of proper foot function.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link
-                href="/shop"
-                className="inline-flex items-center justify-center gap-2 bg-[#ffed00] text-black px-8 py-4 rounded-full font-bold text-lg hover:bg-[#ffed00]/90 transition-all shadow-xl"
-              >
-                Shop BlackBoard
-                <ArrowRight className="h-5 w-5" />
-              </Link>
-              <Link
-                href="/contact"
-                className="inline-flex items-center justify-center gap-2 border-2 border-white text-white px-8 py-4 rounded-full font-bold text-lg hover:bg-white hover:text-black transition-all"
-              >
-                Contact Us
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
     </div>
   )
 }
