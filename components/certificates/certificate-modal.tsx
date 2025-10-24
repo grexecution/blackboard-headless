@@ -1,0 +1,243 @@
+'use client'
+
+import { Fragment, useState } from 'react'
+import { Dialog, Transition } from '@headlessui/react'
+import { X, Trophy, Award, Download, CheckCircle, Circle, Loader2 } from 'lucide-react'
+import { motion } from 'framer-motion'
+
+interface Lesson {
+  title: string
+  duration?: string
+  completed: boolean
+}
+
+interface CertificateModalProps {
+  isOpen: boolean
+  onClose: () => void
+  courseName: string
+  lessons: Lesson[]
+  progress: number
+  onGenerateCertificate: () => Promise<void>
+  certificateGenerated: boolean
+}
+
+export function CertificateModal({
+  isOpen,
+  onClose,
+  courseName,
+  lessons,
+  progress,
+  onGenerateCertificate,
+  certificateGenerated
+}: CertificateModalProps) {
+  const [isGenerating, setIsGenerating] = useState(false)
+  const completedCount = lessons.filter(l => l.completed).length
+  const totalCount = lessons.length
+  const isComplete = progress === 100
+
+  const handleGenerate = async () => {
+    setIsGenerating(true)
+    try {
+      await onGenerateCertificate()
+    } finally {
+      setIsGenerating(false)
+    }
+  }
+
+  return (
+    <Transition.Root show={isOpen} as={Fragment}>
+      <Dialog as="div" className="relative z-50" onClose={onClose}>
+        <Transition.Child
+          as={Fragment}
+          enter="ease-out duration-300"
+          enterFrom="opacity-0"
+          enterTo="opacity-100"
+          leave="ease-in duration-200"
+          leaveFrom="opacity-100"
+          leaveTo="opacity-0"
+        >
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity" />
+        </Transition.Child>
+
+        <div className="fixed inset-0 z-10 overflow-y-auto">
+          <div className="flex min-h-full items-center justify-center p-4">
+            <Transition.Child
+              as={Fragment}
+              enter="ease-out duration-300"
+              enterFrom="opacity-0 scale-95"
+              enterTo="opacity-100 scale-100"
+              leave="ease-in duration-200"
+              leaveFrom="opacity-100 scale-100"
+              leaveTo="opacity-0 scale-95"
+            >
+              <Dialog.Panel className="relative transform overflow-hidden rounded-2xl bg-white shadow-2xl transition-all w-full max-w-2xl">
+                {/* Header */}
+                <div className="bg-gradient-to-r from-yellow-400 to-yellow-500 px-6 py-5">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="bg-white/20 backdrop-blur-sm rounded-full p-2">
+                        <Trophy className="h-6 w-6 text-white" />
+                      </div>
+                      <div>
+                        <Dialog.Title className="text-xl font-bold text-white">
+                          Course Certificate
+                        </Dialog.Title>
+                        <p className="text-sm text-white/90">{courseName}</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={onClose}
+                      className="rounded-full p-2 hover:bg-white/20 transition-colors"
+                    >
+                      <X className="h-5 w-5 text-white" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Progress Bar */}
+                <div className="px-6 py-4 bg-gray-50 border-b">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-semibold text-gray-700">
+                      Overall Progress
+                    </span>
+                    <span className="text-sm font-bold text-yellow-600">
+                      {progress}%
+                    </span>
+                  </div>
+                  <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
+                    <motion.div
+                      className="h-full bg-gradient-to-r from-yellow-400 to-yellow-500"
+                      initial={{ width: 0 }}
+                      animate={{ width: `${progress}%` }}
+                      transition={{ duration: 0.5, ease: 'easeOut' }}
+                    />
+                  </div>
+                  <p className="text-xs text-gray-600 mt-2">
+                    {completedCount} of {totalCount} lessons completed
+                  </p>
+                </div>
+
+                {/* Lesson List */}
+                <div className="px-6 py-4 max-h-96 overflow-y-auto">
+                  <h3 className="font-semibold text-gray-900 mb-3">Lesson Completion</h3>
+                  <div className="space-y-2">
+                    {lessons.map((lesson, index) => (
+                      <div
+                        key={index}
+                        className={`flex items-center gap-3 p-3 rounded-lg border ${
+                          lesson.completed
+                            ? 'bg-green-50 border-green-200'
+                            : 'bg-white border-gray-200'
+                        }`}
+                      >
+                        {lesson.completed ? (
+                          <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0" />
+                        ) : (
+                          <Circle className="h-5 w-5 text-gray-400 flex-shrink-0" />
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className={`text-sm font-medium ${lesson.completed ? 'text-green-900' : 'text-gray-900'}`}>
+                            {lesson.title}
+                          </p>
+                          {lesson.duration && (
+                            <p className="text-xs text-gray-500">{lesson.duration}</p>
+                          )}
+                        </div>
+                        {lesson.completed && (
+                          <span className="text-xs font-semibold text-green-600 bg-green-100 px-2 py-1 rounded-full whitespace-nowrap">
+                            ✓ Complete
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Certificate Preview / Action */}
+                <div className="px-6 py-6 bg-gray-50 border-t">
+                  {!isComplete ? (
+                    <div className="text-center">
+                      <p className="text-sm text-gray-600 mb-4">
+                        Complete all lessons to unlock your certificate
+                      </p>
+                      {/* Blurred Certificate Preview */}
+                      <div className="relative rounded-lg overflow-hidden border-2 border-gray-300">
+                        <div className="absolute inset-0 backdrop-blur-md bg-white/50 z-10 flex items-center justify-center">
+                          <div className="text-center">
+                            <Award className="h-12 w-12 text-gray-400 mx-auto mb-2" />
+                            <p className="text-sm font-semibold text-gray-600">Certificate Locked</p>
+                            <p className="text-xs text-gray-500">
+                              {totalCount - completedCount} {totalCount - completedCount === 1 ? 'lesson' : 'lessons'} remaining
+                            </p>
+                          </div>
+                        </div>
+                        {/* Mock Certificate Design (blurred) */}
+                        <div className="bg-gradient-to-br from-yellow-50 to-white p-8 text-center">
+                          <div className="mb-4">
+                            <Trophy className="h-16 w-16 text-yellow-400 mx-auto" />
+                          </div>
+                          <h3 className="text-2xl font-bold text-gray-900 mb-2">Certificate of Completion</h3>
+                          <p className="text-gray-600 mb-4">This certifies that</p>
+                          <p className="text-xl font-bold text-gray-900 mb-4">Your Name</p>
+                          <p className="text-sm text-gray-600 mb-2">has successfully completed</p>
+                          <p className="text-lg font-semibold text-gray-900">{courseName}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ) : certificateGenerated ? (
+                    <div className="text-center">
+                      <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-full mb-4 shadow-lg">
+                        <Trophy className="h-10 w-10 text-white" />
+                      </div>
+                      <h4 className="text-2xl font-bold text-gray-900 mb-2">
+                        🎉 Certificate Earned!
+                      </h4>
+                      <p className="text-sm text-gray-600 mb-6">
+                        Your certificate is ready to download
+                      </p>
+                      <button
+                        className="w-full bg-black hover:bg-gray-900 text-white font-bold py-4 rounded-xl transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+                      >
+                        <Download className="h-5 w-5" />
+                        Download Certificate PDF
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="text-center">
+                      <div className="inline-flex items-center justify-center w-16 h-16 bg-green-400 rounded-full mb-4">
+                        <Award className="h-8 w-8 text-white" />
+                      </div>
+                      <h4 className="text-xl font-bold text-gray-900 mb-2">
+                        🎉 Congratulations!
+                      </h4>
+                      <p className="text-sm text-gray-700 mb-6">
+                        You've completed all lessons. Generate your certificate now!
+                      </p>
+                      <button
+                        onClick={handleGenerate}
+                        disabled={isGenerating}
+                        className="w-full bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-black font-bold py-4 rounded-xl transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                      >
+                        {isGenerating ? (
+                          <>
+                            <Loader2 className="h-5 w-5 animate-spin" />
+                            Generating Certificate...
+                          </>
+                        ) : (
+                          <>
+                            <Award className="h-5 w-5" />
+                            Generate Certificate
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </Dialog.Panel>
+            </Transition.Child>
+          </div>
+        </div>
+      </Dialog>
+    </Transition.Root>
+  )
+}

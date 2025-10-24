@@ -59,7 +59,7 @@ const PaymentIcons = () => (
     </div>
 
     {/* Mobile version - centered icons only, no text */}
-    <div className="flex md:hidden items-center justify-center gap-2 py-3">
+    <div className="flex md:hidden items-center justify-center gap-2 py-1 md:py-3">
       {/* Visa */}
       <div className="bg-white px-2 py-1 rounded border border-gray-700 shadow-sm">
         <span className="text-[#1434CB] font-bold text-xs tracking-wider">VISA</span>
@@ -301,7 +301,7 @@ export function SideCart({ taxRates, shippingZones }: SideCartProps) {
                 <Dialog.Panel className="pointer-events-auto w-screen max-w-md">
                   <div className="flex h-full flex-col bg-black text-white">
                     {/* Header */}
-                    <div className="flex items-center justify-between border-b border-gray-800 px-6 py-4">
+                    <div className="flex items-center justify-between border-b border-gray-800 px-6 py-2">
                       <div className="flex items-center gap-2">
                         <ShoppingBag className="h-5 w-5" />
                         <h2 className="text-lg font-semibold">Shopping Cart</h2>
@@ -489,7 +489,7 @@ export function SideCart({ taxRates, shippingZones }: SideCartProps) {
 
                     {/* Checkout Section */}
                     {items.length > 0 && (
-                      <div className="border-t border-gray-800 px-6 py-6">
+                      <div className="border-t border-gray-800 px-6 py-4 md:py-6">
                         {/* Estimate Notice */}
                         <div className="mb-4 p-3 bg-gray-900 rounded-md border border-gray-800">
                           <div className="flex items-start gap-2">
