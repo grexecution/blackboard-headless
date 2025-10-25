@@ -516,7 +516,7 @@ export default function CheckoutClient({ countries, taxRates, shippingZones, tes
           body: JSON.stringify({
             orderId: data.order.id,
             orderNumber: data.order.orderNumber,
-            total: data.order.total,
+            total: finalTotal.toFixed(2), // Use Next.js calculated total, not WooCommerce total
             currency: billingData.country === 'US' ? 'USD' : 'EUR',
             customerEmail: billingData.email,
             paymentMethod: selectedPaymentMethod, // Pass the selected payment method
@@ -548,7 +548,7 @@ export default function CheckoutClient({ countries, taxRates, shippingZones, tes
           body: JSON.stringify({
             orderId: data.order.id,
             orderNumber: data.order.orderNumber,
-            total: data.order.total,
+            total: finalTotal.toFixed(2), // Use Next.js calculated total, not WooCommerce total
             currency: billingData.country === 'US' ? 'USD' : 'EUR',
           }),
         })
