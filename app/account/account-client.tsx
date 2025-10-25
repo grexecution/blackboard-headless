@@ -61,6 +61,11 @@ export default function AccountClient({ initialCourses, initialOrders }: Account
   const [ordersLoading, setOrdersLoading] = useState(false)
   const [activeTab, setActiveTab] = useState('dashboard')
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null)
+  const [payoutHistory, setPayoutHistory] = useState<any[]>([])
+  const [payoutAmount, setPayoutAmount] = useState('')
+  const [payoutMethod, setPayoutMethod] = useState('stripe')
+  const [paypalEmail, setPaypalEmail] = useState('')
+  const [payoutLoading, setPayoutLoading] = useState(false)
 
   // Use addresses from session immediately - no API call needed
   useEffect(() => {
@@ -112,6 +117,14 @@ export default function AccountClient({ initialCourses, initialOrders }: Account
     }
   }, [session])
 
+  // Fetch payout history when affiliate tab is opened
+  useEffect(() => {
+    if (activeTab === 'affiliate' && affiliateData && payoutHistory.length === 0) {
+      fetchPayoutHistory()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, affiliateData])
+
   const fetchOrders = async () => {
     setOrdersLoading(true)
     try {
@@ -136,6 +149,51 @@ export default function AccountClient({ initialCourses, initialOrders }: Account
       setCertificates(data)
     } catch (error) {
       console.error('Failed to fetch certificates:', error)
+    }
+  }
+
+  const fetchPayoutHistory = async () => {
+    try {
+      const res = await fetch('/api/affiliate/payout')
+      const data = await res.json()
+      setPayoutHistory(Array.isArray(data) ? data : [])
+    } catch (error) {
+      console.error('Failed to fetch payout history:', error)
+      setPayoutHistory([])
+    }
+  }
+
+  const handlePayoutSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setPayoutLoading(true)
+
+    try {
+      const res = await fetch('/api/affiliate/payout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          amount: parseFloat(payoutAmount),
+          method: payoutMethod,
+          paypal_email: payoutMethod === 'paypal' ? paypalEmail : undefined,
+        }),
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to submit payout request')
+      }
+
+      alert('Payout request submitted successfully! You will receive an email confirmation.')
+      setPayoutAmount('')
+      setPaypalEmail('')
+      fetchPayoutHistory() // Refresh payout history
+    } catch (error: any) {
+      alert('Error: ' + error.message)
+    } finally {
+      setPayoutLoading(false)
     }
   }
 
@@ -592,10 +650,6 @@ export default function AccountClient({ initialCourses, initialOrders }: Account
             >
               <div className="bb-section-header">
                 <h2>Order History</h2>
-                <button onClick={fetchOrders} className="bb-sync-button">
-                  <RefreshCw className="w-4 h-4" />
-                  Sync Orders
-                </button>
               </div>
               {ordersLoading ? (
                 <div className="flex justify-center py-8">
@@ -1252,10 +1306,6 @@ export default function AccountClient({ initialCourses, initialOrders }: Account
               <div className="bb-dashboard-section">
                 <div className="bb-section-header">
                   <h2>Affiliate Dashboard</h2>
-                  <button onClick={() => window.location.reload()} className="bb-sync-button">
-                    <RefreshCw className="w-4 h-4" />
-                    Sync Data
-                  </button>
                 </div>
                 
                 {/* Quick Stats Grid */}
@@ -1296,8 +1346,17 @@ export default function AccountClient({ initialCourses, initialOrders }: Account
                       Copy Link
                     </button>
                   </div>
-                  <div className="mt-3 text-sm text-gray-600">
-                    Commission Rate: <span className="font-semibold text-bb-dark">{(affiliateData.commission_rate * 100)}%</span>
+                  <div className="mt-3 space-y-1">
+                    <div className="text-sm text-gray-600">
+                      Commission Rate: <span className="font-semibold text-bb-dark">{affiliateData.commission_rate}%</span>
+                      <span className="text-xs text-gray-500 ml-2">(you earn {affiliateData.commission_rate}% on sales)</span>
+                    </div>
+                    {affiliateData.discount_rate > 0 && (
+                      <div className="text-sm text-gray-600">
+                        Customer Discount: <span className="font-semibold text-green-600">{affiliateData.discount_rate}%</span>
+                        <span className="text-xs text-gray-500 ml-2">(customers save {affiliateData.discount_rate}% using your link)</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -1354,76 +1413,156 @@ export default function AccountClient({ initialCourses, initialOrders }: Account
                 </div>
               </div>
 
-              {/* Marketing Materials */}
+              {/* Payout History */}
               <div className="bb-dashboard-section">
                 <div className="bb-section-header">
-                  <h2>Marketing Materials</h2>
+                  <h2>Payout History</h2>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {affiliateData.marketing_materials.map((material: any) => (
-                    <div key={material.id} className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-6 border border-gray-200">
-                      <div className="flex items-center gap-3 mb-4">
-                        <Settings className="w-6 h-6 text-bb-dark" />
-                        <div>
-                          <h3 className="font-semibold text-bb-dark">{material.title}</h3>
-                          <div className="text-sm text-gray-600 capitalize">{material.type}</div>
-                        </div>
-                      </div>
-                      {material.size && (
-                        <div className="text-sm text-gray-600 mb-3">Size: {material.size}</div>
-                      )}
-                      <div className="bg-white rounded p-3 mb-4 border">
-                        <code className="text-xs text-gray-600 break-all">{material.code}</code>
-                      </div>
-                      <button className="bb-view-all w-full text-sm">
-                        Copy Code
-                      </button>
-                    </div>
-                  ))}
-                </div>
+                {!Array.isArray(payoutHistory) || payoutHistory.length === 0 ? (
+                  <p className="text-gray-600">No payout history found.</p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b border-gray-200">
+                          <th className="text-left py-3 px-4 font-semibold text-bb-dark">Amount</th>
+                          <th className="text-left py-3 px-4 font-semibold text-bb-dark">Method</th>
+                          <th className="text-left py-3 px-4 font-semibold text-bb-dark">Transaction ID</th>
+                          <th className="text-left py-3 px-4 font-semibold text-bb-dark">Date</th>
+                          <th className="text-left py-3 px-4 font-semibold text-bb-dark">Status</th>
+                          <th className="text-left py-3 px-4 font-semibold text-bb-dark">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {payoutHistory.map((payout: any) => (
+                          <tr key={payout.id} className="border-b border-gray-100 hover:bg-gray-50">
+                            <td className="py-3 px-4">${payout.amount.toFixed(2)}</td>
+                            <td className="py-3 px-4 capitalize">{payout.method}</td>
+                            <td className="py-3 px-4 text-sm text-gray-600">{payout.transaction_id || 'Pending'}</td>
+                            <td className="py-3 px-4">{new Date(payout.date).toLocaleDateString()}</td>
+                            <td className="py-3 px-4">
+                              <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                                payout.status === 'completed'
+                                  ? 'bg-green-100 text-green-700'
+                                  : payout.status === 'pending'
+                                  ? 'bg-yellow-100 text-yellow-700'
+                                  : 'bg-red-100 text-red-700'
+                              }`}>
+                                {payout.status.charAt(0).toUpperCase() + payout.status.slice(1)}
+                              </span>
+                            </td>
+                            <td className="py-3 px-4">
+                              {payout.status === 'completed' && payout.invoice_url && (
+                                <a
+                                  href={payout.invoice_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-bb-dark hover:text-bb-primary transition-colors"
+                                >
+                                  Download Invoice
+                                </a>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
 
-              {/* Payment Info */}
+              {/* Request Payout */}
               <div className="bb-dashboard-section">
                 <div className="bb-section-header">
-                  <h2>Payment Information</h2>
+                  <h2>Request Payout</h2>
                 </div>
-                <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-6 border border-gray-200">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                {/* Payment Settings Info */}
+                <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 mb-6 border border-blue-200">
+                  <h3 className="text-lg font-semibold text-bb-dark mb-4">Payment Settings</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div>
-                      <h4 className="font-semibold text-bb-dark mb-3">Next Payment</h4>
-                      <div className="space-y-2 text-sm">
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Date:</span>
-                          <span className="font-medium">{new Date(affiliateData.payment_info.next_payment_date).toLocaleDateString()}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Amount:</span>
-                          <span className="font-medium text-green-600">${affiliateData.stats.pending_commissions.toFixed(2)}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Method:</span>
-                          <span className="font-medium">{affiliateData.payment_info.payment_method}</span>
-                        </div>
-                      </div>
+                      <div className="text-sm text-gray-600 mb-1">Available Balance</div>
+                      <div className="text-2xl font-bold text-green-600">${affiliateData.stats.pending_commissions.toFixed(2)}</div>
                     </div>
                     <div>
-                      <h4 className="font-semibold text-bb-dark mb-3">Payment Settings</h4>
-                      <div className="space-y-2 text-sm">
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Minimum Payout:</span>
-                          <span className="font-medium">${affiliateData.payment_info.minimum_payout.toFixed(2)}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Email:</span>
-                          <span className="font-medium">{affiliateData.payment_info.payment_email}</span>
-                        </div>
-                      </div>
-                      <button className="mt-4 text-sm text-bb-dark hover:text-bb-primary transition-colors">
-                        Edit Payment Settings
-                      </button>
+                      <div className="text-sm text-gray-600 mb-1">Minimum Payout</div>
+                      <div className="text-2xl font-bold text-bb-dark">${affiliateData.payment_info.minimum_payout.toFixed(2)}</div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-gray-600 mb-1">Payment Methods</div>
+                      <div className="text-lg font-semibold text-bb-dark">{affiliateData.payment_info.payment_method}</div>
                     </div>
                   </div>
+                  <div className="mt-4 pt-4 border-t border-blue-200">
+                    <div className="text-sm text-gray-600">
+                      Payment Email: <span className="font-medium text-bb-dark">{affiliateData.payment_info.payment_email}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Payout Form */}
+                <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-6 border border-gray-200">
+                  <h3 className="text-lg font-semibold text-bb-dark mb-4">Submit Payout Request</h3>
+                  <form onSubmit={handlePayoutSubmit} className="space-y-6">
+                    <div>
+                      <label className="block text-sm font-medium text-bb-dark mb-2">
+                        Amount
+                      </label>
+                      <input
+                        type="number"
+                        min="0.01"
+                        max={affiliateData.stats.pending_commissions}
+                        step="0.01"
+                        value={payoutAmount}
+                        onChange={(e) => setPayoutAmount(e.target.value)}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-bb-primary"
+                        required
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Available balance: ${affiliateData.stats.pending_commissions.toFixed(2)}
+                        {' '}(Minimum payout: ${affiliateData.payment_info.minimum_payout.toFixed(2)})
+                      </p>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-bb-dark mb-2">
+                        Payout Method
+                      </label>
+                      <select
+                        value={payoutMethod}
+                        onChange={(e) => setPayoutMethod(e.target.value)}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-bb-primary"
+                        required
+                      >
+                        <option value="stripe">Stripe</option>
+                        <option value="paypal">PayPal</option>
+                      </select>
+                    </div>
+
+                    {payoutMethod === 'paypal' && (
+                      <div>
+                        <label className="block text-sm font-medium text-bb-dark mb-2">
+                          PayPal Email
+                        </label>
+                        <input
+                          type="email"
+                          value={paypalEmail}
+                          onChange={(e) => setPaypalEmail(e.target.value)}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-bb-primary"
+                          required={payoutMethod === 'paypal'}
+                        />
+                      </div>
+                    )}
+
+                    <button
+                      type="submit"
+                      disabled={payoutLoading}
+                      className="bg-bb-primary text-bb-dark px-6 py-3 rounded-lg font-semibold hover:bg-yellow-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {payoutLoading ? 'Submitting...' : 'Request Payout'}
+                    </button>
+                  </form>
                 </div>
               </div>
             </motion.div>

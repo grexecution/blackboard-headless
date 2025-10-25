@@ -151,8 +151,8 @@ export function ProductDetail({ product, variations, workshopProduct }: ProductD
               )}
 
               {/* Main Image - Full Width */}
-              <motion.div 
-                className="relative aspect-square bg-gray-50 lg:rounded-2xl overflow-hidden lg:shadow-xl"
+              <motion.div
+                className="relative aspect-[16/10] lg:aspect-square bg-gray-50 lg:rounded-2xl overflow-hidden lg:shadow-xl"
                 onClick={() => setIsMobileImageExpanded(!isMobileImageExpanded)}
               >
                 {product.images[selectedImageIndex] && (
@@ -217,8 +217,35 @@ export function ProductDetail({ product, variations, workshopProduct }: ProductD
                   </div>
                 )}
               </motion.div>
-              
-              {/* Thumbnail Gallery - Show 3 with navigation */}
+
+              {/* Mobile Thumbnail Gallery */}
+              {product.images.length > 1 && (
+                <div className="mt-3 px-4 lg:hidden">
+                  <div className="flex gap-2 overflow-x-auto pb-2 hide-scrollbar">
+                    {product.images.map((image, index) => (
+                      <button
+                        key={index}
+                        onClick={() => setSelectedImageIndex(index)}
+                        className={`relative aspect-square bg-white rounded-lg overflow-hidden border-2 transition-all flex-shrink-0 w-16 h-16 ${
+                          selectedImageIndex === index
+                            ? 'border-[#ffed00] shadow-md'
+                            : 'border-gray-200'
+                        }`}
+                      >
+                        <Image
+                          src={image.src}
+                          alt={image.alt || ''}
+                          fill
+                          className="object-cover"
+                          sizes="64px"
+                        />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Desktop Thumbnail Gallery */}
               {product.images.length > 1 && (
                 <div className="hidden lg:block mt-4">
                   <div className="relative">

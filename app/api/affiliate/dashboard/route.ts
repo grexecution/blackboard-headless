@@ -37,7 +37,8 @@ export async function GET(request: NextRequest) {
       affiliate_id: affiliateData.affiliate_id || token.userId,
       status: affiliateData.status || 'active',
       referral_url: affiliateData.referral_url || `${process.env.NEXT_PUBLIC_BASE_URL}/?ref=${affiliateData.affiliate_id || token.userId}`,
-      commission_rate: parseFloat(affiliateData.rate || '0.1'), // Default 10% if not set
+      commission_rate: parseFloat(affiliateData.rate || '10'), // Rate is already in %, e.g. 10 = 10%
+      discount_rate: parseFloat(affiliateData.discount_rate || '0'), // Discount rate in %
       stats: {
         total_referrals: parseInt(affiliateData.referrals || '0'),
         total_commissions: parseFloat(affiliateData.earnings || '0'),
@@ -59,41 +60,10 @@ export async function GET(request: NextRequest) {
           }))
         : [],
       payment_info: {
-        next_payment_date: affiliateData.next_payment_date || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
         minimum_payout: parseFloat(affiliateData.minimum_payout || '50'),
         payment_method: affiliateData.payment_method || 'PayPal',
         payment_email: affiliateData.payment_email || token.email
-      },
-      marketing_materials: [
-        {
-          id: 'banner_1',
-          title: 'Hero Banner - Products',
-          type: 'banner',
-          size: '728x90',
-          url: `${process.env.NEXT_PUBLIC_BASE_URL}/marketing/banner-728x90.png`,
-          code: `<a href="${process.env.NEXT_PUBLIC_BASE_URL}/?ref=${affiliateData.affiliate_id || token.userId}"><img src="${process.env.NEXT_PUBLIC_BASE_URL}/marketing/banner-728x90.png" alt="BlackBoard Training" /></a>`
-        },
-        {
-          id: 'banner_2',
-          title: 'Square Banner - Products',
-          type: 'banner',
-          size: '300x300',
-          url: `${process.env.NEXT_PUBLIC_BASE_URL}/marketing/banner-300x300.png`,
-          code: `<a href="${process.env.NEXT_PUBLIC_BASE_URL}/?ref=${affiliateData.affiliate_id || token.userId}"><img src="${process.env.NEXT_PUBLIC_BASE_URL}/marketing/banner-300x300.png" alt="BlackBoard Training" /></a>`
-        },
-        {
-          id: 'text_1',
-          title: 'Text Link - Main Site',
-          type: 'text',
-          code: `<a href="${process.env.NEXT_PUBLIC_BASE_URL}/?ref=${affiliateData.affiliate_id || token.userId}">Transform your foundation with BlackBoard Training</a>`
-        },
-        {
-          id: 'text_2',
-          title: 'Text Link - Shop',
-          type: 'text',
-          code: `<a href="${process.env.NEXT_PUBLIC_BASE_URL}/shop?ref=${affiliateData.affiliate_id || token.userId}">Shop BlackBoard Training Products</a>`
-        }
-      ]
+      }
     })
 
   } catch (error: any) {
