@@ -4,7 +4,7 @@ import { useCart } from '@/lib/cart-context'
 import { useRouter } from 'next/navigation'
 import { useState, useEffect, useMemo } from 'react'
 import { useSession } from 'next-auth/react'
-import { ShoppingCart, CreditCard, User, MapPin, ArrowLeft, Package, Truck, CheckCircle, AlertCircle, Mail, Lock, Eye, EyeOff, Info, Star } from 'lucide-react'
+import { ShoppingCart, CreditCard, User, MapPin, ArrowLeft, Package, Truck, CheckCircle, AlertCircle, Mail, Lock, Eye, EyeOff, Info, Star, ChevronDown, ChevronUp } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { LoginModal } from '@/components/auth/login-modal'
@@ -62,6 +62,7 @@ export default function CheckoutClient({ countries, taxRates, shippingZones, tes
   const [passwordStrength, setPasswordStrength] = useState<'weak' | 'medium' | 'strong' | null>(null)
   const [passwordMatch, setPasswordMatch] = useState<boolean | null>(null)
   const [showLoginModal, setShowLoginModal] = useState(false)
+  const [orderSummaryExpanded, setOrderSummaryExpanded] = useState(false)
 
   // B2B / Company fields
   const [isCompany, setIsCompany] = useState(false)
@@ -504,9 +505,9 @@ export default function CheckoutClient({ countries, taxRates, shippingZones, tes
       sessionStorage.setItem('lastOrder', JSON.stringify(data.order))
 
       // Handle payment based on method
-      if (selectedPaymentMethod === 'stripe') {
-        // Create Stripe Checkout Session
-        console.log('Creating Stripe checkout session...')
+      if (selectedPaymentMethod === 'stripe' || selectedPaymentMethod === 'klarna') {
+        // Create Stripe Checkout Session (supports both card and Klarna)
+        console.log(`Creating Stripe checkout session with ${selectedPaymentMethod}...`)
         setProcessingStep('redirecting')
 
         const stripeResponse = await fetch('/api/create-stripe-checkout', {
@@ -518,6 +519,7 @@ export default function CheckoutClient({ countries, taxRates, shippingZones, tes
             total: data.order.total,
             currency: billingData.country === 'US' ? 'USD' : 'EUR',
             customerEmail: billingData.email,
+            paymentMethod: selectedPaymentMethod, // Pass the selected payment method
           }),
         })
 
@@ -713,6 +715,122 @@ export default function CheckoutClient({ countries, taxRates, shippingZones, tes
           <div className="grid lg:grid-cols-3 gap-8">
             {/* Main Checkout Form */}
             <div className="lg:col-span-2 space-y-4 md:space-y-6">
+              {/* Collapsible Order Summary - Mobile Only */}
+              <div className="lg:hidden bg-white rounded-lg shadow-sm border border-gray-200">
+                <button
+                  type="button"
+                  onClick={() => setOrderSummaryExpanded(!orderSummaryExpanded)}
+                  className="w-full px-4 py-4 flex items-center justify-between text-left"
+                >
+                  <div className="flex items-center gap-2">
+                    <ShoppingCart className="h-5 w-5 text-gray-600" />
+                    <span className="font-semibold">
+                      Order Summary ({items.length} {items.length === 1 ? 'item' : 'items'})
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="font-bold text-lg">{currencySymbol}{finalTotal.toFixed(2)}</span>
+                    {orderSummaryExpanded ? (
+                      <ChevronUp className="h-5 w-5 text-gray-600" />
+                    ) : (
+                      <ChevronDown className="h-5 w-5 text-gray-600" />
+                    )}
+                  </div>
+                </button>
+
+                {orderSummaryExpanded && (
+                  <div className="px-4 pb-4 border-t border-gray-200">
+                    {/* Cart Items */}
+                    <div className="space-y-3 mt-4 mb-4">
+                      {items.map((item) => (
+                        <div key={item.id} className="flex gap-3">
+                          {/* Product Image */}
+                          <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-md border border-gray-200">
+                            {item.image && !item.image.includes('placeholder') ? (
+                              <Image
+                                src={item.image}
+                                alt={item.name}
+                                fill
+                                className="object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center bg-gray-100">
+                                <Package className="h-6 w-6 text-gray-400" />
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Product Details */}
+                          <div className="flex-1">
+                            <h3 className="text-sm font-medium line-clamp-1">
+                              {item.name}
+                            </h3>
+                            {item.isFreebie && (
+                              <p className="text-xs text-green-600 font-semibold">(Gift)</p>
+                            )}
+                            {item.variation?.attributes && (
+                              <p className="text-xs text-gray-500">
+                                {item.variation.attributes.map((attr) => attr.value).join(', ')}
+                              </p>
+                            )}
+                            <div className="flex justify-between items-center mt-1">
+                              <span className="text-xs text-gray-500">Qty: {item.quantity}</span>
+                              <span className={`text-sm font-medium ${item.isFreebie ? 'text-green-600' : ''}`}>
+                                {item.isFreebie ? 'FREE' : `${currencySymbol}${(item.price * item.quantity).toFixed(2)}`}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Price Breakdown */}
+                    <div className="border-t pt-4 space-y-2">
+                      {/* Subtotal (Net Price - without tax) */}
+                      <div className="flex justify-between text-sm">
+                        <span>Subtotal (excl. tax)</span>
+                        <span>{currencySymbol}{netPrice.toFixed(2)}</span>
+                      </div>
+
+                      {/* Reseller Discount */}
+                      {resellerDiscount > 0 && (
+                        <div className="flex justify-between text-sm text-green-600">
+                          <span>Reseller Discount</span>
+                          <span>-{currencySymbol}{resellerDiscount.toFixed(2)}</span>
+                        </div>
+                      )}
+
+                      {/* Tax */}
+                      {taxRate > 0 ? (
+                        <div className="flex justify-between text-sm">
+                          <span>Tax ({taxRate.toFixed(0)}%)</span>
+                          <span>{currencySymbol}{taxAmount.toFixed(2)}</span>
+                        </div>
+                      ) : vatExemptionApplied ? (
+                        <div className="flex justify-between text-sm text-green-600">
+                          <span>VAT (0% - {validatedVatData ? 'EU Reverse Charge' : 'Export'})</span>
+                          <span>{currencySymbol}0.00</span>
+                        </div>
+                      ) : null}
+
+                      {/* Shipping - only show if cart has physical products */}
+                      {hasPhysicalProducts && (
+                        <div className="flex justify-between text-sm">
+                          <span>{shippingMethodTitle}</span>
+                          <span>{shippingCost === 0 ? 'Free' : `${currencySymbol}${shippingCost.toFixed(2)}`}</span>
+                        </div>
+                      )}
+
+                      {/* Total */}
+                      <div className="flex justify-between font-semibold text-lg pt-2 border-t">
+                        <span>Total</span>
+                        <span>{currencySymbol}{finalTotal.toFixed(2)}</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
               {/* Billing Information */}
               <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6">
                 <div className="flex items-center mb-4">
@@ -720,7 +838,8 @@ export default function CheckoutClient({ countries, taxRates, shippingZones, tes
                   <h2 className="text-xl font-semibold">Billing Information</h2>
                 </div>
                 
-                <div className="grid md:grid-cols-2 gap-4">
+                {/* First Name and Last Name - Side by side on mobile */}
+                <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       First Name *
@@ -739,7 +858,7 @@ export default function CheckoutClient({ countries, taxRates, shippingZones, tes
                       <p className="text-red-500 text-xs mt-1">{validationErrors.firstName}</p>
                     )}
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Last Name *
@@ -758,288 +877,294 @@ export default function CheckoutClient({ countries, taxRates, shippingZones, tes
                       <p className="text-red-500 text-xs mt-1">{validationErrors.lastName}</p>
                     )}
                   </div>
-                  
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Email Address *
-                    </label>
-                    <div className="relative">
-                      <input
-                        type="email"
-                        name="email"
-                        required
-                        value={billingData.email}
-                        onChange={handleBillingChange}
-                        disabled={!!session}
-                        className={`w-full px-3 py-2 pr-10 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#ffed00] ${
-                          validationErrors.email ? 'border-red-500' : 
-                          emailStatus === 'exists' && !session ? 'border-red-500' :
-                          emailStatus === 'available' ? 'border-green-500' :
-                          'border-gray-300'
-                        } ${session ? 'bg-gray-50' : ''}`}
-                      />
-                      {checkingEmail && (
-                        <div className="absolute right-3 top-3">
-                          <div className="animate-spin h-4 w-4 border-2 border-gray-300 border-t-black rounded-full"></div>
-                        </div>
-                      )}
-                      {!checkingEmail && emailStatus === 'exists' && !session && (
-                        <div className="absolute right-3 top-3">
-                          <AlertCircle className="h-4 w-4 text-red-500" />
-                        </div>
-                      )}
-                      {!checkingEmail && emailStatus === 'available' && (
-                        <div className="absolute right-3 top-3">
-                          <CheckCircle className="h-4 w-4 text-green-500" />
-                        </div>
-                      )}
-                    </div>
-                    {validationErrors.email && (
-                      <p className="text-red-500 text-xs mt-1">{validationErrors.email}</p>
+                </div>
+
+                {/* Email Address - Full width */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Email Address *
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="email"
+                      name="email"
+                      required
+                      value={billingData.email}
+                      onChange={handleBillingChange}
+                      disabled={!!session}
+                      className={`w-full px-3 py-2 pr-10 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#ffed00] ${
+                        validationErrors.email ? 'border-red-500' :
+                        emailStatus === 'exists' && !session ? 'border-red-500' :
+                        emailStatus === 'available' ? 'border-green-500' :
+                        'border-gray-300'
+                      } ${session ? 'bg-gray-50' : ''}`}
+                    />
+                    {checkingEmail && (
+                      <div className="absolute right-3 top-3">
+                        <div className="animate-spin h-4 w-4 border-2 border-gray-300 border-t-black rounded-full"></div>
+                      </div>
                     )}
-                    {emailStatus === 'exists' && !session && (
-                      <p className="text-red-600 text-sm mt-1 flex items-center gap-1">
-                        <AlertCircle className="h-3 w-3" />
-                        This email is already registered. 
-                        <button 
-                          type="button"
-                          onClick={() => setShowLoginModal(true)} 
-                          className="underline font-medium hover:text-red-700"
-                        >
-                          Please login
-                        </button>
-                        or use a different email.
-                      </p>
+                    {!checkingEmail && emailStatus === 'exists' && !session && (
+                      <div className="absolute right-3 top-3">
+                        <AlertCircle className="h-4 w-4 text-red-500" />
+                      </div>
                     )}
-                    {emailStatus === 'available' && !session && (
-                      <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-md">
-                        <div className="flex items-start gap-2">
-                          <AlertCircle className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
-                          <div>
-                            <p className="text-sm font-medium text-blue-800">
-                              Account creation required
-                            </p>
-                            <p className="text-xs text-blue-600 mt-1">
-                              An account is required to access training center videos and your purchased video content.
-                              Please set a password below.
-                            </p>
-                          </div>
-                        </div>
+                    {!checkingEmail && emailStatus === 'available' && (
+                      <div className="absolute right-3 top-3">
+                        <CheckCircle className="h-4 w-4 text-green-500" />
                       </div>
                     )}
                   </div>
-                  
-                  {/* Password fields for account creation - mandatory */}
-                  {emailStatus === 'available' && !session && (
-                    <>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Password *
-                        </label>
-                        <div className="relative">
-                          <input
-                            type={showPassword ? 'text' : 'password'}
-                            value={accountPassword}
-                            onChange={handlePasswordChange}
-                            className={`w-full px-3 py-2 pr-10 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#ffed00] ${
-                              validationErrors.password ? 'border-red-500' : 
-                              passwordStrength === 'weak' ? 'border-red-400' :
-                              passwordStrength === 'medium' ? 'border-yellow-400' :
-                              passwordStrength === 'strong' ? 'border-green-400' :
-                              'border-gray-300'
-                            }`}
-                            placeholder="Min. 8 characters"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setShowPassword(!showPassword)}
-                            className="absolute right-3 top-3 text-gray-500 hover:text-gray-700"
-                          >
-                            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                          </button>
-                        </div>
-                        {passwordStrength && (
-                          <div className="mt-1 flex items-center gap-2">
-                            <div className="flex gap-1 flex-1">
-                              <div className={`h-1 flex-1 rounded ${
-                                passwordStrength === 'weak' ? 'bg-red-400' :
-                                passwordStrength === 'medium' ? 'bg-yellow-400' :
-                                'bg-green-400'
-                              }`} />
-                              <div className={`h-1 flex-1 rounded ${
-                                passwordStrength === 'medium' ? 'bg-yellow-400' :
-                                passwordStrength === 'strong' ? 'bg-green-400' :
-                                'bg-gray-200'
-                              }`} />
-                              <div className={`h-1 flex-1 rounded ${
-                                passwordStrength === 'strong' ? 'bg-green-400' : 'bg-gray-200'
-                              }`} />
-                            </div>
-                            <span className={`text-xs font-medium ${
-                              passwordStrength === 'weak' ? 'text-red-600' :
-                              passwordStrength === 'medium' ? 'text-yellow-600' :
-                              'text-green-600'
-                            }`}>
-                              {passwordStrength === 'weak' ? 'Weak' :
-                               passwordStrength === 'medium' ? 'Medium' :
-                               'Strong'}
-                            </span>
-                          </div>
-                        )}
-                        {validationErrors.password && (
-                          <p className="text-red-500 text-xs mt-1">{validationErrors.password}</p>
-                        )}
-                      </div>
-                      
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Confirm Password *
-                        </label>
-                        <div className="relative">
-                          <input
-                            type={showPassword ? 'text' : 'password'}
-                            value={confirmPassword}
-                            onChange={handleConfirmPasswordChange}
-                            className={`w-full px-3 py-2 pr-10 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#ffed00] ${
-                              validationErrors.confirmPassword ? 'border-red-500' :
-                              passwordMatch === false ? 'border-red-400' :
-                              passwordMatch === true ? 'border-green-400' :
-                              'border-gray-300'
-                            }`}
-                            placeholder="Re-enter password"
-                          />
-                          {passwordMatch !== null && (
-                            <div className="absolute right-3 top-3">
-                              {passwordMatch ? (
-                                <CheckCircle className="h-4 w-4 text-green-500" />
-                              ) : (
-                                <AlertCircle className="h-4 w-4 text-red-500" />
-                              )}
-                            </div>
-                          )}
-                        </div>
-                        {passwordMatch === false && confirmPassword && (
-                          <p className="text-red-500 text-xs mt-1">Passwords do not match</p>
-                        )}
-                        {passwordMatch === true && confirmPassword && (
-                          <p className="text-green-500 text-xs mt-1">Passwords match</p>
-                        )}
-                        {validationErrors.confirmPassword && (
-                          <p className="text-red-500 text-xs mt-1">{validationErrors.confirmPassword}</p>
-                        )}
-                      </div>
-                    </>
+                  {validationErrors.email && (
+                    <p className="text-red-500 text-xs mt-1">{validationErrors.email}</p>
                   )}
-                  
-                  {/* Row 1: Street, Apartment, City */}
-                  <div className="md:col-span-2 grid md:grid-cols-3 gap-4">
+                  {emailStatus === 'exists' && !session && (
+                    <p className="text-red-600 text-sm mt-1 flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3" />
+                      This email is already registered.
+                      <button
+                        type="button"
+                        onClick={() => setShowLoginModal(true)}
+                        className="underline font-medium hover:text-red-700"
+                      >
+                        Please login
+                      </button>
+                      or use a different email.
+                    </p>
+                  )}
+                  {emailStatus === 'available' && !session && (
+                    <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                      <div className="flex items-start gap-2">
+                        <AlertCircle className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <p className="text-sm font-medium text-blue-800">
+                            Account creation required
+                          </p>
+                          <p className="text-xs text-blue-600 mt-1">
+                            An account is required to access training center videos and your purchased video content.
+                            Please set a password below.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+
+                {/* Password fields for account creation - mandatory */}
+                {emailStatus === 'available' && !session && (
+                  <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Street Address *
+                        Password *
                       </label>
-                      <input
-                        type="text"
-                        name="address1"
-                        required
-                        value={billingData.address1}
-                        onChange={handleBillingChange}
-                        placeholder="Street & number"
-                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#ffed00] ${
-                          validationErrors.address1 ? 'border-red-500' : 'border-gray-300'
-                        }`}
-                      />
-                      {validationErrors.address1 && (
-                        <p className="text-red-500 text-xs mt-1">{validationErrors.address1}</p>
+                      <div className="relative">
+                        <input
+                          type={showPassword ? 'text' : 'password'}
+                          value={accountPassword}
+                          onChange={handlePasswordChange}
+                          className={`w-full px-3 py-2 pr-10 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#ffed00] ${
+                            validationErrors.password ? 'border-red-500' :
+                            passwordStrength === 'weak' ? 'border-red-400' :
+                            passwordStrength === 'medium' ? 'border-yellow-400' :
+                            passwordStrength === 'strong' ? 'border-green-400' :
+                            'border-gray-300'
+                          }`}
+                          placeholder="Min. 8 characters"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-3 top-3 text-gray-500 hover:text-gray-700"
+                        >
+                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </button>
+                      </div>
+                      {passwordStrength && (
+                        <div className="mt-1 flex items-center gap-2">
+                          <div className="flex gap-1 flex-1">
+                            <div className={`h-1 flex-1 rounded ${
+                              passwordStrength === 'weak' ? 'bg-red-400' :
+                              passwordStrength === 'medium' ? 'bg-yellow-400' :
+                              'bg-green-400'
+                            }`} />
+                            <div className={`h-1 flex-1 rounded ${
+                              passwordStrength === 'medium' ? 'bg-yellow-400' :
+                              passwordStrength === 'strong' ? 'bg-green-400' :
+                              'bg-gray-200'
+                            }`} />
+                            <div className={`h-1 flex-1 rounded ${
+                              passwordStrength === 'strong' ? 'bg-green-400' : 'bg-gray-200'
+                            }`} />
+                          </div>
+                          <span className={`text-xs font-medium ${
+                            passwordStrength === 'weak' ? 'text-red-600' :
+                            passwordStrength === 'medium' ? 'text-yellow-600' :
+                            'text-green-600'
+                          }`}>
+                            {passwordStrength === 'weak' ? 'Weak' :
+                             passwordStrength === 'medium' ? 'Medium' :
+                             'Strong'}
+                          </span>
+                        </div>
+                      )}
+                      {validationErrors.password && (
+                        <p className="text-red-500 text-xs mt-1">{validationErrors.password}</p>
                       )}
                     </div>
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Apartment, suite (optional)
+                        Confirm Password *
                       </label>
-                      <input
-                        type="text"
-                        name="address2"
-                        value={billingData.address2}
-                        onChange={handleBillingChange}
-                        placeholder="Apt, suite, etc."
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ffed00]"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        City *
-                      </label>
-                      <input
-                        type="text"
-                        name="city"
-                        required
-                        value={billingData.city}
-                        onChange={handleBillingChange}
-                        placeholder="City"
-                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#ffed00] ${
-                          validationErrors.city ? 'border-red-500' : 'border-gray-300'
-                        }`}
-                      />
-                      {validationErrors.city && (
-                        <p className="text-red-500 text-xs mt-1">{validationErrors.city}</p>
+                      <div className="relative">
+                        <input
+                          type={showPassword ? 'text' : 'password'}
+                          value={confirmPassword}
+                          onChange={handleConfirmPasswordChange}
+                          className={`w-full px-3 py-2 pr-10 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#ffed00] ${
+                            validationErrors.confirmPassword ? 'border-red-500' :
+                            passwordMatch === false ? 'border-red-400' :
+                            passwordMatch === true ? 'border-green-400' :
+                            'border-gray-300'
+                          }`}
+                          placeholder="Re-enter password"
+                        />
+                        {passwordMatch !== null && (
+                          <div className="absolute right-3 top-3">
+                            {passwordMatch ? (
+                              <CheckCircle className="h-4 w-4 text-green-500" />
+                            ) : (
+                              <AlertCircle className="h-4 w-4 text-red-500" />
+                            )}
+                          </div>
+                        )}
+                      </div>
+                      {passwordMatch === false && confirmPassword && (
+                        <p className="text-red-500 text-xs mt-1">Passwords do not match</p>
+                      )}
+                      {passwordMatch === true && confirmPassword && (
+                        <p className="text-green-500 text-xs mt-1">Passwords match</p>
+                      )}
+                      {validationErrors.confirmPassword && (
+                        <p className="text-red-500 text-xs mt-1">{validationErrors.confirmPassword}</p>
                       )}
                     </div>
                   </div>
+                )}
 
-                  {/* Row 2: State, Postal Code, Country */}
-                  <div className="md:col-span-2 grid md:grid-cols-3 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        State/Province
-                      </label>
-                      <input
-                        type="text"
-                        name="state"
-                        value={billingData.state}
-                        onChange={handleBillingChange}
-                        placeholder="State"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ffed00]"
-                      />
-                    </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Postal Code *
-                      </label>
-                      <input
-                        type="text"
-                        name="postcode"
-                        required
-                        value={billingData.postcode}
-                        onChange={handleBillingChange}
-                        placeholder="Postal code"
-                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#ffed00] ${
-                          validationErrors.postcode ? 'border-red-500' : 'border-gray-300'
-                        }`}
-                      />
-                      {validationErrors.postcode && (
-                        <p className="text-red-500 text-xs mt-1">{validationErrors.postcode}</p>
-                      )}
-                    </div>
+                {/* Street Address - Full width */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Street Address *
+                  </label>
+                  <input
+                    type="text"
+                    name="address1"
+                    required
+                    value={billingData.address1}
+                    onChange={handleBillingChange}
+                    placeholder="Street & number"
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#ffed00] ${
+                      validationErrors.address1 ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                  />
+                  {validationErrors.address1 && (
+                    <p className="text-red-500 text-xs mt-1">{validationErrors.address1}</p>
+                  )}
+                </div>
 
-                    <div>
-                      <CountrySelect
-                        countries={countries}
-                        value={billingData.country}
-                        onChange={(countryCode) => {
-                          setBillingData(prev => ({ ...prev, country: countryCode }))
-                          setValidationErrors(prev => ({ ...prev, country: '' }))
-                        }}
-                        label="Country *"
-                        error={validationErrors.country}
-                      />
-                    </div>
+                {/* Apartment and City - Side by side on mobile */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Apartment, suite
+                    </label>
+                    <input
+                      type="text"
+                      name="address2"
+                      value={billingData.address2}
+                      onChange={handleBillingChange}
+                      placeholder="Apt, suite"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ffed00]"
+                    />
                   </div>
 
-                  {/* Company / B2B Checkbox */}
-                  <div className="md:col-span-2 pt-4 border-t border-gray-200">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      City *
+                    </label>
+                    <input
+                      type="text"
+                      name="city"
+                      required
+                      value={billingData.city}
+                      onChange={handleBillingChange}
+                      placeholder="City"
+                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#ffed00] ${
+                        validationErrors.city ? 'border-red-500' : 'border-gray-300'
+                      }`}
+                    />
+                    {validationErrors.city && (
+                      <p className="text-red-500 text-xs mt-1">{validationErrors.city}</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* State and Postal Code - Side by side on mobile */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      State/Province
+                    </label>
+                    <input
+                      type="text"
+                      name="state"
+                      value={billingData.state}
+                      onChange={handleBillingChange}
+                      placeholder="State"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ffed00]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Postal Code *
+                    </label>
+                    <input
+                      type="text"
+                      name="postcode"
+                      required
+                      value={billingData.postcode}
+                      onChange={handleBillingChange}
+                      placeholder="Postal code"
+                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#ffed00] ${
+                        validationErrors.postcode ? 'border-red-500' : 'border-gray-300'
+                      }`}
+                    />
+                    {validationErrors.postcode && (
+                      <p className="text-red-500 text-xs mt-1">{validationErrors.postcode}</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Country - Full width */}
+                <div>
+                  <CountrySelect
+                    countries={countries}
+                    value={billingData.country}
+                    onChange={(countryCode) => {
+                      setBillingData(prev => ({ ...prev, country: countryCode }))
+                      setValidationErrors(prev => ({ ...prev, country: '' }))
+                    }}
+                    label="Country *"
+                    error={validationErrors.country}
+                  />
+                </div>
+
+                {/* Company / B2B Checkbox */}
+                <div className="pt-4 border-t border-gray-200">
                     <label className="flex items-center cursor-pointer">
                       <input
                         type="checkbox"
@@ -1061,11 +1186,11 @@ export default function CheckoutClient({ countries, taxRates, shippingZones, tes
                     </label>
                   </div>
 
-                  {/* Company Fields - Only show when checkbox is checked */}
-                  {isCompany && (
-                    <>
-                      {/* Company Name and VAT Number in one row */}
-                      <div className="md:col-span-2 grid md:grid-cols-2 gap-4">
+                {/* Company Fields - Only show when checkbox is checked */}
+                {isCompany && (
+                  <>
+                    {/* Company Name and VAT Number in one row */}
+                    <div className="grid grid-cols-2 gap-4">
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">
                             Company Name
@@ -1093,8 +1218,8 @@ export default function CheckoutClient({ countries, taxRates, shippingZones, tes
                         </div>
                       </div>
 
-                      {/* VAT Validation Status and Info */}
-                      <div className="md:col-span-2">
+                    {/* VAT Validation Status and Info */}
+                    <div>
                         {/* VAT Validation Status */}
                         {vatValidationStatus !== 'idle' && vatValidationMessage && (
                           <div className={`mb-2 p-2 rounded-md text-xs flex items-start gap-2 ${
@@ -1123,10 +1248,9 @@ export default function CheckoutClient({ countries, taxRates, shippingZones, tes
                             </p>
                           </div>
                         </div>
-                      </div>
-                    </>
-                  )}
-                </div>
+                    </div>
+                  </>
+                )}
               </div>
 
               {/* Shipping Address - only show if cart has physical products */}
@@ -1149,77 +1273,81 @@ export default function CheckoutClient({ countries, taxRates, shippingZones, tes
                   </div>
                 
                 {!useShippingAsBilling && (
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        First Name *
-                      </label>
-                      <input
-                        type="text"
-                        name="firstName"
-                        required
-                        value={shippingData.firstName}
-                        onChange={handleShippingChange}
-                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#ffed00] ${
-                          validationErrors.shipping_firstName ? 'border-red-500' : 'border-gray-300'
-                        }`}
-                      />
-                      {validationErrors.shipping_firstName && (
-                        <p className="text-red-500 text-xs mt-1">{validationErrors.shipping_firstName}</p>
-                      )}
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Last Name *
-                      </label>
-                      <input
-                        type="text"
-                        name="lastName"
-                        required
-                        value={shippingData.lastName}
-                        onChange={handleShippingChange}
-                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#ffed00] ${
-                          validationErrors.shipping_lastName ? 'border-red-500' : 'border-gray-300'
-                        }`}
-                      />
-                      {validationErrors.shipping_lastName && (
-                        <p className="text-red-500 text-xs mt-1">{validationErrors.shipping_lastName}</p>
-                      )}
-                    </div>
-
-                    {/* Row 1: Street, Apartment, City */}
-                    <div className="md:col-span-2 grid md:grid-cols-3 gap-4">
+                  <div className="space-y-4">
+                    {/* First Name and Last Name - Side by side on mobile */}
+                    <div className="grid grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Street Address *
+                          First Name *
                         </label>
                         <input
                           type="text"
-                          name="address1"
+                          name="firstName"
                           required
-                          value={shippingData.address1}
+                          value={shippingData.firstName}
                           onChange={handleShippingChange}
-                          placeholder="Street & number"
                           className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#ffed00] ${
-                            validationErrors.shipping_address1 ? 'border-red-500' : 'border-gray-300'
+                            validationErrors.shipping_firstName ? 'border-red-500' : 'border-gray-300'
                           }`}
                         />
-                        {validationErrors.shipping_address1 && (
-                          <p className="text-red-500 text-xs mt-1">{validationErrors.shipping_address1}</p>
+                        {validationErrors.shipping_firstName && (
+                          <p className="text-red-500 text-xs mt-1">{validationErrors.shipping_firstName}</p>
                         )}
                       </div>
 
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Apartment, suite (optional)
+                          Last Name *
+                        </label>
+                        <input
+                          type="text"
+                          name="lastName"
+                          required
+                          value={shippingData.lastName}
+                          onChange={handleShippingChange}
+                          className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#ffed00] ${
+                            validationErrors.shipping_lastName ? 'border-red-500' : 'border-gray-300'
+                          }`}
+                        />
+                        {validationErrors.shipping_lastName && (
+                          <p className="text-red-500 text-xs mt-1">{validationErrors.shipping_lastName}</p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Street Address - Full width */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Street Address *
+                      </label>
+                      <input
+                        type="text"
+                        name="address1"
+                        required
+                        value={shippingData.address1}
+                        onChange={handleShippingChange}
+                        placeholder="Street & number"
+                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#ffed00] ${
+                          validationErrors.shipping_address1 ? 'border-red-500' : 'border-gray-300'
+                        }`}
+                      />
+                      {validationErrors.shipping_address1 && (
+                        <p className="text-red-500 text-xs mt-1">{validationErrors.shipping_address1}</p>
+                      )}
+                    </div>
+
+                    {/* Apartment and City - Side by side on mobile */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Apartment, suite
                         </label>
                         <input
                           type="text"
                           name="address2"
                           value={shippingData.address2}
                           onChange={handleShippingChange}
-                          placeholder="Apt, suite, etc."
+                          placeholder="Apt, suite"
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ffed00]"
                         />
                       </div>
@@ -1245,8 +1373,8 @@ export default function CheckoutClient({ countries, taxRates, shippingZones, tes
                       </div>
                     </div>
 
-                    {/* Row 2: State, Postal Code, Country */}
-                    <div className="md:col-span-2 grid md:grid-cols-3 gap-4">
+                    {/* State and Postal Code - Side by side on mobile */}
+                    <div className="grid grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                           State/Province
@@ -1280,19 +1408,20 @@ export default function CheckoutClient({ countries, taxRates, shippingZones, tes
                           <p className="text-red-500 text-xs mt-1">{validationErrors.shipping_postcode}</p>
                         )}
                       </div>
+                    </div>
 
-                      <div>
-                        <CountrySelect
-                          countries={countries}
-                          value={shippingData.country}
-                          onChange={(countryCode) => {
-                            setShippingData(prev => ({ ...prev, country: countryCode }))
-                            setValidationErrors(prev => ({ ...prev, shipping_country: '' }))
-                          }}
-                          label="Country *"
-                          error={validationErrors.shipping_country}
-                        />
-                      </div>
+                    {/* Country - Full width */}
+                    <div>
+                      <CountrySelect
+                        countries={countries}
+                        value={shippingData.country}
+                        onChange={(countryCode) => {
+                          setShippingData(prev => ({ ...prev, country: countryCode }))
+                          setValidationErrors(prev => ({ ...prev, shipping_country: '' }))
+                        }}
+                        label="Country *"
+                        error={validationErrors.shipping_country}
+                      />
                     </div>
                   </div>
                 )}
@@ -1305,9 +1434,9 @@ export default function CheckoutClient({ countries, taxRates, shippingZones, tes
                   <CreditCard className="h-5 w-5 text-gray-600 mr-2" />
                   <h2 className="text-xl font-semibold">Payment Method</h2>
                 </div>
-                
+
                 <div className="space-y-3">
-                  {/* Stripe */}
+                  {/* Stripe - Credit/Debit Card */}
                   <label className={`flex items-start p-4 border rounded-lg cursor-pointer transition ${
                     selectedPaymentMethod === 'stripe' ? 'border-[#ffed00] bg-yellow-50' : 'border-gray-200 hover:border-gray-300'
                   }`}>
@@ -1320,12 +1449,33 @@ export default function CheckoutClient({ countries, taxRates, shippingZones, tes
                       className="mt-1 mr-3"
                     />
                     <div className="flex-1">
-                      <div className="font-medium mb-1">Credit/Debit Card (Stripe)</div>
+                      <div className="font-medium mb-1">Credit Card / Debit Card</div>
                       <div className="text-sm text-gray-600">Pay securely with your credit or debit card</div>
                       <div className="flex gap-2 mt-2">
                         <span className="text-xs bg-gray-100 px-2 py-1 rounded">Visa</span>
                         <span className="text-xs bg-gray-100 px-2 py-1 rounded">Mastercard</span>
                         <span className="text-xs bg-gray-100 px-2 py-1 rounded">Amex</span>
+                      </div>
+                    </div>
+                  </label>
+
+                  {/* Klarna */}
+                  <label className={`flex items-start p-4 border rounded-lg cursor-pointer transition ${
+                    selectedPaymentMethod === 'klarna' ? 'border-[#ffed00] bg-yellow-50' : 'border-gray-200 hover:border-gray-300'
+                  }`}>
+                    <input
+                      type="radio"
+                      name="paymentMethod"
+                      value="klarna"
+                      checked={selectedPaymentMethod === 'klarna'}
+                      onChange={(e) => setSelectedPaymentMethod(e.target.value)}
+                      className="mt-1 mr-3"
+                    />
+                    <div className="flex-1">
+                      <div className="font-medium mb-1">Klarna</div>
+                      <div className="text-sm text-gray-600">Pay now, pay later, or pay in installments</div>
+                      <div className="mt-2">
+                        <span className="text-xs bg-[#FFB3C7] text-black px-2 py-1 rounded font-semibold">Klarna</span>
                       </div>
                     </div>
                   </label>
@@ -1348,24 +1498,6 @@ export default function CheckoutClient({ countries, taxRates, shippingZones, tes
                       <div className="mt-2">
                         <span className="text-xs bg-[#003087] text-white px-2 py-1 rounded">PayPal</span>
                       </div>
-                    </div>
-                  </label>
-
-                  {/* Bank Transfer */}
-                  <label className={`flex items-start p-4 border rounded-lg cursor-pointer transition ${
-                    selectedPaymentMethod === 'bacs' ? 'border-[#ffed00] bg-yellow-50' : 'border-gray-200 hover:border-gray-300'
-                  }`}>
-                    <input
-                      type="radio"
-                      name="paymentMethod"
-                      value="bacs"
-                      checked={selectedPaymentMethod === 'bacs'}
-                      onChange={(e) => setSelectedPaymentMethod(e.target.value)}
-                      className="mt-1 mr-3"
-                    />
-                    <div className="flex-1">
-                      <div className="font-medium mb-1">Bank Transfer</div>
-                      <div className="text-sm text-gray-600">Direct bank transfer (order will be processed after payment confirmation)</div>
                     </div>
                   </label>
                 </div>
