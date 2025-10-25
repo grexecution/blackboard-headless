@@ -14,6 +14,7 @@ import { ShippingZoneWithMethods, findShippingZoneForCountry, calculateCartWeigh
 import { calculateTotalResellerSavings } from '@/lib/reseller-pricing'
 import CountrySelect from '@/components/ui/CountrySelect'
 import { Testimonial, getTestimonialImage, getTestimonialReviewerName, getTestimonialRating, getTestimonialText, getTestimonialJobPosition } from '@/lib/woocommerce/testimonials'
+import CouponInput from '@/components/checkout/coupon-input'
 
 interface CheckoutConfig {
   paymentMethods: Array<{
@@ -63,6 +64,18 @@ export default function CheckoutClient({ countries, taxRates, shippingZones, tes
   const [passwordMatch, setPasswordMatch] = useState<boolean | null>(null)
   const [showLoginModal, setShowLoginModal] = useState(false)
   const [orderSummaryExpanded, setOrderSummaryExpanded] = useState(false)
+
+  // Coupon state
+  const [appliedCoupon, setAppliedCoupon] = useState<{
+    id: number
+    code: string
+    amount: string
+    discountType: string
+    description: string
+    freeShipping: boolean
+    discountAmount: number
+    individualUse: boolean
+  } | null>(null)
 
   // B2B / Company fields
   const [isCompany, setIsCompany] = useState(false)
@@ -478,6 +491,10 @@ export default function CheckoutClient({ countries, taxRates, shippingZones, tes
           taxAmount: taxAmount,
           taxRate: taxRate,
           finalTotal: finalTotal,
+          // Coupon data
+          couponCode: appliedCoupon?.code,
+          couponDiscount: couponDiscount,
+          freeShipping: appliedCoupon?.freeShipping || false,
           // B2B / VAT data
           isCompany,
           companyName,
@@ -645,8 +662,14 @@ export default function CheckoutClient({ countries, taxRates, shippingZones, tes
   // Calculate reseller discount
   const { totalSavings: resellerDiscount } = calculateTotalResellerSavings(items, currency, isReseller)
 
+  // Calculate coupon discount
+  const couponDiscount = appliedCoupon?.discountAmount || 0
+
+  // Apply free shipping if coupon provides it
+  const effectiveShippingCost = appliedCoupon?.freeShipping ? 0 : shippingCost
+
   // Final total stays the same (gross price including tax)
-  const finalTotal = totalPrice + shippingCost
+  const finalTotal = totalPrice + effectiveShippingCost - couponDiscount
 
   if (items.length === 0) {
     return (
@@ -1276,7 +1299,7 @@ export default function CheckoutClient({ countries, taxRates, shippingZones, tes
               {/* Shipping Address - only show if cart has physical products */}
               {hasPhysicalProducts && (
                 <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6">
-                  <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center justify-between">
                     <div className="flex items-center">
                       <Truck className="h-5 w-5 text-gray-600 mr-2" />
                       <h2 className="text-xl font-semibold">Shipping Address</h2>
@@ -1293,7 +1316,7 @@ export default function CheckoutClient({ countries, taxRates, shippingZones, tes
                   </div>
                 
                 {!useShippingAsBilling && (
-                  <div className="space-y-4">
+                  <div className="space-y-4 mt-4">
                     {/* First Name and Last Name - Side by side on mobile */}
                     <div className="grid grid-cols-2 gap-4">
                       <div>
@@ -1447,6 +1470,15 @@ export default function CheckoutClient({ countries, taxRates, shippingZones, tes
                 )}
               </div>
               )}
+
+              {/* Coupon Code */}
+              <CouponInput
+                onCouponApplied={(coupon) => setAppliedCoupon(coupon)}
+                onCouponRemoved={() => setAppliedCoupon(null)}
+                appliedCoupon={appliedCoupon}
+                cartItems={items}
+                customerId={session?.user?.id ? Number(session.user.id) : undefined}
+              />
 
               {/* Payment Method */}
               <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6">
@@ -1617,7 +1649,25 @@ export default function CheckoutClient({ countries, taxRates, shippingZones, tes
                   {hasPhysicalProducts && (
                     <div className="flex justify-between text-sm">
                       <span>{shippingMethodTitle}</span>
-                      <span>{shippingCost === 0 ? 'Free' : `${currencySymbol}${shippingCost.toFixed(2)}`}</span>
+                      <span className={appliedCoupon?.freeShipping ? 'line-through text-gray-400' : ''}>
+                        {shippingCost === 0 ? 'Free' : `${currencySymbol}${shippingCost.toFixed(2)}`}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Coupon Discount */}
+                  {appliedCoupon && (
+                    <div className="flex justify-between text-sm text-green-600 font-medium">
+                      <span>Coupon ({appliedCoupon.code})</span>
+                      <span>-{currencySymbol}{couponDiscount.toFixed(2)}</span>
+                    </div>
+                  )}
+
+                  {/* Free Shipping from Coupon */}
+                  {appliedCoupon?.freeShipping && hasPhysicalProducts && shippingCost > 0 && (
+                    <div className="flex justify-between text-sm text-green-600 font-medium">
+                      <span>Free Shipping ({appliedCoupon.code})</span>
+                      <span>-{currencySymbol}{shippingCost.toFixed(2)}</span>
                     </div>
                   )}
 

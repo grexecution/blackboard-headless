@@ -70,11 +70,18 @@ export async function POST(request: NextRequest) {
         {
           method_id: 'flexible_shipping_single',
           method_title: body.shippingMethodTitle || 'Shipping',
-          total: (body.shippingCost || 0).toFixed(2),
+          total: body.freeShipping ? "0.00" : (body.shippingCost || 0).toFixed(2),
           // Prevent shipping tax recalculation
           taxes: [],
         }
       ],
+      // Add coupon if applied
+      coupon_lines: body.couponCode ? [
+        {
+          code: body.couponCode,
+          discount: body.couponDiscount.toFixed(2),
+        }
+      ] : [],
       customer_note: [
         body.customerNote || '',
         body.resellerDiscount > 0 ? `\n---\n📊 Reseller Discount Applied: ${body.resellerDiscount.toFixed(2)} ${body.billing?.country === 'US' ? 'USD' : 'EUR'}\nThis is a reseller bulk order with discounted pricing.` : '',
