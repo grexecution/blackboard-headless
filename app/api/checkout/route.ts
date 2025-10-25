@@ -55,16 +55,24 @@ export async function POST(request: NextRequest) {
       },
       line_items: body.cartItems
         .filter((item: any) => !item.isFreebie) // Skip freebie items
-        .map((item: any) => ({
-          product_id: item.productId,
-          variation_id: item.variationId || undefined,
-          quantity: item.quantity,
-        })),
+        .map((item: any) => {
+          const itemTotal = (parseFloat(item.price) * item.quantity).toFixed(2)
+          return {
+            product_id: item.productId,
+            variation_id: item.variationId || undefined,
+            quantity: item.quantity,
+            // Use exact prices from Next.js to prevent WooCommerce recalculation
+            subtotal: itemTotal,
+            total: itemTotal,
+          }
+        }),
       shipping_lines: [
         {
           method_id: 'flexible_shipping_single',
           method_title: body.shippingMethodTitle || 'Shipping',
           total: (body.shippingCost || 0).toFixed(2),
+          // Prevent shipping tax recalculation
+          taxes: [],
         }
       ],
       customer_note: [
@@ -79,6 +87,19 @@ export async function POST(request: NextRequest) {
       ].filter(Boolean).join(''),
       customer_id: body.customerId || 0, // Link to WooCommerce customer if logged in
       status: orderStatus,
+      // Important: Tell WooCommerce prices already include tax (prevent double taxation)
+      prices_include_tax: true,
+      // Add tax lines with exact amounts from Next.js calculation
+      tax_lines: body.taxAmount && body.taxAmount > 0 ? [
+        {
+          rate_code: `TAX-${(body.taxRate * 100).toFixed(0)}`,
+          rate_id: 0,
+          label: `Tax ${(body.taxRate * 100).toFixed(0)}%`,
+          compound: false,
+          tax_total: body.taxAmount.toFixed(2),
+          shipping_tax_total: "0.00",
+        }
+      ] : [],
       meta_data: [
         {
           key: '_headless_return_url',

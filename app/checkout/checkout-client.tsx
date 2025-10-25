@@ -474,6 +474,10 @@ export default function CheckoutClient({ countries, taxRates, shippingZones, tes
           shippingCost,
           shippingMethodTitle,
           customerId: customerId,
+          // Tax data from Next.js calculation
+          taxAmount: taxAmount,
+          taxRate: taxRate,
+          finalTotal: finalTotal,
           // B2B / VAT data
           isCompany,
           companyName,
