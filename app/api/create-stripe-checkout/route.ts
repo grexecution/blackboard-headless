@@ -3,10 +3,9 @@ import Stripe from 'stripe'
 
 export async function POST(request: NextRequest) {
   try {
-    const { orderId, orderNumber, total, currency, customerEmail, paymentMethod } = await request.json()
+    const { orderId, orderNumber, total, currency, customerEmail } = await request.json()
 
     console.log('Creating Stripe checkout session for order:', orderNumber)
-    console.log('Payment method:', paymentMethod || 'card')
 
     // Get Stripe secret key from environment
     const stripeSecretKey = process.env.STRIPE_SECRET_KEY
@@ -21,17 +20,9 @@ export async function POST(request: NextRequest) {
 
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || process.env.NEXTAUTH_URL || 'http://localhost:3000'
 
-    // Determine payment method types based on selected method
-    // For Klarna, we enable multiple payment methods including Klarna
-    // For card, we only enable card payments
-    const paymentMethodTypes: Stripe.Checkout.SessionCreateParams.PaymentMethodType[] =
-      paymentMethod === 'klarna'
-        ? ['card', 'klarna'] // Enable both card and Klarna for Klarna checkout
-        : ['card'] // Only card for credit card checkout
-
     // Create Stripe Checkout Session
     const session = await stripe.checkout.sessions.create({
-      payment_method_types: paymentMethodTypes,
+      payment_method_types: ['card'],
       line_items: [
         {
           price_data: {
@@ -54,7 +45,6 @@ export async function POST(request: NextRequest) {
         order_number: orderNumber.toString(),
         source: 'nextjs_headless',
         woocommerce_order_id: orderId.toString(),
-        payment_method: paymentMethod || 'stripe',
       },
     })
 
