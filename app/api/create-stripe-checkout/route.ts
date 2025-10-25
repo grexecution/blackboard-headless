@@ -24,9 +24,10 @@ export async function POST(request: NextRequest) {
     // Determine payment method types based on selected method
     // For Klarna, we enable multiple payment methods including Klarna
     // For card, we only enable card payments
-    const paymentMethodTypes = paymentMethod === 'klarna'
-      ? ['card', 'klarna'] // Enable both card and Klarna for Klarna checkout
-      : ['card'] // Only card for credit card checkout
+    const paymentMethodTypes: Stripe.Checkout.SessionCreateParams.PaymentMethodType[] =
+      paymentMethod === 'klarna'
+        ? ['card', 'klarna'] // Enable both card and Klarna for Klarna checkout
+        : ['card'] // Only card for credit card checkout
 
     // Create Stripe Checkout Session
     const session = await stripe.checkout.sessions.create({
