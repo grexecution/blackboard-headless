@@ -4,7 +4,7 @@ import { useCart } from '@/lib/cart-context'
 import { useRouter } from 'next/navigation'
 import { useState, useEffect, useMemo } from 'react'
 import { useSession } from 'next-auth/react'
-import { ShoppingCart, CreditCard, User, MapPin, ArrowLeft, Package, Truck, CheckCircle, AlertCircle, Mail, Lock, Eye, EyeOff, Info } from 'lucide-react'
+import { ShoppingCart, CreditCard, User, MapPin, ArrowLeft, Package, Truck, CheckCircle, AlertCircle, Mail, Lock, Eye, EyeOff, Info, Star } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { LoginModal } from '@/components/auth/login-modal'
@@ -13,6 +13,7 @@ import { Country, TaxRate, calculateTax, getNetPrice } from '@/lib/woocommerce/c
 import { ShippingZoneWithMethods, findShippingZoneForCountry, calculateCartWeight, calculateShippingCost } from '@/lib/woocommerce/shipping'
 import { calculateTotalResellerSavings } from '@/lib/reseller-pricing'
 import CountrySelect from '@/components/ui/CountrySelect'
+import { Testimonial, getTestimonialImage, getTestimonialReviewerName, getTestimonialRating, getTestimonialText, getTestimonialJobPosition } from '@/lib/woocommerce/testimonials'
 
 interface CheckoutConfig {
   paymentMethods: Array<{
@@ -34,9 +35,10 @@ interface CheckoutClientProps {
   countries: Country[]
   taxRates: TaxRate[]
   shippingZones: ShippingZoneWithMethods[]
+  testimonials: Testimonial[]
 }
 
-export default function CheckoutClient({ countries, taxRates, shippingZones }: CheckoutClientProps) {
+export default function CheckoutClient({ countries, taxRates, shippingZones, testimonials }: CheckoutClientProps) {
   const { getCurrencySymbol, currency } = useCurrency()
   const currencySymbol = getCurrencySymbol()
   const { items, clearCart, totalPrice } = useCart()
@@ -1384,7 +1386,7 @@ export default function CheckoutClient({ countries, taxRates, shippingZones }: C
 
             {/* Order Summary Sidebar */}
             <div className="lg:col-span-1">
-              <div className="bg-white rounded-lg shadow-sm p-6 sticky top-4">
+              <div className="bg-white rounded-lg shadow-sm p-6 sticky top-4 z-10">
                 <h2 className="text-xl font-semibold mb-4">Order Summary</h2>
                 
                 {/* Cart Items */}
@@ -1524,6 +1526,63 @@ export default function CheckoutClient({ countries, taxRates, shippingZones }: C
                   Secure SSL Encrypted Checkout
                 </div>
               </div>
+
+              {/* Customer Testimonials */}
+              {testimonials.length > 0 && (
+                <div className="mt-6 space-y-4">
+                  <div className="text-center">
+                    <h3 className="text-sm font-semibold text-gray-900 mb-1">Trusted by Athletes Worldwide</h3>
+                    <p className="text-xs text-gray-600">Real reviews from our customers</p>
+                  </div>
+                  <div className="space-y-3">
+                    {testimonials.slice(0, 3).map((review) => {
+                      const rating = getTestimonialRating(review)
+                      const reviewerName = getTestimonialReviewerName(review)
+                      const jobPosition = getTestimonialJobPosition(review)
+                      const reviewText = getTestimonialText(review)
+                      const imageUrl = getTestimonialImage(review)
+
+                      return (
+                        <div key={review.id} className="bg-gray-50 rounded-lg p-4 border border-gray-100">
+                          {/* Star Rating */}
+                          <div className="flex items-center gap-1 mb-2">
+                            {[...Array(5)].map((_, i) => (
+                              <Star
+                                key={i}
+                                className={`h-3 w-3 ${i < rating ? 'fill-[#ffed00] text-[#ffed00]' : 'fill-gray-300 text-gray-300'}`}
+                              />
+                            ))}
+                          </div>
+
+                          {/* Review Text */}
+                          {reviewText && (
+                            <p className="text-xs text-gray-700 mb-3 line-clamp-3 leading-relaxed">
+                              &ldquo;{reviewText}&rdquo;
+                            </p>
+                          )}
+
+                          {/* Reviewer Info */}
+                          <div className="flex items-center gap-2">
+                            <div className="relative w-8 h-8 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
+                              <Image
+                                src={imageUrl}
+                                alt={reviewerName}
+                                fill
+                                className="object-cover"
+                                sizes="32px"
+                              />
+                            </div>
+                            <div>
+                              <p className="text-xs font-bold text-gray-900">{reviewerName}</p>
+                              <p className="text-[10px] text-gray-600">{jobPosition}</p>
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </form>

@@ -41,6 +41,11 @@ const nextConfig = {
         hostname: 'i.vimeocdn.com',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'i.pravatar.cc',
+        pathname: '/**',
+      },
       // Production & Staging - blackboard-training.com
       // (includes both production and staging if on same domain)
       {
