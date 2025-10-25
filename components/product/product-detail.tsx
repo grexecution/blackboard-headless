@@ -472,11 +472,11 @@ export function ProductDetail({ product, variations, workshopProduct }: ProductD
                 <div className="flex items-center justify-center gap-3">
                   <div className="flex -space-x-2">
                     {[
-                      { img: 'https://randomuser.me/api/portraits/men/32.jpg' },
-                      { img: 'https://randomuser.me/api/portraits/women/44.jpg' },
-                      { img: 'https://randomuser.me/api/portraits/men/52.jpg' },
-                      { img: 'https://randomuser.me/api/portraits/women/68.jpg' },
-                      { img: 'https://randomuser.me/api/portraits/men/75.jpg' }
+                      { img: '/images/team/s_customers/ken.jpg' },
+                      { img: '/images/team/s_customers/christine.jpg' },
+                      { img: '/images/team/s_customers/marc.jpg' },
+                      { img: '/images/team/s_customers/brandie.jpg' },
+                      { img: '/images/team/s_customers/rene.jpg' }
                     ].map((avatar, i) => (
                       <div
                         key={i}
@@ -485,6 +485,8 @@ export function ProductDetail({ product, variations, workshopProduct }: ProductD
                         <Image
                           src={avatar.img}
                           alt={`Customer ${i + 1}`}
+                          width={32}
+                          height={32}
                           className="w-full h-full object-cover"
                         />
                       </div>
