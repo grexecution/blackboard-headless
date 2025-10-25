@@ -51,7 +51,8 @@
       "Bash(echo:*)",
       "Bash(npx tsc:*)",
       "Bash(find:*)",
-      "Read(//Users/gregorwallner/PhpstormProjects/**)"
+      "Read(//Users/gregorwallner/PhpstormProjects/**)",
+      "Bash(wp post meta:*)"
     ],
     "deny": [],
     "ask": []

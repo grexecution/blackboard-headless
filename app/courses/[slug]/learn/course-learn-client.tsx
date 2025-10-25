@@ -39,16 +39,34 @@ export function CourseLearnClient({ course: initialCourse }: CourseLearnClientPr
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false) // Mobile drawer toggle
   const [showCertificateModal, setShowCertificateModal] = useState(false)
   const [certificateGenerated, setCertificateGenerated] = useState(false)
+  const [certificatePdfUrl, setCertificatePdfUrl] = useState<string | null>(null)
+  const [hasAutoShownModal, setHasAutoShownModal] = useState(false)
   const videoRef = useRef<HTMLIFrameElement>(null)
+
+  // Get chapters structure (with fallback to flat videos for backward compatibility)
+  const chapters = course.acf?.course_chapters || []
+  const videos = course.acf?.course_videos || []
+
+  // Flatten chapters into videos array for existing functionality
+  const allVideos = chapters.length > 0
+    ? chapters.flatMap(chapter => chapter.videos || [])
+    : videos
 
   useEffect(() => {
     if (course?.id) {
       const saved = localStorage.getItem(`course_${course.id}_progress`)
       if (saved) {
-        setCompletedVideos(JSON.parse(saved))
+        const savedProgress = JSON.parse(saved)
+        // Filter out invalid indices (cleanup for old data with chapter rows)
+        const validProgress = savedProgress.filter((idx: number) => idx < allVideos.length)
+        setCompletedVideos(validProgress)
+        // Save cleaned data back
+        if (validProgress.length !== savedProgress.length) {
+          localStorage.setItem(`course_${course.id}_progress`, JSON.stringify(validProgress))
+        }
       }
     }
-  }, [course?.id])
+  }, [course?.id, allVideos.length])
 
   const handleVideoComplete = () => {
     if (!course) return
@@ -56,8 +74,18 @@ export function CourseLearnClient({ course: initialCourse }: CourseLearnClientPr
     setCompletedVideos(newCompleted)
     localStorage.setItem(`course_${course.id}_progress`, JSON.stringify(newCompleted))
 
-    const videos = course.acf?.course_videos || []
-    if (currentVideoIndex < videos.length - 1) {
+    // Check if course is now 100% complete
+    const newProgress = Math.round((newCompleted.length / allVideos.length) * 100)
+
+    // If we just hit 100%, show certificate modal immediately
+    if (newProgress === 100 && !hasAutoShownModal) {
+      setTimeout(() => {
+        setShowCertificateModal(true)
+        setHasAutoShownModal(true)
+        sessionStorage.setItem(`course_${course.id}_auto_shown`, 'true')
+      }, 800) // Small delay for better UX
+    } else if (currentVideoIndex < allVideos.length - 1) {
+      // Move to next video only if not complete
       setCurrentVideoIndex(currentVideoIndex + 1)
     }
   }
@@ -77,8 +105,9 @@ export function CourseLearnClient({ course: initialCourse }: CourseLearnClientPr
   const isVideoCompleted = (index: number) => completedVideos.includes(index)
 
   const calculateProgress = () => {
-    if (!course?.acf?.course_videos) return 0
-    return Math.round((completedVideos.length / course.acf.course_videos.length) * 100)
+    const totalVideos = allVideos.length
+    if (totalVideos === 0) return 0
+    return Math.round((completedVideos.length / totalVideos) * 100)
   }
 
   const formatDuration = (duration?: string) => duration || ''
@@ -112,16 +141,35 @@ export function CourseLearnClient({ course: initialCourse }: CourseLearnClientPr
     }
   }
 
-  // Load certificate status
+  // Load certificate status and PDF URL
   useEffect(() => {
     if (course?.id) {
       const certData = localStorage.getItem(`course_${course.id}_certificate`)
       if (certData) {
         const data = JSON.parse(certData)
         setCertificateGenerated(data.generated || false)
+        setCertificatePdfUrl(data.pdfUrl || null)
       }
     }
   }, [course?.id])
+
+  // Auto-trigger certificate modal when 100% complete (only once per session)
+  useEffect(() => {
+    const progress = calculateProgress()
+    if (progress === 100 && !hasAutoShownModal && !showCertificateModal) {
+      const autoShownKey = `course_${course.id}_auto_shown`
+      const alreadyShown = sessionStorage.getItem(autoShownKey)
+
+      if (!alreadyShown) {
+        setTimeout(() => {
+          setShowCertificateModal(true)
+          setHasAutoShownModal(true)
+          sessionStorage.setItem(autoShownKey, 'true')
+        }, 1500)
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [completedVideos, course.id, hasAutoShownModal, showCertificateModal])
 
   if (!course.access?.has_access) {
     return (
@@ -146,10 +194,9 @@ export function CourseLearnClient({ course: initialCourse }: CourseLearnClientPr
     )
   }
 
-  const videos = course.acf?.course_videos || []
-  const currentVideo = videos[currentVideoIndex]
+  const currentVideo = allVideos[currentVideoIndex]
 
-  if (videos.length === 0) {
+  if (allVideos.length === 0) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center">
         <BookOpen className="h-16 w-16 text-gray-400 mb-4" />
@@ -179,7 +226,7 @@ export function CourseLearnClient({ course: initialCourse }: CourseLearnClientPr
                 <div className="flex items-center gap-4 text-sm text-gray-600">
                   <span className="flex items-center gap-1">
                     <Video className="h-4 w-4" />
-                    {videos.length} Videos
+                    {allVideos.length} Videos
                   </span>
                   {course.acf?.duration && (
                     <span className="flex items-center gap-1">
@@ -198,37 +245,81 @@ export function CourseLearnClient({ course: initialCourse }: CourseLearnClientPr
                 <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
                   <div className="h-full bg-gradient-to-r from-[#ffed00] to-yellow-500 transition-all" style={{ width: `${calculateProgress()}%` }} />
                 </div>
-                <p className="text-xs text-gray-500 mt-2">{completedVideos.length} of {videos.length} videos completed</p>
+                <p className="text-xs text-gray-500 mt-2">{completedVideos.length} of {allVideos.length} videos completed</p>
               </div>
 
               <div className="p-6 max-h-[50vh] overflow-y-auto">
                 <h3 className="font-semibold mb-4">Course Content</h3>
-                <div className="space-y-2">
-                  {videos.map((video, index) => (
-                    <button
-                      key={index}
-                      onClick={() => handleVideoSelect(index)}
-                      className={`w-full text-left p-3 rounded-lg transition-all ${currentVideoIndex === index ? 'bg-[#ffed00] text-black' : 'hover:bg-gray-100'}`}
-                    >
-                      <div className="flex items-start gap-3">
-                        <div className={`mt-0.5 ${isVideoCompleted(index) ? 'text-green-500' : currentVideoIndex === index ? 'text-black' : 'text-gray-400'}`}>
-                          {isVideoCompleted(index) ? (
-                            <CheckCircle className="h-5 w-5" />
-                          ) : (
-                            <div className="w-5 h-5 rounded-full border-2 border-current flex items-center justify-center">
-                              <span className="text-xs">{index + 1}</span>
-                            </div>
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className={`font-medium truncate ${currentVideoIndex === index ? 'text-black' : ''}`}>{video.video_title}</p>
-                          {video.video_duration && (
-                            <p className={`text-xs ${currentVideoIndex === index ? 'text-black/70' : 'text-gray-500'}`}>{formatDuration(video.video_duration)}</p>
-                          )}
+                <div className="space-y-4">
+                  {chapters.length > 0 ? (
+                    chapters.map((chapter, chapterIndex) => (
+                      <div key={chapterIndex}>
+                        {chapter.chapter_name && (
+                          <div className="px-3 py-2 mb-2 bg-gradient-to-r from-yellow-50 to-yellow-100 border-l-4 border-yellow-500 rounded">
+                            <h4 className="font-bold text-sm text-gray-800">📁 {chapter.chapter_name}</h4>
+                          </div>
+                        )}
+                        <div className="space-y-2">
+                          {chapter.videos && chapter.videos.map((video) => {
+                            const videoIndex = video.index - 1
+                            return (
+                              <button
+                                key={video.index}
+                                onClick={() => handleVideoSelect(videoIndex)}
+                                className={`w-full text-left p-3 rounded-lg transition-all ${currentVideoIndex === videoIndex ? 'bg-[#ffed00] text-black' : 'hover:bg-gray-100'}`}
+                              >
+                                <div className="flex items-start gap-3">
+                                  <div className={`mt-0.5 ${isVideoCompleted(videoIndex) ? 'text-green-500' : currentVideoIndex === videoIndex ? 'text-black' : 'text-gray-400'}`}>
+                                    {isVideoCompleted(videoIndex) ? (
+                                      <CheckCircle className="h-5 w-5" />
+                                    ) : (
+                                      <div className="w-5 h-5 rounded-full border-2 border-current flex items-center justify-center">
+                                        <span className="text-xs">{video.index}</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <p className={`font-medium truncate ${currentVideoIndex === videoIndex ? 'text-black' : ''}`}>{video.video_title}</p>
+                                    {video.video_duration && (
+                                      <p className={`text-xs ${currentVideoIndex === videoIndex ? 'text-black/70' : 'text-gray-500'}`}>{formatDuration(video.video_duration)}</p>
+                                    )}
+                                  </div>
+                                </div>
+                              </button>
+                            )
+                          })}
                         </div>
                       </div>
-                    </button>
-                  ))}
+                    ))
+                  ) : (
+                    <div className="space-y-2">
+                      {videos.map((video, index) => (
+                        <button
+                          key={index}
+                          onClick={() => handleVideoSelect(index)}
+                          className={`w-full text-left p-3 rounded-lg transition-all ${currentVideoIndex === index ? 'bg-[#ffed00] text-black' : 'hover:bg-gray-100'}`}
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className={`mt-0.5 ${isVideoCompleted(index) ? 'text-green-500' : currentVideoIndex === index ? 'text-black' : 'text-gray-400'}`}>
+                              {isVideoCompleted(index) ? (
+                                <CheckCircle className="h-5 w-5" />
+                              ) : (
+                                <div className="w-5 h-5 rounded-full border-2 border-current flex items-center justify-center">
+                                  <span className="text-xs">{index + 1}</span>
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className={`font-medium truncate ${currentVideoIndex === index ? 'text-black' : ''}`}>{video.video_title}</p>
+                              {video.video_duration && (
+                                <p className={`text-xs ${currentVideoIndex === index ? 'text-black/70' : 'text-gray-500'}`}>{formatDuration(video.video_duration)}</p>
+                              )}
+                            </div>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -251,7 +342,7 @@ export function CourseLearnClient({ course: initialCourse }: CourseLearnClientPr
                 <p className="text-xs text-gray-600 mb-3">
                   {calculateProgress() === 100
                     ? 'Congratulations! All videos completed.'
-                    : `${completedVideos.length}/${videos.length} videos completed`}
+                    : `${completedVideos.length}/${allVideos.length} videos completed`}
                 </p>
 
                 <button
@@ -298,7 +389,7 @@ export function CourseLearnClient({ course: initialCourse }: CourseLearnClientPr
                           <ChevronLeft className="h-5 w-5" />
                         </button>
                       )}
-                      {currentVideoIndex < videos.length - 1 && (
+                      {currentVideoIndex < allVideos.length - 1 && (
                         <button onClick={() => setCurrentVideoIndex(currentVideoIndex + 1)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
                           <ChevronRight className="h-5 w-5" />
                         </button>
@@ -406,7 +497,7 @@ export function CourseLearnClient({ course: initialCourse }: CourseLearnClientPr
                       </button>
                     ) : <div />}
 
-                    {currentVideoIndex < videos.length - 1 ? (
+                    {currentVideoIndex < allVideos.length - 1 ? (
                       <button onClick={() => setCurrentVideoIndex(currentVideoIndex + 1)} className="flex items-center gap-2 bg-[#ffed00] text-black px-6 py-3 rounded-full font-semibold hover:bg-yellow-500 transition-colors">
                         Next Video
                         <ChevronRight className="h-4 w-4" />
@@ -433,7 +524,7 @@ export function CourseLearnClient({ course: initialCourse }: CourseLearnClientPr
         isOpen={showCertificateModal}
         onClose={() => setShowCertificateModal(false)}
         courseName={course.title}
-        lessons={videos.map((video, index) => ({
+        lessons={allVideos.map((video, index) => ({
           title: video.video_title,
           duration: video.video_duration,
           completed: completedVideos.includes(index)
@@ -441,6 +532,17 @@ export function CourseLearnClient({ course: initialCourse }: CourseLearnClientPr
         progress={calculateProgress()}
         onGenerateCertificate={handleGenerateCertificate}
         certificateGenerated={certificateGenerated}
+        certificatePdfUrl={certificatePdfUrl}
+        onCertificateGenerated={(pdfUrl) => {
+          setCertificatePdfUrl(pdfUrl)
+          setCertificateGenerated(true)
+          // Save to localStorage
+          localStorage.setItem(`course_${course.id}_certificate`, JSON.stringify({
+            generated: true,
+            pdfUrl: pdfUrl,
+            generatedAt: new Date().toISOString()
+          }))
+        }}
       />
 
       {/* Mobile Menu Drawer - Only on mobile */}
@@ -495,7 +597,7 @@ export function CourseLearnClient({ course: initialCourse }: CourseLearnClientPr
                         <div className="flex items-center gap-4 text-sm text-gray-600">
                           <span className="flex items-center gap-1">
                             <Video className="h-4 w-4" />
-                            {videos.length} Videos
+                            {allVideos.length} Videos
                           </span>
                           {course.acf?.duration && (
                             <span className="flex items-center gap-1">
@@ -515,41 +617,88 @@ export function CourseLearnClient({ course: initialCourse }: CourseLearnClientPr
                         <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
                           <div className="h-full bg-gradient-to-r from-[#ffed00] to-yellow-500 transition-all" style={{ width: `${calculateProgress()}%` }} />
                         </div>
-                        <p className="text-xs text-gray-500 mt-2">{completedVideos.length} of {videos.length} videos completed</p>
+                        <p className="text-xs text-gray-500 mt-2">{completedVideos.length} of {allVideos.length} videos completed</p>
                       </div>
 
                       {/* Video List */}
                       <div className="flex-1 overflow-y-auto p-6">
                         <h3 className="font-semibold mb-4">Course Content</h3>
-                        <div className="space-y-2">
-                          {videos.map((video, index) => (
-                            <button
-                              key={index}
-                              onClick={() => {
-                                handleVideoSelect(index)
-                                setMobileMenuOpen(false)
-                              }}
-                              className={`w-full text-left p-3 rounded-lg transition-all ${currentVideoIndex === index ? 'bg-[#ffed00] text-black' : 'hover:bg-gray-100'}`}
-                            >
-                              <div className="flex items-start gap-3">
-                                <div className={`mt-0.5 ${isVideoCompleted(index) ? 'text-green-500' : currentVideoIndex === index ? 'text-black' : 'text-gray-400'}`}>
-                                  {isVideoCompleted(index) ? (
-                                    <CheckCircle className="h-5 w-5" />
-                                  ) : (
-                                    <div className="w-5 h-5 rounded-full border-2 border-current flex items-center justify-center">
-                                      <span className="text-xs">{index + 1}</span>
-                                    </div>
-                                  )}
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <p className={`font-medium truncate ${currentVideoIndex === index ? 'text-black' : ''}`}>{video.video_title}</p>
-                                  {video.video_duration && (
-                                    <p className={`text-xs ${currentVideoIndex === index ? 'text-black/70' : 'text-gray-500'}`}>{formatDuration(video.video_duration)}</p>
-                                  )}
+                        <div className="space-y-4">
+                          {chapters.length > 0 ? (
+                            chapters.map((chapter, chapterIndex) => (
+                              <div key={chapterIndex}>
+                                {chapter.chapter_name && (
+                                  <div className="px-3 py-2 mb-2 bg-gradient-to-r from-yellow-50 to-yellow-100 border-l-4 border-yellow-500 rounded">
+                                    <h4 className="font-bold text-sm text-gray-800">📁 {chapter.chapter_name}</h4>
+                                  </div>
+                                )}
+                                <div className="space-y-2">
+                                  {chapter.videos && chapter.videos.map((video) => {
+                                    const videoIndex = video.index - 1
+                                    return (
+                                      <button
+                                        key={video.index}
+                                        onClick={() => {
+                                          handleVideoSelect(videoIndex)
+                                          setMobileMenuOpen(false)
+                                        }}
+                                        className={`w-full text-left p-3 rounded-lg transition-all ${currentVideoIndex === videoIndex ? 'bg-[#ffed00] text-black' : 'hover:bg-gray-100'}`}
+                                      >
+                                        <div className="flex items-start gap-3">
+                                          <div className={`mt-0.5 ${isVideoCompleted(videoIndex) ? 'text-green-500' : currentVideoIndex === videoIndex ? 'text-black' : 'text-gray-400'}`}>
+                                            {isVideoCompleted(videoIndex) ? (
+                                              <CheckCircle className="h-5 w-5" />
+                                            ) : (
+                                              <div className="w-5 h-5 rounded-full border-2 border-current flex items-center justify-center">
+                                                <span className="text-xs">{video.index}</span>
+                                              </div>
+                                            )}
+                                          </div>
+                                          <div className="flex-1 min-w-0">
+                                            <p className={`font-medium truncate ${currentVideoIndex === videoIndex ? 'text-black' : ''}`}>{video.video_title}</p>
+                                            {video.video_duration && (
+                                              <p className={`text-xs ${currentVideoIndex === videoIndex ? 'text-black/70' : 'text-gray-500'}`}>{formatDuration(video.video_duration)}</p>
+                                            )}
+                                          </div>
+                                        </div>
+                                      </button>
+                                    )
+                                  })}
                                 </div>
                               </div>
-                            </button>
-                          ))}
+                            ))
+                          ) : (
+                            <div className="space-y-2">
+                              {videos.map((video, index) => (
+                                <button
+                                  key={index}
+                                  onClick={() => {
+                                    handleVideoSelect(index)
+                                    setMobileMenuOpen(false)
+                                  }}
+                                  className={`w-full text-left p-3 rounded-lg transition-all ${currentVideoIndex === index ? 'bg-[#ffed00] text-black' : 'hover:bg-gray-100'}`}
+                                >
+                                  <div className="flex items-start gap-3">
+                                    <div className={`mt-0.5 ${isVideoCompleted(index) ? 'text-green-500' : currentVideoIndex === index ? 'text-black' : 'text-gray-400'}`}>
+                                      {isVideoCompleted(index) ? (
+                                        <CheckCircle className="h-5 w-5" />
+                                      ) : (
+                                        <div className="w-5 h-5 rounded-full border-2 border-current flex items-center justify-center">
+                                          <span className="text-xs">{index + 1}</span>
+                                        </div>
+                                      )}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <p className={`font-medium truncate ${currentVideoIndex === index ? 'text-black' : ''}`}>{video.video_title}</p>
+                                      {video.video_duration && (
+                                        <p className={`text-xs ${currentVideoIndex === index ? 'text-black/70' : 'text-gray-500'}`}>{formatDuration(video.video_duration)}</p>
+                                      )}
+                                    </div>
+                                  </div>
+                                </button>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       </div>
 
@@ -572,7 +721,7 @@ export function CourseLearnClient({ course: initialCourse }: CourseLearnClientPr
                         <p className="text-xs text-gray-600 mb-3">
                           {calculateProgress() === 100
                             ? 'Congratulations! All videos completed.'
-                            : `${completedVideos.length}/${videos.length} videos completed`}
+                            : `${completedVideos.length}/${allVideos.length} videos completed`}
                         </p>
 
                         <button

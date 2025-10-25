@@ -103,6 +103,17 @@ export interface Course {
       permalink: string
     }
     duration?: string
+    course_chapters?: {
+      chapter_name: string
+      videos?: {
+        index: number
+        video_title: string
+        vimeo_id: string
+        video_duration?: string
+        video_description?: string
+        thumbnail?: string
+      }[]
+    }[]
     course_videos?: {
       video_title: string
       vimeo_id: string

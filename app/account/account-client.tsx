@@ -289,8 +289,14 @@ export default function AccountClient({ initialCourses, initialOrders }: Account
                     className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-6 text-center hover:shadow-lg transition-all duration-200 border-2 border-transparent hover:border-gray-300 group"
                   >
                     <Award className="w-12 h-12 mx-auto mb-4 text-gray-900 group-hover:scale-110 transition-transform" />
-                    <div className="text-3xl font-bold text-gray-900 mb-1">{certificates.length}</div>
-                    <div className="text-sm text-gray-600 font-medium">Certificates</div>
+                    <div className="text-3xl font-bold text-gray-900 mb-1">
+                      {courses.filter((course: any) => {
+                        if (typeof window === 'undefined') return false
+                        const certData = localStorage.getItem(`course_${course.id}_certificate`)
+                        return certData && JSON.parse(certData).generated
+                      }).length}
+                    </div>
+                    <div className="text-sm text-gray-600 font-medium">Certificates Earned</div>
                     <div className="mt-3 text-xs text-gray-500 flex items-center justify-center gap-1">
                       View Certificates <ChevronRight className="w-3 h-3" />
                     </div>
@@ -858,64 +864,162 @@ export default function AccountClient({ initialCourses, initialOrders }: Account
             >
               <div className="bb-section-header">
                 <h2>My Certificates</h2>
-                <button onClick={fetchCertificates} className="bb-sync-button">
-                  <RefreshCw className="w-4 h-4" />
-                  Sync Certificates
-                </button>
+                <p className="text-sm text-gray-600 mt-1">View and download your course certificates</p>
               </div>
-              {certificates.length > 0 ? (
+              {courses.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {certificates.map((certificate: any) => (
-                    <div key={certificate.id} className="bg-gradient-to-br from-bb-primary/5 to-yellow-50 rounded-xl p-6 border border-bb-primary/20 hover:border-bb-primary/40 transition-all duration-300">
-                      <div className="flex items-start justify-between mb-4">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-3">
-                            <Award className="w-6 h-6 text-bb-primary" />
-                            <h3 className="font-semibold text-lg text-bb-dark">Certificate of Completion</h3>
-                          </div>
-                          <h4 className="text-xl font-bold text-bb-dark mb-2">{certificate.course_title}</h4>
-                          <div className="flex items-center gap-4 text-sm text-gray-600 mb-3">
-                            <span className="flex items-center gap-1">
-                              <Calendar className="w-4 h-4" />
-                              Completed: {new Date(certificate.completion_date).toLocaleDateString()}
-                            </span>
-                            {certificate.grade && (
+                  {courses.map((course: any) => {
+                    // Get certificate data from localStorage
+                    const certData = typeof window !== 'undefined'
+                      ? localStorage.getItem(`course_${course.id}_certificate`)
+                      : null
+                    const certificate = certData ? JSON.parse(certData) : null
+                    const isGenerated = certificate?.generated || false
+                    const pdfUrl = certificate?.pdfUrl || null
+
+                    // Get progress from localStorage
+                    const progressData = typeof window !== 'undefined'
+                      ? localStorage.getItem(`course_${course.id}_progress`)
+                      : null
+                    const completedVideos = progressData ? JSON.parse(progressData) : []
+
+                    // Calculate progress
+                    const totalVideos = course.acf?.course_chapters?.length > 0
+                      ? course.acf.course_chapters.flatMap((ch: any) => ch.videos || []).length
+                      : course.acf?.course_videos?.length || 0
+                    const progress = totalVideos > 0 ? Math.round((completedVideos.length / totalVideos) * 100) : 0
+                    const isComplete = progress === 100
+
+                    const handleDownload = () => {
+                      if (pdfUrl) {
+                        const link = document.createElement('a')
+                        link.href = pdfUrl
+                        link.download = `${course.title.replace(/[^a-z0-9]/gi, '_')}_Certificate.pdf`
+                        document.body.appendChild(link)
+                        link.click()
+                        document.body.removeChild(link)
+                      }
+                    }
+
+                    return (
+                      <div
+                        key={course.id}
+                        className={`rounded-xl p-6 border transition-all duration-300 ${
+                          isComplete
+                            ? 'bg-gradient-to-br from-[#ffed00]/10 to-yellow-50 border-[#ffed00]/30 hover:border-[#ffed00]/50'
+                            : 'bg-gradient-to-br from-gray-50 to-gray-100 border-gray-200 hover:border-gray-300'
+                        }`}
+                      >
+                        <div className="flex items-start justify-between mb-4">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-3">
+                              {isComplete ? (
+                                <Award className="w-6 h-6 text-[#ffed00]" />
+                              ) : (
+                                <BookOpen className="w-6 h-6 text-gray-400" />
+                              )}
+                              <h3 className="font-semibold text-lg text-gray-900">
+                                {isComplete ? 'Certificate of Completion' : 'In Progress'}
+                              </h3>
+                            </div>
+                            <h4 className="text-xl font-bold text-gray-900 mb-3">{course.title}</h4>
+
+                            {/* Progress Bar */}
+                            <div className="mb-3">
+                              <div className="flex items-center justify-between mb-2">
+                                <span className="text-sm font-medium text-gray-600">Progress</span>
+                                <span className="text-sm font-bold text-gray-900">{progress}%</span>
+                              </div>
+                              <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                                <div
+                                  className={`h-full transition-all duration-300 ${
+                                    isComplete ? 'bg-gradient-to-r from-[#ffed00] to-yellow-500' : 'bg-gray-400'
+                                  }`}
+                                  style={{ width: `${progress}%` }}
+                                />
+                              </div>
+                              <p className="text-xs text-gray-500 mt-1">
+                                {completedVideos.length} of {totalVideos} lessons completed
+                              </p>
+                            </div>
+
+                            {/* Course Stats */}
+                            <div className="flex items-center gap-4 text-sm text-gray-600">
                               <span className="flex items-center gap-1">
-                                <Star className="w-4 h-4 text-yellow-500" />
-                                Grade: {certificate.grade}
+                                <Video className="w-4 h-4" />
+                                {totalVideos} lessons
                               </span>
+                              {course.acf?.duration && (
+                                <span className="flex items-center gap-1">
+                                  <Clock className="w-4 h-4" />
+                                  {course.acf.duration}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex items-center justify-between pt-4 border-t border-gray-200">
+                          <div className="flex items-center gap-2 text-sm">
+                            {isComplete ? (
+                              <>
+                                <CheckCircle className="w-4 h-4 text-green-600" />
+                                <span className="text-green-600 font-medium">Completed</span>
+                                {isGenerated && certificate?.generatedAt && (
+                                  <span className="text-gray-500">
+                                    • {new Date(certificate.generatedAt).toLocaleDateString()}
+                                  </span>
+                                )}
+                              </>
+                            ) : (
+                              <>
+                                <Clock className="w-4 h-4 text-gray-400" />
+                                <span className="text-gray-600 font-medium">
+                                  {totalVideos - completedVideos.length} lessons remaining
+                                </span>
+                              </>
                             )}
                           </div>
-                          <div className="text-sm text-gray-600">
-                            Instructor: <span className="font-medium">{certificate.instructor.name}</span>
-                          </div>
+
+                          {isComplete && isGenerated && pdfUrl ? (
+                            <button
+                              onClick={handleDownload}
+                              className="flex items-center gap-2 bg-black hover:bg-gray-800 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
+                            >
+                              <Award className="w-4 h-4" />
+                              Download Certificate
+                            </button>
+                          ) : isComplete ? (
+                            <Link
+                              href={`/courses/${course.slug}/learn`}
+                              className="flex items-center gap-2 bg-[#ffed00] hover:bg-yellow-500 text-black text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
+                            >
+                              <Award className="w-4 h-4" />
+                              Generate Certificate
+                            </Link>
+                          ) : (
+                            <Link
+                              href={`/courses/${course.slug}/learn`}
+                              className="flex items-center gap-2 text-gray-600 hover:text-black text-sm font-semibold transition-colors"
+                            >
+                              Continue Learning
+                              <ChevronRight className="w-4 h-4" />
+                            </Link>
+                          )}
                         </div>
                       </div>
-                      <div className="flex items-center justify-between pt-4 border-t border-bb-primary/10">
-                        <div className="flex items-center gap-2 text-sm text-green-600">
-                          <Shield className="w-4 h-4" />
-                          <span className="capitalize">{certificate.status}</span>
-                        </div>
-                        <a 
-                          href={certificate.certificate_url} 
-                          className="bb-view-all text-sm"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          Download PDF <ExternalLink className="w-4 h-4" />
-                        </a>
-                      </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               ) : (
                 <div className="bb-empty-state">
-                  <Award className="w-16 h-16 mx-auto mb-4" />
-                  <p>No certificates earned yet</p>
-                  <p className="text-sm text-gray-500 mb-6">Complete your enrolled courses to earn certificates</p>
-                  <a href="#" className="bb-btn-primary">
-                    View Courses
-                  </a>
+                  <Award className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+                  <p className="text-gray-600 mb-2">No courses enrolled yet</p>
+                  <p className="text-sm text-gray-500 mb-6">Enroll in courses to start earning certificates</p>
+                  <Link href="/courses" className="bb-btn-primary inline-block">
+                    Browse Courses
+                  </Link>
                 </div>
               )}
             </motion.div>
