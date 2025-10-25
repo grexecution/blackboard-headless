@@ -94,9 +94,21 @@ export default function AccountClient({ initialCourses, initialOrders }: Account
   useEffect(() => {
     if (session) {
       fetch('/api/affiliate/dashboard')
-        .then(res => res.ok ? res.json() : null)
-        .then(data => setAffiliateData(data))
-        .catch(() => setAffiliateData(null))
+        .then(res => {
+          if (!res.ok) {
+            console.log('Affiliate check failed:', res.status, res.statusText)
+            return null
+          }
+          return res.json()
+        })
+        .then(data => {
+          console.log('Affiliate data:', data)
+          setAffiliateData(data)
+        })
+        .catch(err => {
+          console.error('Affiliate fetch error:', err)
+          setAffiliateData(null)
+        })
     }
   }, [session])
 
