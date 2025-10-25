@@ -74,14 +74,14 @@ export default function VideoPlayer({ video }: VideoPlayerProps) {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8">
       {video.acf.videos.map((item: VideoItem, index: number) => (
-        <div key={index} className="bg-white rounded-2xl shadow-xl overflow-hidden">
+        <div key={index} className="bg-white rounded-xl sm:rounded-2xl shadow-xl overflow-hidden">
           <div className="grid lg:grid-cols-2 gap-0">
-            {/* Video Player */}
-            <div className="bg-black aspect-video lg:aspect-auto">
+            {/* Video Player - 16:9 aspect ratio on mobile */}
+            <div className="bg-black">
               {item.vimeo_video_id ? (
-                <div className="relative w-full h-full min-h-[400px]">
+                <div className="relative w-full aspect-video">
                   <iframe
                     src={`https://player.vimeo.com/video/${item.vimeo_video_id}?title=0&byline=0&portrait=0`}
                     className="absolute inset-0 w-full h-full"
@@ -91,29 +91,29 @@ export default function VideoPlayer({ video }: VideoPlayerProps) {
                   />
                 </div>
               ) : (
-                <div className="flex items-center justify-center h-full min-h-[400px] bg-gray-900">
+                <div className="flex items-center justify-center aspect-video bg-gray-900">
                   <div className="text-center">
-                    <Play className="h-16 w-16 text-gray-600 mx-auto mb-4" />
-                    <p className="text-gray-500">Video not available</p>
+                    <Play className="h-12 w-12 sm:h-16 sm:w-16 text-gray-600 mx-auto mb-4" />
+                    <p className="text-gray-500 text-sm sm:text-base">Video not available</p>
                   </div>
                 </div>
               )}
             </div>
 
             {/* Video Info */}
-            <div className="p-8 lg:p-10">
-              <h2 className="text-2xl lg:text-3xl font-bold mb-6">{item.title}</h2>
+            <div className="p-4 sm:p-6 lg:p-10">
+              <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold mb-4 sm:mb-6">{item.title}</h2>
 
               {/* Short Description */}
               {item.short_description && (
-                <div className="mb-6">
+                <div className="mb-4 sm:mb-6">
                   <div className={`prose prose-gray max-w-none ${!expandedDescriptions[index] ? 'line-clamp-3' : ''}`}>
-                    <p className="text-gray-600">{item.short_description}</p>
+                    <p className="text-sm sm:text-base text-gray-600">{item.short_description}</p>
                   </div>
                   {item.short_description.length > 150 && (
                     <button
                       onClick={() => toggleDescription(index)}
-                      className="mt-2 text-[#ffed00] font-semibold text-sm flex items-center gap-1 hover:text-black transition-colors"
+                      className="mt-2 text-[#ffed00] font-semibold text-xs sm:text-sm flex items-center gap-1 hover:text-black transition-colors"
                     >
                       {expandedDescriptions[index] ? (
                         <>
@@ -132,7 +132,7 @@ export default function VideoPlayer({ video }: VideoPlayerProps) {
               )}
 
               {/* Metadata Grid */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 {item.seconds_per_page && (
                   <div className="flex items-start gap-3">
                     <Clock className="h-5 w-5 text-[#ffed00] mt-0.5" />
@@ -176,9 +176,9 @@ export default function VideoPlayer({ video }: VideoPlayerProps) {
 
               {/* Full Description */}
               {item.description && (
-                <div className="mt-6 pt-6 border-t border-gray-200">
-                  <h3 className="font-semibold mb-3">About this exercise</h3>
-                  <p className="text-gray-600 text-sm leading-relaxed">{item.description}</p>
+                <div className="mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-gray-200">
+                  <h3 className="font-semibold text-sm sm:text-base mb-2 sm:mb-3">About this exercise</h3>
+                  <p className="text-gray-600 text-xs sm:text-sm leading-relaxed">{item.description}</p>
                 </div>
               )}
             </div>

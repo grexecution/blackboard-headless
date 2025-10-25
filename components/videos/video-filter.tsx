@@ -1,17 +1,20 @@
 'use client'
 
+import { useState } from 'react'
 import { VideoCategory } from '@/lib/woocommerce/videos'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Filter } from 'lucide-react'
+import { Filter, X } from 'lucide-react'
 
 interface VideoFilterProps {
   categories: VideoCategory[]
+  onOpenChange?: (open: boolean) => void
 }
 
-export default function VideoFilter({ categories }: VideoFilterProps) {
+export default function VideoFilter({ categories, onOpenChange }: VideoFilterProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const currentCategory = searchParams.get('category')
+  const [isOpen, setIsOpen] = useState(false)
 
   const handleCategoryChange = (categorySlug: string | null) => {
     const params = new URLSearchParams(searchParams.toString())
@@ -23,14 +26,40 @@ export default function VideoFilter({ categories }: VideoFilterProps) {
     }
 
     router.push(`/training-videos${params.toString() ? `?${params.toString()}` : ''}`)
+    setIsOpen(false) // Close mobile menu after selection
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-lg p-6 sticky top-24">
-      <div className="flex items-center gap-2 mb-6">
-        <Filter className="h-5 w-5 text-gray-700" />
-        <h3 className="font-bold text-lg">Filter Videos</h3>
-      </div>
+    <>
+
+      {/* Mobile Overlay */}
+      {isOpen && (
+        <div
+          className="lg:hidden fixed inset-0 bg-black/50 z-50"
+          onClick={() => setIsOpen(false)}
+        />
+      )}
+
+      {/* Desktop Sidebar / Mobile Slide-in */}
+      <div className={`
+        bg-white rounded-xl shadow-lg p-6
+        lg:sticky lg:top-24
+        fixed lg:relative inset-y-0 right-0 z-50 w-80 lg:w-auto
+        transform transition-transform duration-300 ease-in-out
+        ${isOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'}
+      `}>
+        {/* Mobile Close Button */}
+        <button
+          onClick={() => setIsOpen(false)}
+          className="lg:hidden absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-full transition-colors"
+        >
+          <X className="h-5 w-5" />
+        </button>
+
+        <div className="flex items-center gap-2 mb-6">
+          <Filter className="h-5 w-5 text-gray-700" />
+          <h3 className="font-bold text-lg">Filter Videos</h3>
+        </div>
 
       {/* Categories */}
       <div>
@@ -83,6 +112,7 @@ export default function VideoFilter({ categories }: VideoFilterProps) {
           </p>
         </div>
       </div>
-    </div>
+      </div>
+    </>
   )
 }

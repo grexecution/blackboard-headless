@@ -1,21 +1,37 @@
 'use client'
 
 import { useEffect, useState, useRef, useCallback } from 'react'
-import { useSearchParams } from 'next/navigation'
-import { Video } from '@/lib/woocommerce/videos'
+import { useSearchParams, useRouter } from 'next/navigation'
+import { Video, VideoCategory } from '@/lib/woocommerce/videos'
 import VideoCard from './video-card'
-import { Play, Loader2 } from 'lucide-react'
+import { Play, Loader2, Filter, X } from 'lucide-react'
 
 interface VideosGridProps {
   initialVideos: Video[]
-  allCategories: any[]
+  allCategories: VideoCategory[]
+  onFilterClick?: () => void
 }
 
 const VIDEOS_PER_PAGE = 9
 
-export default function VideosGrid({ initialVideos, allCategories }: VideosGridProps) {
+export default function VideosGrid({ initialVideos, allCategories, onFilterClick }: VideosGridProps) {
+  const router = useRouter()
   const searchParams = useSearchParams()
   const currentCategory = searchParams.get('category')
+  const [isFilterOpen, setIsFilterOpen] = useState(false)
+
+  const handleCategoryChange = (categorySlug: string | null) => {
+    const params = new URLSearchParams(searchParams.toString())
+
+    if (categorySlug) {
+      params.set('category', categorySlug)
+    } else {
+      params.delete('category')
+    }
+
+    router.push(`/training-videos${params.toString() ? `?${params.toString()}` : ''}`)
+    setIsFilterOpen(false)
+  }
 
   // Filter videos based on category
   const getFilteredVideos = useCallback(() => {
@@ -110,8 +126,81 @@ export default function VideosGrid({ initialVideos, allCategories }: VideosGridP
 
   return (
     <div>
-      <div className="mb-6">
-        <p className="text-gray-600">
+      {/* Mobile Filter Overlay */}
+      {isFilterOpen && (
+        <div
+          className="lg:hidden fixed inset-0 bg-black/50 z-50"
+          onClick={() => setIsFilterOpen(false)}
+        />
+      )}
+
+      {/* Mobile Filter Panel */}
+      <div className={`
+        lg:hidden fixed inset-y-0 right-0 z-50 w-80 bg-white shadow-2xl
+        transform transition-transform duration-300 ease-in-out
+        ${isFilterOpen ? 'translate-x-0' : 'translate-x-full'}
+      `}>
+        <div className="p-6 h-full overflow-y-auto">
+          {/* Close Button */}
+          <button
+            onClick={() => setIsFilterOpen(false)}
+            className="absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-full transition-colors"
+          >
+            <X className="h-5 w-5" />
+          </button>
+
+          <div className="flex items-center gap-2 mb-6">
+            <Filter className="h-5 w-5 text-gray-700" />
+            <h3 className="font-bold text-lg">Filter Videos</h3>
+          </div>
+
+          {/* Categories */}
+          <div>
+            <h4 className="font-semibold text-sm text-gray-700 mb-3">Categories</h4>
+            <div className="space-y-2">
+              {/* All Videos */}
+              <button
+                onClick={() => handleCategoryChange(null)}
+                className={`w-full text-left px-4 py-2.5 rounded-lg font-medium text-sm transition-all ${
+                  !currentCategory
+                    ? 'bg-[#ffed00] text-black'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                All Videos
+              </button>
+
+              {/* Category Buttons */}
+              {allCategories.map((category) => (
+                <button
+                  key={category.id}
+                  onClick={() => handleCategoryChange(category.slug)}
+                  className={`w-full text-left px-4 py-2.5 rounded-lg font-medium text-sm transition-all flex items-center justify-between ${
+                    currentCategory === category.slug
+                      ? 'bg-[#ffed00] text-black'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  <span>{category.name}</span>
+                  {category.count > 0 && (
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${
+                      currentCategory === category.slug
+                        ? 'bg-black/20'
+                        : 'bg-gray-300'
+                    }`}>
+                      {category.count}
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Header with Filter Button on Mobile */}
+      <div className="flex items-center justify-between mb-6">
+        <p className="text-sm sm:text-base text-gray-600">
           {categoryName ? (
             <>
               Showing <span className="font-semibold">{filteredVideos.length}</span> videos in{' '}
@@ -123,6 +212,15 @@ export default function VideosGrid({ initialVideos, allCategories }: VideosGridP
             </>
           )}
         </p>
+
+        {/* Mobile Filter Button */}
+        <button
+          onClick={() => setIsFilterOpen(!isFilterOpen)}
+          className="lg:hidden inline-flex items-center gap-2 bg-[#ffed00] text-black px-4 py-2 rounded-lg font-semibold text-sm hover:bg-yellow-400 transition-colors"
+        >
+          <Filter className="h-4 w-4" />
+          Filter
+        </button>
       </div>
 
       {displayedVideos.length > 0 ? (
