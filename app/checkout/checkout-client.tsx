@@ -538,14 +538,30 @@ export default function CheckoutClient({ countries, taxRates, shippingZones, tes
         return
 
       } else if (selectedPaymentMethod === 'paypal') {
-        // TODO: Implement PayPal - for now redirect to WordPress
-        console.log('PayPal payment - redirecting to WordPress for now...')
-        clearCart()
-        if (data.order.paymentUrl) {
-          window.location.href = data.order.paymentUrl
-        } else {
-          router.push(`/order-success?order=${data.order.id}&number=${data.order.orderNumber}&method=${data.order.paymentMethod}`)
+        // Create PayPal order
+        console.log('Creating PayPal order...')
+        setProcessingStep('redirecting')
+
+        const paypalResponse = await fetch('/api/create-paypal-order', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            orderId: data.order.id,
+            orderNumber: data.order.orderNumber,
+            total: data.order.total,
+            currency: billingData.country === 'US' ? 'USD' : 'EUR',
+          }),
+        })
+
+        const paypalData = await paypalResponse.json()
+
+        if (!paypalData.success) {
+          throw new Error(paypalData.error || 'Failed to create PayPal order')
         }
+
+        console.log('Redirecting to PayPal...')
+        clearCart()
+        window.location.href = paypalData.approveLink
         return
 
       } else {
