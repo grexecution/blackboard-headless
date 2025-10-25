@@ -44,6 +44,7 @@ export default function HomeContent({ blackboardProducts, blackboardWithVariatio
   }
 
   const [selectedInstructor, setSelectedInstructor] = useState<any>(null)
+  const [showVideoModal, setShowVideoModal] = useState(false)
 
   const instructors = [
     {
@@ -164,7 +165,11 @@ export default function HomeContent({ blackboardProducts, blackboardWithVariatio
                   Shop Now
                   <ArrowRight className="h-5 w-5" />
                 </Link>
-                <button className="inline-flex items-center justify-center gap-2 border-2 border-white text-white px-8 py-4 rounded-full font-bold text-lg hover:bg-white hover:text-black transition-all">
+                <button
+                  onClick={() => setShowVideoModal(true)}
+                  className="inline-flex items-center justify-center gap-2 border-2 border-white text-white px-8 py-4 rounded-full font-bold text-lg hover:bg-white hover:text-black transition-all"
+                  type="button"
+                >
                   <PlayCircle className="h-5 w-5" />
                   Watch Demo
                 </button>
@@ -301,7 +306,11 @@ export default function HomeContent({ blackboardProducts, blackboardWithVariatio
                   Shop Now
                   <ArrowRight className="h-5 w-5" />
                 </Link>
-                <button className="inline-flex items-center justify-center gap-2 border-2 border-white text-white px-6 py-3 sm:px-8 sm:py-4 rounded-full font-bold text-base sm:text-lg hover:bg-white hover:text-black transition-all">
+                <button
+                  onClick={() => setShowVideoModal(true)}
+                  type="button"
+                  className="inline-flex items-center justify-center gap-2 border-2 border-white text-white px-6 py-3 sm:px-8 sm:py-4 rounded-full font-bold text-base sm:text-lg hover:bg-white hover:text-black transition-all"
+                >
                   <PlayCircle className="h-5 w-5" />
                   Watch Demo
                 </button>
@@ -1206,6 +1215,51 @@ export default function HomeContent({ blackboardProducts, blackboardWithVariatio
         </div>
       </section>
 */}
+
+      {/* Video Modal */}
+      {showVideoModal && (
+        <div
+          className="fixed inset-0 bg-black/95 z-50 flex items-center justify-center p-4"
+          onClick={() => setShowVideoModal(false)}
+        >
+          <button
+            onClick={() => setShowVideoModal(false)}
+            className="absolute top-4 right-4 z-10 w-12 h-12 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-full flex items-center justify-center text-white transition-all"
+            aria-label="Close video"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="28"
+              height="28"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+          <div
+            className="relative w-full max-w-6xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="relative pt-[56.25%] bg-black rounded-xl overflow-hidden">
+              <video
+                className="absolute inset-0 w-full h-full"
+                controls
+                autoPlay
+                playsInline
+                src="https://blackboard-training.com/wp-content/uploads/2023/11/bb_image_en-lores.mp4"
+              >
+                Your browser does not support the video tag.
+              </video>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   )
